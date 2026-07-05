@@ -19,8 +19,12 @@
 - `refs/video-notes.md`：基于字幕和画面的中文时间线笔记。
 - `refs/systems-breakdown.md`：面向实现的系统拆解。
 - `refs/keyframes/`：少量低清关键帧和 contact sheet，仅作学习参考。
+- `refs/asset-crops/`：主角、弓和敌人的低清裁切参考。
+- `docs/replication-plan.md`：复刻实现路线。
 
 注意：`refs/` 中的截图来自第三方视频，仅用于本学习仓库的研究索引，不应作为最终游戏素材发布或再分发。
+
+正式自制素材放在 `assets/`。参考图不进入最终游戏包。
 
 ## 计划中的游戏结构
 
