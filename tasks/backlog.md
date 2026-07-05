@@ -6,7 +6,7 @@
 - [x] `mvp-002-prototype-video-crops`: prepare temporary runtime crops from video references. Merged from `task/mvp-002-prototype-video-crops`.
 - [x] `mvp-003-mobile-input`: implement mobile dual-joystick and desktop debug input. Merged from `task/mvp-003-mobile-input`.
 - [x] `mvp-004-room-visuals-state`: implement single reference-style combat room, doors, decorations, room state. Merged from `task/mvp-004-room-visuals-state`.
-- [ ] `mvp-005-player-bow-combat`: implement Bowbert, bow visuals, arrows, player damage/dodge basics.
+- [ ] `mvp-005-player-bow-combat`: implement Bowbert, bow visuals, arrows, player damage/dodge basics. Worker running in `/home/simpx/bowbert-workers/mvp-005-player-bow-combat`.
 - [ ] `mvp-006-dart-goober-ai`: implement Dart Goober spawn, AI, darts, hit/death.
 - [ ] `mvp-007-feedback-hud-smoke`: implement required feedback, hearts HUD, smoke checks.
 

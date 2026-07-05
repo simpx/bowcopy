@@ -4,7 +4,7 @@ title: Bowbert movement, bow, arrows, dodge
 status: active
 owner: worker-mvp-005
 branch: task/mvp-005-player-bow-combat
-worktree:
+worktree: /home/simpx/bowbert-workers/mvp-005-player-bow-combat
 allowed:
   - src/sim/player/**
   - src/sim/projectiles/**
