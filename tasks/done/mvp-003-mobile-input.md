@@ -1,7 +1,7 @@
 ---
 id: mvp-003-mobile-input
 title: Mobile dual joystick and desktop debug input
-status: active
+status: done
 owner: worker-mvp-003
 branch: task/mvp-003-mobile-input
 worktree: /home/simpx/bowbert-workers/mvp-003-mobile-input
@@ -37,3 +37,9 @@ Implement the MVP input layer: mobile left movement joystick, right aim/fire joy
 # Notes
 
 Depends on `mvp-001-project-scaffold`. Do not implement player combat or enemy behavior beyond debug visualization needed to verify input.
+
+Reviewed and merged by manager from `task/mvp-003-mobile-input` at worker commit `7da7093`.
+
+Manager verification:
+
+- `npm run build`: passed on integration branch with the expected Phaser/Vite large chunk warning.
