@@ -4,7 +4,7 @@ title: Dart Goober spawn, AI, darts, death
 status: active
 owner: worker-mvp-006
 branch: task/mvp-006-dart-goober-ai
-worktree:
+worktree: /home/simpx/bowbert-workers/mvp-006-dart-goober-ai
 allowed:
   - src/sim/enemies/**
   - src/render/enemies/**
