@@ -21,6 +21,63 @@
 - Reference crops in `refs/asset-crops/` are not runtime assets.
 - Final game assets must live under `assets/` and be original/recreated.
 
+## Mobile Direction
+
+Target landscape mobile first. Portrait is possible later, but the current combat model needs two thumbs: one for movement and one for aiming. Landscape keeps the room, enemies, arrows, and dodge button readable without covering the center playfield.
+
+Controls:
+
+- Left virtual joystick: movement.
+- Right virtual joystick: bow direction and active attack.
+- Right joystick hold: keep firing arrows at a fixed rhythm in the held direction.
+- Right joystick drag: adjust aim direction while firing.
+- Right joystick release: stop firing and keep the last facing direction.
+- Right dodge button: dodge in current movement direction.
+- If the player is not moving when dodge is pressed, dodge in the current aim/facing direction.
+
+HUD layout:
+
+- Hearts at top-left.
+- Optional room/minimap chip at top-right.
+- Left joystick fixed in bottom-left safe area.
+- Right aim joystick fixed in bottom-right safe area.
+- Dodge button sits above or inside the right thumb cluster, far enough from the aim joystick to avoid accidental presses.
+- Keep the screen center and lower-middle playfield clear.
+
+Combat implication:
+
+- This is no longer pure auto-attack.
+- MVP does not use player-controlled bow charge.
+- Each arrow still plays a short procedural draw/release animation before firing.
+- Enemy and room design should assume the player can aim while moving, but dodge has a cooldown and uses movement direction.
+- Charge can return later as an upgrade, special attack, or sigil.
+
+## MVP Visual Requirements
+
+MVP must include the original video's procedural animation idea. This is not a polish-only phase.
+
+Required:
+
+- Player and enemies are built from simple runtime-drawn parts or layered primitives, not a full frame-by-frame sprite sheet.
+- Squash/stretch animation uses sine-wave driven scale and rotation profiles.
+- Idle, walk, shoot, hit, and dodge each have distinct animation profiles.
+- Eyes track aim direction or target direction with clamped pupil offsets.
+- Enemy eyes and body tilt should sell intent and impact.
+- Bow attack uses a short automatic draw/release pose even without manual charge.
+- Arrows have flight trails or small motion streaks.
+- Arrow-wall and arrow-enemy hits spawn particles.
+- Enemy death spawns particles.
+- Dodge spawns ghost afterimages.
+- Camera shake is present for hit, damage, dodge, and room clear events.
+
+MVP can skip:
+
+- Final exported PNG assets.
+- Full room generation.
+- Boss rooms.
+- Sigil system.
+- Manual charge depth.
+
 ## Phase 1: Asset Targets
 
 先做最小可玩所需资产。
@@ -49,14 +106,14 @@ Style goals:
 - `assets/weapons/bow/`
 - Needed:
   - relaxed bow;
-  - half-drawn bow;
-  - fully drawn bow;
+  - drawn bow;
+  - release pose;
   - arrow sprite;
   - hit marker or small burst.
 
 Style goals:
 
-- three visible charge states;
+- visible relaxed, draw, and release poses for automatic firing;
 - readable at small size;
 - rotate around player hand/side pivot.
 
@@ -82,19 +139,25 @@ Style goals:
 MVP scope:
 
 1. Single room.
-2. Player movement and mouse aim.
-3. Bow charge and arrow firing.
-4. Dodge roll with cooldown and ghost trail.
-5. One enemy: dart goober.
-6. Arrow collision against walls and enemies.
-7. Room clear state.
+2. Mobile landscape layout.
+3. Left virtual joystick movement.
+4. Right virtual joystick aim and hold-to-fire.
+5. Dodge button with cooldown and ghost trail.
+6. One enemy: dart goober.
+7. Arrow collision against walls and enemies.
+8. Room clear state.
+9. Procedural player/enemy animation.
+10. Arrow, hit, death, dodge, and camera feedback.
 
 Exit criteria:
 
 - shooting feels readable;
+- right-stick hold reliably fires in the intended direction;
+- dodge follows movement direction and does not fight aiming;
 - enemy movement is not perfectly robotic;
 - roll can dodge or reposition;
 - enemy can die and room can clear.
+- the game still feels alive when using placeholder art because eyes, squash/stretch, particles, and camera feedback are active.
 
 ## Phase 3: Room Loop
 
@@ -137,12 +200,12 @@ Add enemies in this order:
 
 Rule: every new enemy should reuse at least one existing system. If a monster requires a completely separate architecture, it waits.
 
-## Phase 5: Juice
+## Phase 5: Expanded Juice
 
-Add feedback systems after the core loop works:
+MVP already includes baseline juice. After the core loop works, expand it:
 
 - camera shake by event strength;
-- bow-charge zoom and vignette;
+- bow-fire anticipation and release kick;
 - arrow hit particles;
 - spawn particles;
 - death particles;
@@ -170,8 +233,12 @@ When we start coding, the first commit should create:
 - Vite + TypeScript + Phaser project;
 - `src/game/` scene bootstrap;
 - `src/sim/` gameplay state;
+- `src/input/` mobile action mapper;
 - `src/assets/manifest.ts` stable asset keys;
 - a placeholder Bowbert drawn from our own shapes or recreated PNG;
+- landscape virtual joystick UI;
+- procedural animation profiles for player and Dart Goober;
+- baseline particles and camera shake;
 - one room and one enemy.
 
 Reference images are already in `refs/asset-crops/`. They are only for visual analysis.
