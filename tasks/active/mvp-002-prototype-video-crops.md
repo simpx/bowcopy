@@ -4,7 +4,7 @@ title: Prepare temporary runtime video-crop assets
 status: active
 owner: worker-mvp-002
 branch: task/mvp-002-prototype-video-crops
-worktree:
+worktree: /home/simpx/bowbert-workers/mvp-002-prototype-video-crops
 allowed:
   - assets/prototype-video-crops/**
   - src/assets/**

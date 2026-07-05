@@ -4,7 +4,7 @@ title: Phaser TypeScript Vite scaffold
 status: active
 owner: worker-mvp-001
 branch: task/mvp-001-project-scaffold
-worktree:
+worktree: /home/simpx/bowbert-workers/mvp-001-project-scaffold
 allowed:
   - package.json
   - package-lock.json
