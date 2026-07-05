@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bowbert Eye Tuning</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111712;
+      --panel: #1b241d;
+      --panel-2: #243025;
+      --line: #415041;
+      --text: #eef3e7;
+      --muted: #aebba8;
+      --accent: #f0c45b;
+      --accent-2: #80c77a;
+      --danger: #e48778;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      padding: 18px;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 0 auto 14px;
+      max-width: 1480px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+      letter-spacing: 0;
+      font-weight: 700;
+    }
+
+    .hint {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(360px, 1fr) minmax(420px, 1fr) 360px;
+      gap: 14px;
+      max-width: 1480px;
+      margin: 0 auto;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .panel-meta {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .stage {
+      min-height: 560px;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background:
+        linear-gradient(45deg, rgba(255, 255, 255, 0.04) 25%, transparent 25%) 0 0 / 22px 22px,
+        linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.04) 75%) 0 0 / 22px 22px,
+        linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.04) 75%) 11px 11px / 22px 22px,
+        linear-gradient(45deg, rgba(255, 255, 255, 0.04) 25%, transparent 25%) 11px 11px / 22px 22px,
+        #152017;
+    }
+
+    .reference-frame {
+      width: min(100%, 620px);
+      display: grid;
+      place-items: center;
+    }
+
+    .reference-frame img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
+    }
+
+    .body-wrap {
+      position: relative;
+      width: min(calc(100% - 120px), 520px);
+      min-width: 260px;
+      aspect-ratio: 654 / 714;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .body-wrap img {
+      display: block;
+      width: 100%;
+      height: auto;
+      pointer-events: none;
+      filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.25));
+    }
+
+    .eye {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 80px;
+      height: 80px;
+      border-radius: 999px;
+      background: #090b08;
+      cursor: grab;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 2px 0 rgba(255, 255, 255, 0.18) inset, 0 8px 14px rgba(0, 0, 0, 0.28);
+      touch-action: none;
+      z-index: 4;
+    }
+
+    .eye:active {
+      cursor: grabbing;
+    }
+
+    .eye.active {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+    }
+
+    .eye-white {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border-radius: 999px;
+      background: #f7f2df;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75) inset;
+    }
+
+    .eye-pupil {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      border-radius: 999px;
+      background: #151510;
+      transform: translate(-50%, -50%);
+    }
+
+    .resize-handle {
+      position: absolute;
+      right: -8px;
+      bottom: -8px;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #111712;
+      border-radius: 999px;
+      background: var(--accent);
+      cursor: nwse-resize;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+      z-index: 5;
+    }
+
+    .controls {
+      display: grid;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 8px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+    }
+
+    .segmented button,
+    .button-row button,
+    .copy-button {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #2b382c;
+      color: var(--text);
+      min-height: 34px;
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+
+    .segmented button.active,
+    .button-row button.active {
+      border-color: var(--accent);
+      background: #4b4224;
+      color: #fff2c8;
+    }
+
+    .segmented button:hover,
+    .button-row button:hover,
+    .copy-button:hover {
+      border-color: #6f806f;
+      background: #334432;
+    }
+
+    .field {
+      display: grid;
+      grid-template-columns: 86px 1fr 62px;
+      gap: 9px;
+      align-items: center;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    input[type="number"] {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #121912;
+      color: var(--text);
+      padding: 5px 6px;
+      text-align: right;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .copy-button {
+      width: 100%;
+      border-color: #76602a;
+      background: #4a3b20;
+      color: #ffe7a3;
+      font-weight: 700;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 230px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #101610;
+      color: #e9f2df;
+      padding: 10px;
+      line-height: 1.45;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+    }
+
+    .status {
+      min-height: 18px;
+      color: var(--accent-2);
+      font-size: 12px;
+    }
+
+    .small-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 1180px) {
+      .layout {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .controls-panel {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 820px) {
+      body {
+        padding: 12px;
+      }
+
+      .topbar,
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .stage {
+        min-height: auto;
+      }
+
+      .body-wrap {
+        width: min(calc(100% - 72px), 420px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Bowbert Eye Tuning</h1>
+      <p class="hint">拖动眼睛调整位置，拖右下角黄点或滚轮调整大小。右侧参数会实时更新。</p>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Reference</div>
+        <div class="panel-meta">original crop</div>
+      </div>
+      <div class="stage">
+        <div class="reference-frame">
+          <img src="asset-crops/player/bowbert_close_reference.png" alt="Original Bowbert reference">
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Generated Body + Tuned Eyes</div>
+        <div class="panel-meta">trimmed body basis</div>
+      </div>
+      <div class="stage">
+        <div class="body-wrap" id="bodyWrap">
+          <img id="bodyImage" src="../assets/characters/bowbert/bowbert-body-skill-v1-trimmed.png" alt="Generated Bowbert body">
+          <div class="eye" data-eye="left" id="eye-left" title="Left eye: drag to move, wheel to scale">
+            <div class="eye-white"></div>
+            <div class="eye-pupil"></div>
+            <div class="resize-handle" title="Drag to scale"></div>
+          </div>
+          <div class="eye" data-eye="right" id="eye-right" title="Right eye: drag to move, wheel to scale">
+            <div class="eye-white"></div>
+            <div class="eye-pupil"></div>
+            <div class="resize-handle" title="Drag to scale"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel controls-panel">
+      <div class="panel-head">
+        <div class="panel-title">Controls</div>
+        <div class="panel-meta">copy params back</div>
+      </div>
+      <div class="controls">
+        <div class="segmented" aria-label="Active eye">
+          <button type="button" id="select-left">Left eye</button>
+          <button type="button" id="select-right">Right eye</button>
+        </div>
+
+        <div class="field">
+          <label for="xRange">X</label>
+          <input id="xRange" type="range" min="-0.200" max="1.200" step="0.001">
+          <input id="xNumber" type="number" min="-0.2" max="1.2" step="0.001">
+        </div>
+
+        <div class="field">
+          <label for="yRange">Y</label>
+          <input id="yRange" type="range" min="-0.200" max="1.200" step="0.001">
+          <input id="yNumber" type="number" min="-0.2" max="1.2" step="0.001">
+        </div>
+
+        <div class="field">
+          <label for="rRange">Outer</label>
+          <input id="rRange" type="range" min="0.040" max="0.260" step="0.001">
+          <input id="rNumber" type="number" min="0.04" max="0.26" step="0.001">
+        </div>
+
+        <div class="field">
+          <label for="whiteRange">White</label>
+          <input id="whiteRange" type="range" min="0.500" max="0.920" step="0.001">
+          <input id="whiteNumber" type="number" min="0.5" max="0.92" step="0.001">
+        </div>
+
+        <div class="field">
+          <label for="pupilRange">Pupil</label>
+          <input id="pupilRange" type="range" min="0.140" max="0.520" step="0.001">
+          <input id="pupilNumber" type="number" min="0.14" max="0.52" step="0.001">
+        </div>
+
+        <div class="field">
+          <label for="aimXRange">Pupil X</label>
+          <input id="aimXRange" type="range" min="-1.000" max="1.000" step="0.001">
+          <input id="aimXNumber" type="number" min="-1" max="1" step="0.001">
+        </div>
+
+        <div class="field">
+          <label for="aimYRange">Pupil Y</label>
+          <input id="aimYRange" type="range" min="-1.000" max="1.000" step="0.001">
+          <input id="aimYNumber" type="number" min="-1" max="1" step="0.001">
+        </div>
+
+        <div class="button-row">
+          <button type="button" id="look-left">Look left</button>
+          <button type="button" id="look-center">Center</button>
+          <button type="button" id="look-right">Look right</button>
+        </div>
+
+        <div class="button-row">
+          <button type="button" id="mirror-size">Sync size</button>
+          <button type="button" id="swap-eyes">Swap pos</button>
+          <button type="button" id="reset">Reset</button>
+        </div>
+
+        <textarea id="output" spellcheck="false" aria-label="Generated eye tuning parameters"></textarea>
+        <button class="copy-button" type="button" id="copy">Copy params</button>
+        <div class="status" id="status"></div>
+        <div class="small-note">坐标以裁剪后的 body PNG 为基准，x 是图片宽度比例，y 是图片高度比例，r 是图片宽度比例。把这段参数贴回来，我就按这个写进游戏。</div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const initialState = {
+      active: "left",
+      pupilAim: { x: 1, y: -0.08 },
+      eyes: {
+        left: { x: 0.9403, y: 0.6001, r: 0.167, white: 0.802, pupil: 0.520 },
+        right: { x: 0.0999, y: 0.6001, r: 0.167, white: 0.802, pupil: 0.520 }
+      }
+    };
+
+    const state = structuredClone(initialState);
+    const bodyWrap = document.getElementById("bodyWrap");
+    const bodyImage = document.getElementById("bodyImage");
+    const statusEl = document.getElementById("status");
+    const outputEl = document.getElementById("output");
+    const selectLeft = document.getElementById("select-left");
+    const selectRight = document.getElementById("select-right");
+    const eyeEls = {
+      left: document.getElementById("eye-left"),
+      right: document.getElementById("eye-right")
+    };
+
+    const inputs = {
+      x: [document.getElementById("xRange"), document.getElementById("xNumber")],
+      y: [document.getElementById("yRange"), document.getElementById("yNumber")],
+      r: [document.getElementById("rRange"), document.getElementById("rNumber")],
+      white: [document.getElementById("whiteRange"), document.getElementById("whiteNumber")],
+      pupil: [document.getElementById("pupilRange"), document.getElementById("pupilNumber")],
+      aimX: [document.getElementById("aimXRange"), document.getElementById("aimXNumber")],
+      aimY: [document.getElementById("aimYRange"), document.getElementById("aimYNumber")]
+    };
+
+    let gesture = null;
+    let statusTimer = 0;
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function round(value) {
+      return Number(value.toFixed(4));
+    }
+
+    function getWrapMetrics() {
+      const rect = bodyWrap.getBoundingClientRect();
+      return {
+        rect,
+        width: bodyWrap.clientWidth,
+        height: bodyWrap.clientHeight
+      };
+    }
+
+    function setActive(eye) {
+      state.active = eye;
+      selectLeft.classList.toggle("active", eye === "left");
+      selectRight.classList.toggle("active", eye === "right");
+      eyeEls.left.classList.toggle("active", eye === "left");
+      eyeEls.right.classList.toggle("active", eye === "right");
+      syncInputsFromState();
+      render();
+    }
+
+    function syncInputsFromState() {
+      const activeEye = state.eyes[state.active];
+      const values = {
+        x: activeEye.x,
+        y: activeEye.y,
+        r: activeEye.r,
+        white: activeEye.white,
+        pupil: activeEye.pupil,
+        aimX: state.pupilAim.x,
+        aimY: state.pupilAim.y
+      };
+
+      Object.entries(values).forEach(([key, value]) => {
+        inputs[key].forEach((input) => {
+          input.value = Number(value).toFixed(3);
+        });
+      });
+    }
+
+    function applyInput(key, rawValue) {
+      const value = Number(rawValue);
+      if (!Number.isFinite(value)) return;
+
+      if (key === "aimX") {
+        state.pupilAim.x = clamp(value, -1, 1);
+      } else if (key === "aimY") {
+        state.pupilAim.y = clamp(value, -1, 1);
+      } else {
+        const eye = state.eyes[state.active];
+        const limits = {
+          x: [-0.2, 1.2],
+          y: [-0.2, 1.2],
+          r: [0.04, 0.26],
+          white: [0.5, 0.92],
+          pupil: [0.14, 0.52]
+        }[key];
+        eye[key] = clamp(value, limits[0], limits[1]);
+      }
+
+      syncInputsFromState();
+      render();
+    }
+
+    function renderEye(name) {
+      const eye = state.eyes[name];
+      const el = eyeEls[name];
+      const size = Math.max(2, eye.r * getWrapMetrics().width * 2);
+      const whiteSize = size * eye.white;
+      const pupilSize = whiteSize * eye.pupil;
+      const aimLen = Math.hypot(state.pupilAim.x, state.pupilAim.y);
+      const aimScale = aimLen > 1 ? 1 / aimLen : 1;
+      const pupilX = state.pupilAim.x * aimScale * size * 0.165;
+      const pupilY = state.pupilAim.y * aimScale * size * 0.110;
+
+      el.style.left = `${eye.x * 100}%`;
+      el.style.top = `${eye.y * 100}%`;
+      el.style.width = `${size}px`;
+      el.style.height = `${size}px`;
+
+      const whiteEl = el.querySelector(".eye-white");
+      const pupilEl = el.querySelector(".eye-pupil");
+      whiteEl.style.width = `${whiteSize}px`;
+      whiteEl.style.height = `${whiteSize}px`;
+      pupilEl.style.width = `${pupilSize}px`;
+      pupilEl.style.height = `${pupilSize}px`;
+      pupilEl.style.marginLeft = `${pupilX}px`;
+      pupilEl.style.marginTop = `${pupilY}px`;
+    }
+
+    function buildParams() {
+      return {
+        basis: "assets/characters/bowbert/bowbert-body-skill-v1-trimmed.png",
+        imageSize: { width: 654, height: 714 },
+        coordinateSpace: "x-normalized-to-width-y-normalized-to-height-radius-normalized-to-width",
+        eyes: {
+          left: {
+            x: round(state.eyes.left.x),
+            y: round(state.eyes.left.y),
+            outerRadius: round(state.eyes.left.r),
+            whiteRatio: round(state.eyes.left.white),
+            pupilRatio: round(state.eyes.left.pupil)
+          },
+          right: {
+            x: round(state.eyes.right.x),
+            y: round(state.eyes.right.y),
+            outerRadius: round(state.eyes.right.r),
+            whiteRatio: round(state.eyes.right.white),
+            pupilRatio: round(state.eyes.right.pupil)
+          }
+        },
+        pupilAim: {
+          x: round(state.pupilAim.x),
+          y: round(state.pupilAim.y),
+          offsetScale: { x: 0.165, y: 0.110 }
+        }
+      };
+    }
+
+    function renderOutput() {
+      const params = buildParams();
+      outputEl.value = `const BOWBERT_EYE_TUNING = ${JSON.stringify(params, null, 2)};`;
+    }
+
+    function render() {
+      renderEye("left");
+      renderEye("right");
+      renderOutput();
+    }
+
+    function pointerToNormalized(event) {
+      const { rect, width, height } = getWrapMetrics();
+      return {
+        x: (event.clientX - rect.left) / width,
+        y: (event.clientY - rect.top) / height
+      };
+    }
+
+    function startDrag(event, eyeName) {
+      if (event.button !== undefined && event.button !== 0) return;
+      event.preventDefault();
+      setActive(eyeName);
+      const current = state.eyes[eyeName];
+      const point = pointerToNormalized(event);
+      gesture = {
+        type: "move",
+        eye: eyeName,
+        offsetX: point.x - current.x,
+        offsetY: point.y - current.y
+      };
+      eyeEls[eyeName].setPointerCapture(event.pointerId);
+    }
+
+    function startResize(event, eyeName) {
+      if (event.button !== undefined && event.button !== 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setActive(eyeName);
+      gesture = { type: "resize", eye: eyeName };
+      eyeEls[eyeName].setPointerCapture(event.pointerId);
+    }
+
+    function onPointerMove(event) {
+      if (!gesture) return;
+      event.preventDefault();
+      const eye = state.eyes[gesture.eye];
+      const point = pointerToNormalized(event);
+
+      if (gesture.type === "move") {
+        eye.x = clamp(point.x - gesture.offsetX, -0.2, 1.2);
+        eye.y = clamp(point.y - gesture.offsetY, -0.2, 1.2);
+      } else if (gesture.type === "resize") {
+        const { width, height } = getWrapMetrics();
+        const dx = (point.x - eye.x) * width;
+        const dy = (point.y - eye.y) * height;
+        eye.r = clamp(Math.hypot(dx, dy) / width, 0.04, 0.26);
+      }
+
+      syncInputsFromState();
+      render();
+    }
+
+    function endGesture(event) {
+      if (!gesture) return;
+      const activeEl = eyeEls[gesture.eye];
+      if (activeEl.hasPointerCapture(event.pointerId)) {
+        activeEl.releasePointerCapture(event.pointerId);
+      }
+      gesture = null;
+    }
+
+    function showStatus(text) {
+      window.clearTimeout(statusTimer);
+      statusEl.textContent = text;
+      statusTimer = window.setTimeout(() => {
+        statusEl.textContent = "";
+      }, 1600);
+    }
+
+    function resetState() {
+      const fresh = structuredClone(initialState);
+      state.active = fresh.active;
+      state.pupilAim = fresh.pupilAim;
+      state.eyes = fresh.eyes;
+      setActive(state.active);
+      render();
+    }
+
+    selectLeft.addEventListener("click", () => setActive("left"));
+    selectRight.addEventListener("click", () => setActive("right"));
+
+    Object.entries(inputs).forEach(([key, pair]) => {
+      pair.forEach((input) => {
+        input.addEventListener("input", () => applyInput(key, input.value));
+      });
+    });
+
+    Object.entries(eyeEls).forEach(([name, el]) => {
+      el.addEventListener("pointerdown", (event) => startDrag(event, name));
+      el.addEventListener("pointermove", onPointerMove);
+      el.addEventListener("pointerup", endGesture);
+      el.addEventListener("pointercancel", endGesture);
+      el.addEventListener("wheel", (event) => {
+        event.preventDefault();
+        setActive(name);
+        const eye = state.eyes[name];
+        eye.r = clamp(eye.r - event.deltaY * 0.00012, 0.04, 0.26);
+        syncInputsFromState();
+        render();
+      }, { passive: false });
+
+      el.querySelector(".resize-handle").addEventListener("pointerdown", (event) => startResize(event, name));
+    });
+
+    document.getElementById("look-left").addEventListener("click", () => {
+      state.pupilAim = { x: -1, y: -0.08 };
+      syncInputsFromState();
+      render();
+    });
+
+    document.getElementById("look-center").addEventListener("click", () => {
+      state.pupilAim = { x: 0, y: 0 };
+      syncInputsFromState();
+      render();
+    });
+
+    document.getElementById("look-right").addEventListener("click", () => {
+      state.pupilAim = { x: 1, y: -0.08 };
+      syncInputsFromState();
+      render();
+    });
+
+    document.getElementById("mirror-size").addEventListener("click", () => {
+      const source = state.eyes[state.active];
+      const targetName = state.active === "left" ? "right" : "left";
+      Object.assign(state.eyes[targetName], {
+        r: source.r,
+        white: source.white,
+        pupil: source.pupil
+      });
+      render();
+    });
+
+    document.getElementById("swap-eyes").addEventListener("click", () => {
+      const left = state.eyes.left;
+      const right = state.eyes.right;
+      [left.x, right.x] = [right.x, left.x];
+      [left.y, right.y] = [right.y, left.y];
+      syncInputsFromState();
+      render();
+    });
+
+    document.getElementById("reset").addEventListener("click", resetState);
+
+    document.getElementById("copy").addEventListener("click", async () => {
+      outputEl.select();
+      try {
+        await navigator.clipboard.writeText(outputEl.value);
+        showStatus("Copied.");
+      } catch (error) {
+        document.execCommand("copy");
+        showStatus("Copied.");
+      }
+    });
+
+    bodyImage.addEventListener("load", render);
+    window.addEventListener("resize", render);
+    setActive(state.active);
+    render();
+  </script>
+</body>
+</html>

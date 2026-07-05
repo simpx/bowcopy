@@ -1,14 +1,27 @@
 import Phaser from 'phaser';
 
-import dartGooberBodyUrl from '../../../assets/prototype-video-crops/enemies/dart-goober-body.png';
+import {
+  DART_GOOBER_CHARACTER,
+  type DartGooberEyeEmotion,
+  type EmbeddedEyeTuning,
+  type EyeEmotionTuning,
+  type EyeName
+} from '../characters/layeredCharacterConfig';
 import type { DartGooberEnemy, DartGooberEvent } from '../../sim/enemies';
 import type { SimVector } from '../../sim/player';
-import { createCornerKeyedTexture } from '../player/keyedTexture';
+
+interface DartGooberEyeVisual {
+  readonly container: Phaser.GameObjects.Container;
+  readonly pupil: Phaser.GameObjects.Ellipse;
+  readonly tuning: EmbeddedEyeTuning;
+}
 
 interface DartGooberVisual {
   readonly container: Phaser.GameObjects.Container;
   readonly shadow: Phaser.GameObjects.Ellipse;
+  readonly artLayer: Phaser.GameObjects.Container;
   readonly body: Phaser.GameObjects.Image;
+  readonly eyes: Record<EyeName, DartGooberEyeVisual>;
   readonly muzzleGlow: Phaser.GameObjects.Arc;
 }
 
@@ -21,15 +34,15 @@ interface DartGooberParticle {
   durationMs: number;
 }
 
-const BODY_RAW_KEY = 'dart-goober-body-raw';
-const BODY_KEY = 'dart-goober-body-keyed';
-const BODY_SCALE = 0.32;
+const BODY_SCALE = DART_GOOBER_CHARACTER.base.scale;
 const HIT_FLASH_MS = 170;
 const PARTICLE_DEPTH = 78;
+const EYE_NAMES: readonly EyeName[] = ['left', 'right'];
 const SPAWN_COLORS = [0xf1c07a, 0xa2d07e, 0xffe6a1] as const;
 const HIT_COLORS = [0xfff1b5, 0xffcf57] as const;
 const FIRE_COLORS = [0xffcf57, 0xc2f26d] as const;
 const DEATH_COLORS = [0xe96945, 0xa2d07e, 0xffcf57] as const;
+const EYE_PUPIL_COLOR = 0x070707;
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
@@ -52,8 +65,8 @@ const normalize = (vector: SimVector): SimVector => {
 };
 
 export const preloadDartGooberAssets = (scene: Phaser.Scene) => {
-  if (!scene.textures.exists(BODY_RAW_KEY)) {
-    scene.load.image(BODY_RAW_KEY, dartGooberBodyUrl);
+  if (!scene.textures.exists(DART_GOOBER_CHARACTER.base.textureKey)) {
+    scene.load.image(DART_GOOBER_CHARACTER.base.textureKey, DART_GOOBER_CHARACTER.base.imageUrl);
   }
 };
 
@@ -65,7 +78,6 @@ export class DartGooberRenderer {
   constructor(private readonly scene: Phaser.Scene) {}
 
   create() {
-    createCornerKeyedTexture(this.scene, BODY_RAW_KEY, BODY_KEY, { threshold: 46 });
     this.particleGraphics = this.scene.add.graphics().setDepth(PARTICLE_DEPTH);
   }
 
@@ -128,14 +140,34 @@ export class DartGooberRenderer {
   }
 
   private createVisual(id: number): DartGooberVisual {
-    const shadow = this.scene.add.ellipse(0, 20, 54, 15, 0x07120d, 0.32);
-    const body = this.scene.add.image(0, -19, BODY_KEY).setOrigin(0.5).setScale(BODY_SCALE);
+    const { base, gaze } = DART_GOOBER_CHARACTER;
+    const shadow = this.scene.add.ellipse(
+      0,
+      base.shadow.y,
+      base.shadow.width,
+      base.shadow.height,
+      0x07120d,
+      0.32
+    );
+    const body = this.scene.add
+      .image(0, 0, base.textureKey)
+      .setOrigin(0.5);
+    const eyes = Object.fromEntries(
+      EYE_NAMES.map((name) => [name, this.createEye(gaze.eyes[name])])
+    ) as Record<EyeName, DartGooberEyeVisual>;
+    const artLayer = this.scene.add.container(
+      0,
+      base.y,
+      [body, ...EYE_NAMES.map((name) => eyes[name].container)]
+    );
     const muzzleGlow = this.scene.add.circle(0, -20, 9, 0xffd36a, 0);
-    const container = this.scene.add.container(0, 0, [shadow, body, muzzleGlow]);
+    const container = this.scene.add.container(0, 0, [shadow, artLayer, muzzleGlow]);
     const visual = {
       container,
       shadow,
+      artLayer,
       body,
+      eyes,
       muzzleGlow
     };
 
@@ -152,6 +184,7 @@ export class DartGooberRenderer {
     const spawnEase = this.getSpawnEase(enemy.spawnProgress);
     const spawnBounce = enemy.spawnProgress < 1 ? Math.sin(enemy.spawnProgress * Math.PI) * 0.2 : 0;
     const facing = normalize(enemy.facing);
+    const eyeEmotion = this.getEyeEmotion(enemy, charge, hitFlash);
     const squash = Math.abs(walkWave) * 0.065 + idleWave * 0.018;
     const anticipation = charge * 0.11;
     const scaleX = BODY_SCALE * (1 + squash - anticipation + hitFlash * 0.08);
@@ -166,10 +199,10 @@ export class DartGooberRenderer {
     visual.shadow.setScale(0.78 + spawnEase * 0.22 + Math.abs(walkWave) * 0.08, 1);
     visual.shadow.setAlpha(0.14 + spawnEase * 0.2);
 
-    visual.body.setPosition(-facing.x * charge * 5, -19 + idleWave * 2 - Math.abs(walkWave) * 2);
-    visual.body.setScale(scaleX, scaleY);
-    visual.body.setFlipX(facing.x < -0.08);
+    visual.artLayer.setPosition(-facing.x * charge * 5, DART_GOOBER_CHARACTER.base.y + idleWave * 2 - Math.abs(walkWave) * 2);
+    visual.artLayer.setScale(scaleX, scaleY);
     visual.body.setTint(hitFlash > 0 ? 0xfff1d0 : charge > 0.2 ? 0xffdda0 : 0xffffff);
+    this.updateEyes(visual.eyes, facing, eyeEmotion);
 
     visual.muzzleGlow.setPosition(facing.x * 27, -20 + facing.y * 16);
     visual.muzzleGlow.setScale(0.45 + charge * 0.95);
@@ -180,6 +213,93 @@ export class DartGooberRenderer {
     const clamped = clamp01(progress);
 
     return 1 - (1 - clamped) ** 3;
+  }
+
+  private getEyeEmotion(
+    enemy: DartGooberEnemy,
+    charge: number,
+    hitFlash: number
+  ): DartGooberEyeEmotion {
+    if (hitFlash > 0.05) {
+      return 'hit';
+    }
+
+    if (charge > 0.45) {
+      return 'aim';
+    }
+
+    if (enemy.moveAmount > 0.2) {
+      return 'alert';
+    }
+
+    return enemy.phase === 'shooting' ? 'angry' : 'default';
+  }
+
+  private createEye(tuning: EmbeddedEyeTuning): DartGooberEyeVisual {
+    const { width, height } = DART_GOOBER_CHARACTER.base.imageSize;
+    const container = this.scene.add.container(
+      (tuning.x - 0.5) * width,
+      (tuning.y - 0.5) * height
+    );
+    const pupil = this.scene.add.ellipse(
+      0,
+      0,
+      tuning.radiusX * width * 2,
+      tuning.radiusY * height * 2,
+      EYE_PUPIL_COLOR,
+      1
+    );
+
+    container.add(pupil);
+
+    return {
+      container,
+      pupil,
+      tuning
+    };
+  }
+
+  private updateEyes(
+    eyes: Record<EyeName, DartGooberEyeVisual>,
+    facing: SimVector,
+    eyeEmotion: DartGooberEyeEmotion
+  ) {
+    const emotion = DART_GOOBER_CHARACTER.gaze.emotions[eyeEmotion];
+    const { width, height } = DART_GOOBER_CHARACTER.base.imageSize;
+    const offsetX =
+      Phaser.Math.Clamp(facing.x, -1, 1) * width * DART_GOOBER_CHARACTER.gaze.pupilOffsetScale.x +
+      emotion.pupilShiftX * width;
+    const offsetY =
+      Phaser.Math.Clamp(facing.y, -1, 1) * height * DART_GOOBER_CHARACTER.gaze.pupilOffsetScale.y +
+      emotion.pupilShiftY * height;
+
+    for (const name of EYE_NAMES) {
+      this.updateEye(eyes[name], name, emotion, offsetX, offsetY);
+    }
+  }
+
+  private updateEye(
+    eye: DartGooberEyeVisual,
+    name: EyeName,
+    emotion: EyeEmotionTuning,
+    offsetX: number,
+    offsetY: number
+  ) {
+    const { width, height } = DART_GOOBER_CHARACTER.base.imageSize;
+    const side = name === 'left' ? -1 : 1;
+    const lidCompression = 1 - (emotion.upperLid + emotion.lowerLid) * 0.24;
+    const pupilWidth = eye.tuning.radiusX * width * 2 * emotion.pupilScale * emotion.eyeScaleX;
+    const pupilHeight =
+      eye.tuning.radiusY *
+      height *
+      2 *
+      emotion.pupilScale *
+      emotion.eyeScaleY *
+      Phaser.Math.Clamp(lidCompression, 0.45, 1);
+
+    eye.container.setRotation(eye.tuning.rotation + side * emotion.eyeTiltAdd);
+    eye.pupil.setPosition(offsetX, offsetY);
+    eye.pupil.setSize(pupilWidth, pupilHeight);
   }
 
   private emitBurst(

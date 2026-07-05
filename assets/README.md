@@ -46,6 +46,22 @@ assets/
 - Use stable, descriptive filenames.
 - Add metadata when a sprite needs pivot, scale, hitbox, or animation timing.
 
+## Character Layer Model
+
+Characters should be split by what actually needs to move:
+
+1. `fixed-ai-image`: the stable body art generated or recreated as a bitmap.
+2. `attachments`: runtime parts that sit on the body, such as Bowbert's eyes or bow.
+3. `runtime-gaze`: lightweight pupils, eye masks, or expression shapes driven by aim/emotion.
+4. `motion-params`: idle, walk, attack, hit, recoil, and spawn squash/bob/tilt values.
+
+Use attachments when a part naturally floats on top of the body. Bake it into the fixed AI image when the part must feel embedded, such as Dart Goober's blue eye sockets and white eye shapes. Runtime should then only add the gaze/expression layer.
+
+Current layered character assets:
+
+- `characters/bowbert/bowbert-body-skill-v1-trimmed.png`: fixed body image; eyes and bow are runtime attachments.
+- `characters/dart-goober/dart-goober-base-ai-v1-trimmed.png`: fixed body image with embedded eye sockets; black gaze shapes are runtime generated.
+
 ## First Asset Batch
 
 - Bowbert body + eyes.

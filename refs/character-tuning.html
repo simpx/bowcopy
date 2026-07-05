@@ -1,0 +1,1591 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bowbert Character Tuning</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111712;
+      --panel: #1b241d;
+      --panel-2: #243025;
+      --line: #415041;
+      --text: #eef3e7;
+      --muted: #aebba8;
+      --accent: #f0c45b;
+      --ok: #80c77a;
+      --warn: #d7b36b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      padding: 18px;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 14px;
+      max-width: 1520px;
+      margin: 0 auto 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .role-select {
+      display: grid;
+      gap: 6px;
+      min-width: 280px;
+    }
+
+    .role-select label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    select {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #121912;
+      color: var(--text);
+      padding: 6px 10px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 0.78fr) minmax(500px, 1.1fr) 420px;
+      gap: 14px;
+      max-width: 1520px;
+      margin: 0 auto;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .panel-meta {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .stage {
+      min-height: 640px;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background:
+        linear-gradient(45deg, rgba(255, 255, 255, 0.04) 25%, transparent 25%) 0 0 / 22px 22px,
+        linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.04) 75%) 0 0 / 22px 22px,
+        linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.04) 75%) 11px 11px / 22px 22px,
+        linear-gradient(45deg, rgba(255, 255, 255, 0.04) 25%, transparent 25%) 11px 11px / 22px 22px,
+        #152017;
+    }
+
+    .reference-frame {
+      width: min(100%, 620px);
+      display: grid;
+      gap: 10px;
+      place-items: center;
+    }
+
+    .reference-frame img {
+      display: block;
+      max-width: 100%;
+      max-height: 520px;
+      width: auto;
+      height: auto;
+      border-radius: 6px;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
+    }
+
+    .role-status {
+      width: 100%;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.16);
+      padding: 9px 10px;
+    }
+
+    .howto {
+      display: grid;
+      gap: 8px;
+      border: 1px solid rgba(240, 196, 91, 0.34);
+      border-radius: 8px;
+      background: rgba(240, 196, 91, 0.08);
+      padding: 10px;
+      color: #f5e5b6;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .howto strong {
+      color: #ffe7a3;
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .emotion-help {
+      padding: 10px 10px 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .emotion-tabs {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
+      padding: 10px;
+      padding-bottom: 0;
+    }
+
+    .emotion-tabs button {
+      min-width: 0;
+      padding: 7px 6px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .emotion-tabs button.is-active {
+      border-color: #d7b36b;
+      background: #4a3b20;
+      color: #ffe7a3;
+      font-weight: 700;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 720px;
+      height: auto;
+      border-radius: 6px;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
+      touch-action: none;
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      max-height: 760px;
+      overflow: auto;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+      overflow: hidden;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 9px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff2c8;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .group-fields {
+      display: grid;
+      gap: 9px;
+      padding: 10px;
+    }
+
+    .field {
+      display: grid;
+      grid-template-columns: 112px 1fr 68px;
+      gap: 9px;
+      align-items: center;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    input[type="number"] {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #121912;
+      color: var(--text);
+      padding: 5px 6px;
+      text-align: right;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    button {
+      min-height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #2b382c;
+      color: var(--text);
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: #6f806f;
+      background: #334432;
+    }
+
+    .copy-button {
+      width: 100%;
+      border-color: #76602a;
+      background: #4a3b20;
+      color: #ffe7a3;
+      font-weight: 700;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 230px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #101610;
+      color: #e9f2df;
+      padding: 10px;
+      line-height: 1.45;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+    }
+
+    .status {
+      min-height: 18px;
+      color: var(--ok);
+      font-size: 12px;
+    }
+
+    .empty {
+      color: var(--warn);
+      border: 1px solid rgba(240, 196, 91, 0.28);
+      border-radius: 8px;
+      background: rgba(240, 196, 91, 0.08);
+      padding: 12px;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1240px) {
+      .layout {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .controls-panel {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 860px) {
+      body {
+        padding: 12px;
+      }
+
+      .topbar,
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .stage {
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Character Runtime Tuning</h1>
+      <p class="hint">这是角色调参台：左边是原图，中间是我们的运行时效果，右边只改当前角色。</p>
+    </div>
+    <div class="role-select">
+      <label for="roleSelect">角色</label>
+      <select id="roleSelect"></select>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Reference</div>
+        <div class="panel-meta" id="referenceMeta">crop</div>
+      </div>
+      <div class="stage">
+        <div class="reference-frame">
+          <img id="referenceImage" alt="Selected character reference">
+          <div class="role-status" id="roleStatus"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Runtime Preview</div>
+        <div class="panel-meta" id="previewMeta">canvas</div>
+      </div>
+      <div class="stage">
+        <canvas id="preview" width="720" height="640" aria-label="Character runtime preview"></canvas>
+      </div>
+    </section>
+
+    <aside class="panel controls-panel">
+      <div class="panel-head">
+        <div class="panel-title">Runtime Params</div>
+        <div class="panel-meta">copy role config</div>
+      </div>
+      <div class="controls" id="controls"></div>
+    </aside>
+  </main>
+
+  <script>
+    const roles = [
+      {
+        id: "bowbert",
+        name: "Bowbert",
+        status: "可调",
+        reference: "asset-crops/player/bowbert_close_reference.png",
+        image: "../assets/characters/bowbert/bowbert-body-skill-v1-trimmed.png",
+        note: "怎么调：先点右侧“站立/走路/攻击”看状态，再打开身体、眼睛或弓分组微调。中间是运行时效果，满意后复制参数。"
+      },
+      {
+        id: "dartGoober",
+        name: "Dart Goober",
+        status: "可调",
+        reference: "asset-crops/enemies/dart_goober_body_reference.png",
+        image: "../assets/characters/dart-goober/dart-goober-base-ai-v1-trimmed.png",
+        note: "现在是拆层角色：固定 AI base 图里已经包含木头身体、叶冠、蓝色嵌入式眼窝和白眼球；runtime 只叠加黑色眼神/瞳孔和动作参数。"
+      },
+      {
+        id: "dartTriGoober",
+        name: "Dart Tri Goober",
+        status: "仅参考",
+        reference: "asset-crops/enemies/dart_tri_goober_reference.png",
+        note: "只有参考图，还没有 runtime renderer，所以暂时不能调。"
+      },
+      {
+        id: "redShroom",
+        name: "Red Shroom",
+        status: "仅参考",
+        reference: "asset-crops/enemies/red_shroom_reference.png",
+        note: "只有参考图，还没有 runtime renderer，所以暂时不能调。"
+      },
+      {
+        id: "purpleShroom",
+        name: "Purple Shroom",
+        status: "仅参考",
+        reference: "asset-crops/enemies/purple_shroom_reference.png",
+        note: "只有参考图，还没有 runtime renderer，所以暂时不能调。"
+      },
+      {
+        id: "slime",
+        name: "Slime",
+        status: "仅参考",
+        reference: "asset-crops/enemies/slime_large_reference.png",
+        note: "只有参考图，还没有 runtime renderer，所以暂时不能调。"
+      },
+      {
+        id: "kaboomlet",
+        name: "Kaboomlet",
+        status: "仅参考",
+        reference: "asset-crops/enemies/kaboomlet_reference.png",
+        note: "只有参考图，还没有 runtime renderer，所以暂时不能调。"
+      },
+      {
+        id: "spooperGooper",
+        name: "Spooper Gooper",
+        status: "仅参考",
+        reference: "asset-crops/enemies/spooper_gooper_reference.png",
+        note: "只有参考图，还没有 runtime renderer，所以暂时不能调。"
+      }
+    ];
+
+    const initialState = {
+      bowbert: {
+        architecture: {
+          fixedAiImage: "body",
+          attachments: ["runtime eyes", "procedural branch bow"],
+          runtimeGaze: "attached-eye-pupils",
+          motionParams: ["idle", "walk", "attack", "hit", "dodge"]
+        },
+        body: {
+          imageSize: { width: 654, height: 714 },
+          scale: 0.12,
+          y: -14,
+          shadowWidth: 64,
+          shadowHeight: 18,
+          shadowY: 25
+        },
+        eyes: {
+          left: { x: 0.9403, y: 0.6001, outerRadius: 0.167, whiteRatio: 0.802, pupilRatio: 0.52 },
+          right: { x: 0.0999, y: 0.6001, outerRadius: 0.167, whiteRatio: 0.802, pupilRatio: 0.52 },
+          pupilOffsetScale: { x: 0.165, y: 0.11 }
+        },
+        bow: {
+          texture: { width: 360, height: 420, anchorX: 180, anchorY: 210, drawScale: 0.58 },
+          placement: {
+            scale: 0.22,
+            distance: 50,
+            yDistance: 40,
+            offsetX: 0,
+            offsetY: -15,
+            rotationOffsetDeg: -7,
+            drawDistance: 5,
+            releaseKick: 7,
+            recoilDistance: 8,
+            recoilY: 5
+          }
+        },
+        walk: {
+          walkSquash: 0.045,
+          idleSquash: 0.018,
+          hitSquash: 0.1,
+          dodgeStretch: 0.14,
+          walkBob: 2,
+          recoilX: 5,
+          recoilY: 3,
+          tiltVelocity: 0.06
+        },
+        preview: {
+          aimDeg: 0,
+          moveAmount: 0.75,
+          drawProgress: 0,
+          recoil: 0,
+          dodge: 0,
+          hit: 0
+        }
+      },
+      dartGoober: {
+        architecture: {
+          fixedAiImage: "body-with-embedded-eye-sockets",
+          attachments: [],
+          runtimeGaze: "embedded-eye-pupils",
+          motionParams: ["idle", "walk", "attack", "hit", "spawn"]
+        },
+        body: {
+          imageSize: { width: 901, height: 957 },
+          scale: 0.095,
+          y: -19,
+          shadowWidth: 58,
+          shadowHeight: 16,
+          shadowY: 22
+        },
+        motion: {
+          idleBob: 2,
+          walkBob: 2,
+          walkSquash: 0.065,
+          idleSquash: 0.018,
+          hitScaleX: 0.08,
+          hitScaleY: 0.04,
+          walkTilt: 0.05,
+          velocityTilt: 0.08
+        },
+        attack: {
+          anticipation: 0.11,
+          chargeShift: 5,
+          muzzleX: 27,
+          muzzleY: -20,
+          muzzleAimY: 16,
+          muzzleRadius: 9,
+          muzzleScaleBase: 0.45,
+          muzzleScaleCharge: 0.95,
+          muzzleAlphaBase: 0.1,
+          muzzleAlphaCharge: 0.45
+        },
+        preview: {
+          facingDeg: 0,
+          moveAmount: 0,
+          charge: 0,
+          hit: 0,
+          spawn: 1,
+          eyeEmotion: "default"
+        },
+        gaze: {
+          mode: "embedded-eye-pupils",
+          eyes: {
+            left: { x: 0.1849, y: 0.5834, radiusX: 0.054, radiusY: 0.043, rotation: -0.5 },
+            right: { x: 0.7792, y: 0.5835, radiusX: 0.054, radiusY: 0.043, rotation: 0.5 }
+          },
+          pupilOffsetScale: {
+            x: 0.018,
+            y: 0.012
+          },
+          emotions: {
+            default: {
+              eyeTiltAdd: 0.05,
+              eyeScaleX: 1.12,
+              eyeScaleY: 0.82,
+              pupilScale: 1.18,
+              pupilShiftX: 0,
+              pupilShiftY: 0,
+              upperLid: 0.08,
+              lowerLid: 0.02
+            },
+            angry: {
+              eyeTiltAdd: 0.08,
+              eyeScaleX: 1.1,
+              eyeScaleY: 0.72,
+              pupilScale: 1.28,
+              pupilShiftX: 0.01,
+              pupilShiftY: 0.004,
+              upperLid: 0.28,
+              lowerLid: 0.03
+            },
+            alert: {
+              eyeTiltAdd: -0.03,
+              eyeScaleX: 0.88,
+              eyeScaleY: 0.88,
+              pupilScale: 0.78,
+              pupilShiftX: 0,
+              pupilShiftY: 0,
+              upperLid: 0,
+              lowerLid: 0
+            },
+            hit: {
+              eyeTiltAdd: 0.02,
+              eyeScaleX: 0.82,
+              eyeScaleY: 0.56,
+              pupilScale: 0.68,
+              pupilShiftX: -0.008,
+              pupilShiftY: -0.006,
+              upperLid: 0.36,
+              lowerLid: 0.18
+            },
+            aim: {
+              eyeTiltAdd: 0.06,
+              eyeScaleX: 1.05,
+              eyeScaleY: 0.7,
+              pupilScale: 1.12,
+              pupilShiftX: 0.014,
+              pupilShiftY: 0,
+              upperLid: 0.22,
+              lowerLid: 0.05
+            }
+          }
+        }
+      }
+    };
+
+    const controlDefs = {
+      bowbert: [
+        {
+          title: "1. 预览状态",
+          fields: [
+            ["preview.aimDeg", "瞄准角度", -180, 180, 1],
+            ["preview.moveAmount", "移动强度", 0, 1, 0.001],
+            ["preview.drawProgress", "拉弓", 0, 1, 0.001],
+            ["preview.recoil", "Recoil", 0, 1, 0.001],
+            ["preview.dodge", "Dodge", 0, 1, 0.001],
+            ["preview.hit", "Hit", 0, 1, 0.001]
+          ]
+        },
+        {
+          title: "2. 身体 / 走路",
+          fields: [
+            ["body.scale", "Body scale", 0.06, 0.22, 0.001],
+            ["body.y", "Body Y", -60, 20, 0.1],
+            ["body.shadowWidth", "Shadow W", 20, 120, 0.1],
+            ["body.shadowHeight", "Shadow H", 4, 40, 0.1],
+            ["body.shadowY", "Shadow Y", 0, 60, 0.1],
+            ["walk.walkSquash", "Walk squash", 0, 0.12, 0.001],
+            ["walk.idleSquash", "Idle squash", 0, 0.08, 0.001],
+            ["walk.hitSquash", "Hit squash", 0, 0.24, 0.001],
+            ["walk.dodgeStretch", "Dodge stretch", 0, 0.28, 0.001],
+            ["walk.walkBob", "Walk bob", 0, 8, 0.1],
+            ["walk.recoilX", "Recoil X", 0, 16, 0.1],
+            ["walk.recoilY", "Recoil Y", 0, 12, 0.1],
+            ["walk.tiltVelocity", "Tilt", 0, 0.16, 0.001]
+          ]
+        },
+        {
+          title: "3. 眼睛",
+          fields: [
+            ["eyes.left.x", "Left X", -0.2, 1.2, 0.001],
+            ["eyes.left.y", "Left Y", -0.2, 1.2, 0.001],
+            ["eyes.left.outerRadius", "Left radius", 0.04, 0.28, 0.001],
+            ["eyes.left.whiteRatio", "Left white", 0.5, 0.92, 0.001],
+            ["eyes.left.pupilRatio", "Left pupil", 0.14, 0.56, 0.001],
+            ["eyes.right.x", "Right X", -0.2, 1.2, 0.001],
+            ["eyes.right.y", "Right Y", -0.2, 1.2, 0.001],
+            ["eyes.right.outerRadius", "Right radius", 0.04, 0.28, 0.001],
+            ["eyes.right.whiteRatio", "Right white", 0.5, 0.92, 0.001],
+            ["eyes.right.pupilRatio", "Right pupil", 0.14, 0.56, 0.001],
+            ["eyes.pupilOffsetScale.x", "Pupil X", 0, 0.32, 0.001],
+            ["eyes.pupilOffsetScale.y", "Pupil Y", 0, 0.24, 0.001]
+          ]
+        },
+        {
+          title: "4. 弓",
+          fields: [
+            ["bow.placement.scale", "Bow scale", 0.08, 0.42, 0.001],
+            ["bow.placement.distance", "Distance", 0, 95, 0.1],
+            ["bow.placement.yDistance", "Y distance", 0, 85, 0.1],
+            ["bow.placement.offsetX", "Offset X", -80, 80, 0.1],
+            ["bow.placement.offsetY", "Offset Y", -80, 60, 0.1],
+            ["bow.placement.rotationOffsetDeg", "Angle offset", -45, 45, 0.1],
+            ["bow.placement.drawDistance", "Draw dist", 0, 24, 0.1],
+            ["bow.placement.releaseKick", "Release kick", 0, 24, 0.1],
+            ["bow.placement.recoilDistance", "Recoil dist", 0, 24, 0.1],
+            ["bow.placement.recoilY", "Recoil Y", 0, 18, 0.1],
+            ["bow.texture.drawScale", "Draw scale", 0.3, 0.9, 0.001]
+          ]
+        }
+      ],
+      dartGoober: [
+        {
+          title: "1. 预览状态",
+          fields: [
+            ["preview.facingDeg", "朝向角度", -180, 180, 1],
+            ["preview.moveAmount", "移动强度", 0, 1, 0.001],
+            ["preview.charge", "蓄力", 0, 1, 0.001],
+            ["preview.hit", "Hit", 0, 1, 0.001],
+            ["preview.spawn", "Spawn", 0, 1, 0.001]
+          ]
+        },
+        {
+          title: "2. 固定 AI base / 走路",
+          fields: [
+            ["body.scale", "Body scale", 0.04, 0.18, 0.001],
+            ["body.y", "Body Y", -60, 20, 0.1],
+            ["body.shadowWidth", "Shadow W", 20, 120, 0.1],
+            ["body.shadowHeight", "Shadow H", 4, 40, 0.1],
+            ["body.shadowY", "Shadow Y", 0, 60, 0.1],
+            ["motion.idleBob", "Idle bob", 0, 8, 0.1],
+            ["motion.walkBob", "Walk bob", 0, 8, 0.1],
+            ["motion.walkSquash", "Walk squash", 0, 0.16, 0.001],
+            ["motion.idleSquash", "Idle squash", 0, 0.08, 0.001],
+            ["motion.hitScaleX", "Hit X", 0, 0.24, 0.001],
+            ["motion.hitScaleY", "Hit Y", 0, 0.16, 0.001],
+            ["motion.walkTilt", "Walk tilt", 0, 0.16, 0.001],
+            ["motion.velocityTilt", "Velocity tilt", 0, 0.18, 0.001]
+          ]
+        },
+        {
+          title: "3. runtime 眼神 anchor",
+          fields: [
+            ["gaze.eyes.left.x", "Left X", 0.08, 0.36, 0.001],
+            ["gaze.eyes.left.y", "Left Y", 0.42, 0.72, 0.001],
+            ["gaze.eyes.left.radiusX", "Left W", 0.02, 0.09, 0.001],
+            ["gaze.eyes.left.radiusY", "Left H", 0.02, 0.08, 0.001],
+            ["gaze.eyes.left.rotation", "Left rot", -1.2, 0.2, 0.001],
+            ["gaze.eyes.right.x", "Right X", 0.62, 0.9, 0.001],
+            ["gaze.eyes.right.y", "Right Y", 0.42, 0.72, 0.001],
+            ["gaze.eyes.right.radiusX", "Right W", 0.02, 0.09, 0.001],
+            ["gaze.eyes.right.radiusY", "Right H", 0.02, 0.08, 0.001],
+            ["gaze.eyes.right.rotation", "Right rot", -0.2, 1.2, 0.001],
+            ["gaze.pupilOffsetScale.x", "Aim X", 0, 0.04, 0.001],
+            ["gaze.pupilOffsetScale.y", "Aim Y", 0, 0.03, 0.001]
+          ]
+        },
+        {
+          title: "4. 攻击效果",
+          fields: [
+            ["attack.anticipation", "Anticipation", 0, 0.24, 0.001],
+            ["attack.chargeShift", "Charge shift", 0, 18, 0.1],
+            ["attack.muzzleX", "Muzzle X", -60, 60, 0.1],
+            ["attack.muzzleY", "Muzzle Y", -60, 30, 0.1],
+            ["attack.muzzleAimY", "Muzzle aim Y", -30, 30, 0.1],
+            ["attack.muzzleRadius", "Muzzle R", 1, 24, 0.1],
+            ["attack.muzzleScaleBase", "Muzzle base", 0, 1.2, 0.001],
+            ["attack.muzzleScaleCharge", "Muzzle charge", 0, 2, 0.001],
+            ["attack.muzzleAlphaBase", "Muzzle alpha", 0, 1, 0.001],
+            ["attack.muzzleAlphaCharge", "Muzzle +alpha", 0, 1, 0.001]
+          ]
+        }
+      ]
+    };
+
+    const dartEyeEmotionDefs = [
+      { id: "default", label: "默认" },
+      { id: "angry", label: "愤怒" },
+      { id: "alert", label: "警觉" },
+      { id: "hit", label: "受击" },
+      { id: "aim", label: "瞄准" }
+    ];
+
+    const dartEyeEmotionFields = [
+      ["eyeTiltAdd", "Tilt +", -0.5, 0.5, 0.001],
+      ["eyeScaleX", "Eye X scale", 0.55, 1.45, 0.001],
+      ["eyeScaleY", "Eye Y scale", 0.45, 1.45, 0.001],
+      ["pupilScale", "Pupil scale", 0.25, 1.35, 0.001],
+      ["pupilShiftX", "Pupil X bias", -0.06, 0.06, 0.001],
+      ["pupilShiftY", "Pupil Y bias", -0.06, 0.06, 0.001],
+      ["upperLid", "Upper lid", 0, 0.82, 0.001],
+      ["lowerLid", "Lower lid", 0, 0.82, 0.001]
+    ];
+
+    const legacyDartFaceKeys = [
+      "eyeX",
+      "eyeY",
+      "eyeRadius",
+      "eyeTilt",
+      "eyeRingWidth",
+      "pupilRadius",
+      "pupilShift",
+      "muzzleY",
+      "muzzleRadius",
+      "muzzleInnerRatio"
+    ];
+
+    const state = structuredClone(initialState);
+    const roleSelect = document.getElementById("roleSelect");
+    const referenceImage = document.getElementById("referenceImage");
+    const referenceMeta = document.getElementById("referenceMeta");
+    const previewMeta = document.getElementById("previewMeta");
+    const roleStatus = document.getElementById("roleStatus");
+    const controlsEl = document.getElementById("controls");
+    const canvas = document.getElementById("preview");
+    const ctx = canvas.getContext("2d");
+    const images = {};
+    const initialRole = new URLSearchParams(window.location.search).get("role");
+    let currentRole = roles.some((role) => role.id === initialRole) ? initialRole : "bowbert";
+    let outputEl;
+    let statusEl;
+    let statusTimer = 0;
+
+    const bowCanvas = document.createElement("canvas");
+    bowCanvas.width = 360;
+    bowCanvas.height = 420;
+    const bowCtx = bowCanvas.getContext("2d");
+
+    const LEAF_TIP_TOP = new Path2D("M-18 0 C-46 -30 -35 -61 5 -63 C22 -36 18 -15 -18 0Z");
+    const LEAF_TIP_BOTTOM = new Path2D("M-18 0 C-46 30 -35 61 5 63 C22 36 18 15 -18 0Z");
+    const ARROW_TAIL_TOP = new Path2D("M-136 0 C-169 -25 -190 -28 -213 -22 C-193 3 -167 9 -136 0Z");
+    const ARROW_TAIL_BOTTOM = new Path2D("M-136 0 C-169 25 -190 28 -213 22 C-193 -3 -167 -9 -136 0Z");
+    const ARROW_TAIL_TOP_MARK = new Path2D("M-139 0 C-160 -9 -181 -14 -204 -18");
+    const ARROW_TAIL_BOTTOM_MARK = new Path2D("M-139 0 C-160 9 -181 14 -204 18");
+    const BRANCH_LIMB = new Path2D("M48 -166 C132 -125 150 -55 98 0 C151 61 125 127 47 166");
+    const BRANCH_MARK_TOP = new Path2D("M92 -101 C70 -88 63 -70 71 -51");
+    const BRANCH_MARK_BOTTOM = new Path2D("M113 42 C88 55 80 76 90 99");
+    const BRANCH_GRIP = new Path2D("M79 -24 C101 -14 105 16 80 28");
+    const BOW_CHARGE_ARC = new Path2D("M64 -158 C142 -122 157 -58 105 0 C157 58 142 122 64 158");
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function round(value) {
+      return Number(value.toFixed(4));
+    }
+
+    function getByPath(root, path) {
+      return path.split(".").reduce((value, key) => value[key], root);
+    }
+
+    function setByPath(root, path, nextValue) {
+      const parts = path.split(".");
+      const last = parts.pop();
+      const parent = parts.reduce((value, key) => value[key], root);
+      parent[last] = nextValue;
+    }
+
+    function setupStroke(context, width, color, alpha = 1) {
+      context.strokeStyle = color;
+      context.lineWidth = width;
+      context.globalAlpha = alpha;
+      context.lineCap = "round";
+      context.lineJoin = "round";
+    }
+
+    function strokePath(context, path, stroke = "#070707", strokeWidth = 8, alpha = 1) {
+      context.save();
+      setupStroke(context, strokeWidth, stroke, alpha);
+      context.stroke(path);
+      context.restore();
+    }
+
+    function fillAndStrokePath(context, path, fill, stroke = "#070707", strokeWidth = 8, alpha = 1) {
+      context.save();
+      context.globalAlpha = alpha;
+      context.fillStyle = fill;
+      context.strokeStyle = stroke;
+      context.lineWidth = strokeWidth;
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      context.fill(path);
+      context.stroke(path);
+      context.restore();
+    }
+
+    function cubicPath(start, c1, c2, end) {
+      const path = new Path2D();
+      path.moveTo(start.x, start.y);
+      path.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, end.x, end.y);
+      return path;
+    }
+
+    function loadImages() {
+      const loadables = roles.filter((role) => role.image);
+
+      for (const role of loadables) {
+        const image = new Image();
+        image.onload = () => {
+          images[role.id] = image;
+        };
+        image.src = role.image;
+      }
+    }
+
+    function populateRoles() {
+      for (const role of roles) {
+        const option = document.createElement("option");
+        option.value = role.id;
+        option.textContent = `${role.name} - ${role.status}`;
+        roleSelect.append(option);
+      }
+
+      roleSelect.value = currentRole;
+      roleSelect.addEventListener("change", () => {
+        currentRole = roleSelect.value;
+        const url = new URL(window.location.href);
+        url.searchParams.set("role", currentRole);
+        window.history.replaceState(null, "", url);
+        syncRoleUi();
+      });
+    }
+
+    function appendSliderRow(parent, path, label, min, max, step) {
+      const row = document.createElement("div");
+      row.className = "field";
+
+      const labelEl = document.createElement("label");
+      labelEl.textContent = label;
+
+      const range = document.createElement("input");
+      range.type = "range";
+      range.min = String(min);
+      range.max = String(max);
+      range.step = String(step);
+
+      const number = document.createElement("input");
+      number.type = "number";
+      number.min = String(min);
+      number.max = String(max);
+      number.step = String(step);
+
+      const sync = (raw) => {
+        const next = Number(raw);
+        if (!Number.isFinite(next)) return;
+        setByPath(state[currentRole], path, clamp(next, min, max));
+        syncInputs();
+        renderOutput();
+        saveState();
+      };
+
+      range.addEventListener("input", () => sync(range.value));
+      number.addEventListener("input", () => sync(number.value));
+      range.dataset.path = path;
+      number.dataset.path = path;
+
+      row.append(labelEl, range, number);
+      parent.append(row);
+    }
+
+    function renderControls() {
+      const defs = controlDefs[currentRole];
+      controlsEl.innerHTML = "";
+
+      if (!defs) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "这个角色目前只有参考图，还没有 runtime renderer。先实现角色渲染后，再在这里暴露调参项。";
+        controlsEl.append(empty);
+        appendOutputControls();
+        renderOutput();
+        return;
+      }
+
+      const howto = document.createElement("div");
+      howto.className = "howto";
+      howto.innerHTML = `<strong>怎么调</strong><span>1. 先点下面的状态按钮看站立、走路、攻击。2. 打开对应分组微调。3. 中间满意后点 Copy params 发给我。</span>`;
+      controlsEl.append(howto);
+
+      const topButtons = document.createElement("div");
+      topButtons.className = "quick-actions";
+      for (const [kind, label] of [["idle", "站立"], ["walk", "走路"], ["action", "攻击"]]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.addEventListener("click", () => applyPreset(kind));
+        topButtons.append(button);
+      }
+      controlsEl.append(topButtons);
+
+      if (currentRole === "dartGoober") {
+        appendDartEyeEmotionControls();
+      }
+
+      for (const group of defs) {
+        const details = document.createElement("details");
+        details.open = group === defs[0];
+        const summary = document.createElement("summary");
+        summary.textContent = group.title;
+        const fields = document.createElement("div");
+        fields.className = "group-fields";
+
+        for (const [path, label, min, max, step] of group.fields) {
+          appendSliderRow(fields, path, label, min, max, step);
+        }
+
+        details.append(summary, fields);
+        controlsEl.append(details);
+      }
+
+      const reset = document.createElement("button");
+      reset.type = "button";
+      reset.textContent = "重置当前角色";
+      reset.addEventListener("click", () => {
+        state[currentRole] = structuredClone(initialState[currentRole]);
+        syncInputs();
+        renderOutput();
+        saveState();
+      });
+      controlsEl.append(reset);
+      appendOutputControls();
+      syncInputs();
+      renderOutput();
+    }
+
+    function appendDartEyeEmotionControls() {
+      const activeId = state.dartGoober.preview.eyeEmotion || "default";
+      const details = document.createElement("details");
+      details.open = true;
+
+      const summary = document.createElement("summary");
+      const activeLabel = dartEyeEmotionDefs.find((item) => item.id === activeId)?.label ?? activeId;
+      summary.textContent = `当前眼神：${activeLabel}`;
+
+      const help = document.createElement("div");
+      help.className = "emotion-help";
+      help.textContent = "这里调 runtime 眼神：黑色瞳孔/眼神的偏移、缩放和眯眼。蓝色眼窝和白眼球已经烘进 AI base 图；位置锚点在下面的“runtime 眼神 anchor”里调。";
+
+      const tabs = document.createElement("div");
+      tabs.className = "emotion-tabs";
+      for (const item of dartEyeEmotionDefs) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = item.label;
+        button.classList.toggle("is-active", item.id === activeId);
+        button.addEventListener("click", () => {
+          state.dartGoober.preview.eyeEmotion = item.id;
+          renderControls();
+          renderOutput();
+          saveState();
+        });
+        tabs.append(button);
+      }
+
+      const fields = document.createElement("div");
+      fields.className = "group-fields";
+      for (const [key, label, min, max, step] of dartEyeEmotionFields) {
+        appendSliderRow(fields, `gaze.emotions.${activeId}.${key}`, label, min, max, step);
+      }
+
+      details.append(summary, help, tabs, fields);
+      controlsEl.append(details);
+    }
+
+    function appendOutputControls() {
+      outputEl = document.createElement("textarea");
+      outputEl.spellcheck = false;
+      outputEl.setAttribute("aria-label", "Generated character tuning parameters");
+      const copy = document.createElement("button");
+      copy.type = "button";
+      copy.className = "copy-button";
+      copy.textContent = "Copy params";
+      copy.addEventListener("click", async () => {
+        outputEl.select();
+        try {
+          await navigator.clipboard.writeText(outputEl.value);
+        } catch (error) {
+          document.execCommand("copy");
+        }
+        window.clearTimeout(statusTimer);
+        statusEl.textContent = "Copied.";
+        statusTimer = window.setTimeout(() => {
+          statusEl.textContent = "";
+        }, 1600);
+      });
+      statusEl = document.createElement("div");
+      statusEl.className = "status";
+      controlsEl.append(outputEl, copy, statusEl);
+    }
+
+    function syncInputs() {
+      for (const input of controlsEl.querySelectorAll("input[data-path]")) {
+        const value = getByPath(state[currentRole], input.dataset.path);
+        const step = Number(input.step);
+        const precision = step < 0.01 ? 3 : step < 1 ? 1 : 0;
+        input.value = Number(value).toFixed(precision);
+      }
+    }
+
+    function applyPreset(kind) {
+      if (currentRole === "bowbert") {
+        const presets = {
+          idle: { aimDeg: 0, moveAmount: 0, drawProgress: 0, recoil: 0, dodge: 0, hit: 0 },
+          walk: { aimDeg: 0, moveAmount: 0.85, drawProgress: 0, recoil: 0, dodge: 0, hit: 0 },
+          action: { aimDeg: -12, moveAmount: 0.25, drawProgress: 0.72, recoil: 0.16, dodge: 0, hit: 0 }
+        };
+        Object.assign(state.bowbert.preview, presets[kind] ?? presets.idle);
+      } else if (currentRole === "dartGoober") {
+        const presets = {
+          idle: { facingDeg: 0, moveAmount: 0, charge: 0, hit: 0, spawn: 1, eyeEmotion: "default" },
+          walk: { facingDeg: 0, moveAmount: 0.85, charge: 0, hit: 0, spawn: 1, eyeEmotion: "alert" },
+          action: { facingDeg: -14, moveAmount: 0.2, charge: 0.82, hit: 0, spawn: 1, eyeEmotion: "aim" }
+        };
+        Object.assign(state.dartGoober.preview, presets[kind] ?? presets.idle);
+      }
+
+      syncInputs();
+      renderOutput();
+      saveState();
+    }
+
+    function syncRoleUi() {
+      const role = roles.find((candidate) => candidate.id === currentRole) ?? roles[0];
+      referenceImage.src = role.reference;
+      referenceMeta.textContent = role.status;
+      previewMeta.textContent = role.status === "可调" ? "runtime canvas" : "reference only";
+      roleStatus.textContent = role.note;
+      renderControls();
+    }
+
+    function roundDeep(value) {
+      if (typeof value === "number") return round(value);
+      if (Array.isArray(value)) return value.map(roundDeep);
+      if (value && typeof value === "object") {
+        return Object.fromEntries(Object.entries(value).map(([key, nested]) => [key, roundDeep(nested)]));
+      }
+      return value;
+    }
+
+    function renderOutput() {
+      if (!outputEl) return;
+
+      const role = roles.find((candidate) => candidate.id === currentRole);
+      const params = {
+        role: currentRole,
+        name: role?.name ?? currentRole,
+        status: role?.status ?? "unknown",
+        tuning: roundDeep(state[currentRole] ?? {})
+      };
+      const constName = `${currentRole.replace(/[^a-z0-9]/gi, "_").toUpperCase()}_TUNING`;
+      outputEl.value = `const ${constName} = ${JSON.stringify(params, null, 2)};`;
+    }
+
+    function saveState() {
+      localStorage.setItem("bowbert-character-tuning-v1", JSON.stringify(state));
+    }
+
+    function restoreState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem("bowbert-character-tuning-v1") ?? "{}");
+        for (const key of Object.keys(initialState)) {
+          if (saved[key]) state[key] = mergeDeep(structuredClone(initialState[key]), saved[key]);
+        }
+      } catch (error) {
+        localStorage.removeItem("bowbert-character-tuning-v1");
+      }
+    }
+
+    function normalizeState() {
+      const dart = state.dartGoober;
+      if (!dart) return;
+
+      if (!dartEyeEmotionDefs.some((item) => item.id === dart.preview.eyeEmotion)) {
+        dart.preview.eyeEmotion = "default";
+      }
+
+      dart.gaze = dart.gaze || structuredClone(initialState.dartGoober.gaze);
+
+      for (const item of dartEyeEmotionDefs) {
+        const defaults = initialState.dartGoober.gaze.emotions[item.id];
+        dart.gaze.emotions[item.id] = mergeDeep(
+          structuredClone(defaults),
+          dart.gaze.emotions[item.id] || {}
+        );
+      }
+
+      delete dart.face;
+      delete dart.texture;
+      delete dart.leaves;
+
+      for (const key of legacyDartFaceKeys) {
+        if (dart[key]) delete dart[key];
+      }
+    }
+
+    function mergeDeep(target, source) {
+      for (const [key, value] of Object.entries(source)) {
+        if (value && typeof value === "object" && !Array.isArray(value) && target[key]) {
+          mergeDeep(target[key], value);
+        } else {
+          target[key] = value;
+        }
+      }
+      return target;
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#142018";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.075)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 24) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 24) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawBowbert(timeMs) {
+      const cfg = state.bowbert;
+      const image = images.bowbert;
+      const t = timeMs / 1000;
+      const aimAngle = (cfg.preview.aimDeg * Math.PI) / 180;
+      const aim = { x: Math.cos(aimAngle), y: Math.sin(aimAngle) };
+      const walkPhase = t * 7.2;
+      const walkWave = Math.sin(walkPhase) * cfg.preview.moveAmount;
+      const idleWave = Math.sin(timeMs * 0.004);
+      const bodySquash = walkWave * cfg.walk.walkSquash + idleWave * cfg.walk.idleSquash + cfg.preview.hit * cfg.walk.hitSquash;
+      const dodgeStretch = cfg.preview.dodge * cfg.walk.dodgeStretch;
+      const scaleX = cfg.body.scale * (1 + Math.abs(bodySquash) + dodgeStretch);
+      const scaleY = cfg.body.scale * (1 - bodySquash - dodgeStretch * 0.52);
+      const zoom = 3.55;
+
+      ctx.save();
+      ctx.translate(canvas.width * 0.49, canvas.height * 0.59);
+      ctx.scale(zoom, zoom);
+      ctx.rotate(Math.sin(walkPhase) * cfg.preview.moveAmount * 0.025);
+
+      ctx.save();
+      ctx.fillStyle = "#07120d";
+      ctx.globalAlpha = 0.28;
+      ctx.beginPath();
+      ctx.ellipse(0, cfg.body.shadowY, cfg.body.shadowWidth / 2, cfg.body.shadowHeight / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      const bodyX = -aim.x * cfg.preview.recoil * cfg.walk.recoilX;
+      const bodyY = cfg.body.y - Math.abs(walkWave) * cfg.walk.walkBob - aim.y * cfg.preview.recoil * cfg.walk.recoilY;
+      const bodyW = cfg.body.imageSize.width * scaleX;
+      const bodyH = cfg.body.imageSize.height * scaleY;
+
+      if (image) {
+        ctx.drawImage(image, bodyX - bodyW / 2, bodyY - bodyH / 2, bodyW, bodyH);
+      }
+
+      drawBowbertBow(cfg, aim, aimAngle, cfg.preview.recoil, t);
+      drawBowbertEyes(cfg, bodyX, bodyY, scaleX, scaleY, aim);
+      ctx.restore();
+    }
+
+    function drawBowbertEyes(cfg, bodyX, bodyY, scaleX, scaleY, aim) {
+      for (const name of ["left", "right"]) {
+        const eye = cfg.eyes[name];
+        const x = bodyX + (eye.x - 0.5) * cfg.body.imageSize.width * scaleX;
+        const y = bodyY + (eye.y - 0.5) * cfg.body.imageSize.height * scaleY;
+        const r = eye.outerRadius * cfg.body.imageSize.width * scaleX;
+        const whiteR = r * eye.whiteRatio;
+        const pupilR = whiteR * eye.pupilRatio;
+        const len = Math.hypot(aim.x, aim.y);
+        const aimScale = len > 1 ? 1 / len : 1;
+
+        ctx.fillStyle = "#090b08";
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#f7f2df";
+        ctx.beginPath();
+        ctx.arc(x, y, whiteR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#151510";
+        ctx.beginPath();
+        ctx.arc(
+          x + aim.x * aimScale * r * 2 * cfg.eyes.pupilOffsetScale.x,
+          y + aim.y * aimScale * r * 2 * cfg.eyes.pupilOffsetScale.y,
+          pupilR,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
+    }
+
+    function drawBowbertBow(cfg, aim, aimAngle, recoil, timeSeconds) {
+      const bow = cfg.bow;
+      const placement = bow.placement;
+      const visualDraw = cfg.preview.drawProgress;
+      const showArrow = visualDraw > 0.08;
+      const releaseKick = recoil > 0.01 ? Math.max(0.25, recoil) : 0;
+      const distance = placement.distance + visualDraw * placement.drawDistance - releaseKick * placement.releaseKick;
+
+      bowCanvas.width = bow.texture.width;
+      bowCanvas.height = bow.texture.height;
+      drawProceduralBranchBow(bowCtx, bow, {
+        draw: visualDraw,
+        recoil,
+        timeSeconds,
+        showArrow,
+        glow: true
+      });
+
+      ctx.save();
+      ctx.translate(
+        placement.offsetX + aim.x * distance - aim.x * recoil * placement.recoilDistance,
+        placement.offsetY + aim.y * placement.yDistance - aim.y * recoil * placement.recoilY
+      );
+      ctx.rotate(aimAngle + (placement.rotationOffsetDeg * Math.PI) / 180);
+      ctx.scale(placement.scale, placement.scale);
+      ctx.drawImage(bowCanvas, -bow.texture.anchorX, -bow.texture.anchorY);
+      ctx.restore();
+    }
+
+    function drawDartGoober(timeMs) {
+      const cfg = state.dartGoober;
+      const image = images.dartGoober;
+      const t = timeMs / 1000;
+      const facingAngle = (cfg.preview.facingDeg * Math.PI) / 180;
+      const facing = { x: Math.cos(facingAngle), y: Math.sin(facingAngle) };
+      const walkPhase = t * 7.6;
+      const walkWave = Math.sin(walkPhase) * cfg.preview.moveAmount;
+      const idleWave = Math.sin(timeMs * 0.004);
+      const charge = cfg.preview.charge;
+      const hit = cfg.preview.hit;
+      const spawnEase = 1 - (1 - clamp(cfg.preview.spawn, 0, 1)) ** 3;
+      const spawnBounce = cfg.preview.spawn < 1 ? Math.sin(cfg.preview.spawn * Math.PI) * 0.2 : 0;
+      const squash = Math.abs(walkWave) * cfg.motion.walkSquash + idleWave * cfg.motion.idleSquash;
+      const anticipation = charge * cfg.attack.anticipation;
+      const scaleX = cfg.body.scale * (1 + squash - anticipation + hit * cfg.motion.hitScaleX);
+      const scaleY = cfg.body.scale * (1 - squash + anticipation - hit * cfg.motion.hitScaleY);
+      const zoom = 3.1;
+
+      ctx.save();
+      ctx.translate(canvas.width * 0.5, canvas.height * 0.58);
+      ctx.scale(zoom, zoom);
+      ctx.rotate(walkWave * cfg.motion.walkTilt);
+      ctx.scale(Math.max(0.05, spawnEase + spawnBounce), Math.max(0.05, spawnEase + spawnBounce));
+      ctx.globalAlpha = 0.18 + spawnEase * 0.82;
+
+      ctx.save();
+      ctx.fillStyle = "#07120d";
+      ctx.globalAlpha *= 0.32;
+      ctx.beginPath();
+      ctx.ellipse(0, cfg.body.shadowY, cfg.body.shadowWidth / 2, cfg.body.shadowHeight / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(
+        -facing.x * charge * cfg.attack.chargeShift,
+        cfg.body.y + idleWave * cfg.motion.idleBob - Math.abs(walkWave) * cfg.motion.walkBob
+      );
+      ctx.scale(scaleX, scaleY);
+      if (image) {
+        ctx.drawImage(
+          image,
+          -cfg.body.imageSize.width / 2,
+          -cfg.body.imageSize.height / 2,
+          cfg.body.imageSize.width,
+          cfg.body.imageSize.height
+        );
+      }
+      drawDartEmbeddedGaze(ctx, cfg, facing, cfg.preview.eyeEmotion);
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalAlpha *= charge > 0.01 ? cfg.attack.muzzleAlphaBase + charge * cfg.attack.muzzleAlphaCharge : 0;
+      ctx.fillStyle = "#ffd36a";
+      ctx.translate(facing.x * cfg.attack.muzzleX, cfg.attack.muzzleY + facing.y * cfg.attack.muzzleAimY);
+      ctx.scale(cfg.attack.muzzleScaleBase + charge * cfg.attack.muzzleScaleCharge, cfg.attack.muzzleScaleBase + charge * cfg.attack.muzzleScaleCharge);
+      ctx.beginPath();
+      ctx.arc(0, 0, cfg.attack.muzzleRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.restore();
+    }
+
+    function drawDartEmbeddedGaze(context, cfg, facing, eyeEmotion) {
+      const emotion = resolveDartEyeEmotion(cfg, eyeEmotion);
+      const width = cfg.body.imageSize.width;
+      const height = cfg.body.imageSize.height;
+      const offsetX = clamp(facing.x, -1, 1) * width * cfg.gaze.pupilOffsetScale.x + emotion.pupilShiftX * width;
+      const offsetY = clamp(facing.y, -1, 1) * height * cfg.gaze.pupilOffsetScale.y + emotion.pupilShiftY * height;
+
+      for (const name of ["left", "right"]) {
+        const eye = cfg.gaze.eyes[name];
+        const side = name === "left" ? -1 : 1;
+        const lidCompression = 1 - (emotion.upperLid + emotion.lowerLid) * 0.24;
+        const pupilWidth = eye.radiusX * width * 2 * emotion.pupilScale * emotion.eyeScaleX;
+        const pupilHeight = eye.radiusY * height * 2 * emotion.pupilScale * emotion.eyeScaleY * clamp(lidCompression, 0.45, 1);
+
+        context.save();
+        context.translate((eye.x - 0.5) * width, (eye.y - 0.5) * height);
+        context.rotate(eye.rotation + side * emotion.eyeTiltAdd);
+        context.fillStyle = "#070707";
+        context.beginPath();
+        context.ellipse(offsetX, offsetY, pupilWidth / 2, pupilHeight / 2, 0, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+      }
+    }
+
+    function drawReferenceOnly() {
+      const role = roles.find((candidate) => candidate.id === currentRole);
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#f0c45b";
+      ctx.font = "700 18px system-ui, sans-serif";
+      ctx.fillText(role?.name ?? currentRole, canvas.width / 2, canvas.height / 2 - 12);
+      ctx.fillStyle = "#aebba8";
+      ctx.font = "13px system-ui, sans-serif";
+      ctx.fillText("仅参考：还没有运行时渲染器，所以暂时不能调。", canvas.width / 2, canvas.height / 2 + 18);
+      ctx.restore();
+    }
+
+    function resolveDartEyeEmotion(cfg, eyeEmotion) {
+      const id = eyeEmotion || cfg.preview.eyeEmotion || "default";
+      return cfg.gaze.emotions?.[id] || cfg.gaze.emotions?.default || initialState.dartGoober.gaze.emotions.default;
+    }
+
+    function drawProceduralBranchBow(context, bow, options) {
+      const draw = clamp(options.draw, 0, 1);
+      const recoil = clamp(options.recoil, 0, 1);
+      const fullDraw = clamp((draw - 0.82) / 0.18, 0, 1);
+
+      context.clearRect(0, 0, bow.texture.width, bow.texture.height);
+      context.save();
+      context.translate(bow.texture.anchorX + recoil * 8, bow.texture.anchorY);
+      context.scale(bow.texture.drawScale, bow.texture.drawScale);
+
+      if (options.glow) {
+        context.save();
+        context.fillStyle = "#fff2ad";
+        context.globalAlpha = 0.045 + draw * 0.075;
+        context.beginPath();
+        context.ellipse(28, 0, 178 + draw * 24, 214 + draw * 18, 0, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+      }
+
+      drawBranchLimb(context);
+      drawBowChargeArc(context, draw, fullDraw, options.timeSeconds);
+      drawBowString(context, draw, fullDraw);
+
+      if (options.showArrow && draw > 0.08) {
+        drawArrowProjectile(context, 124 - draw * 176, 1, 0.78 + draw * 0.08 + fullDraw * 0.02);
+      }
+
+      if (draw > 0) {
+        const nockX = 60 - draw * 136;
+        context.save();
+        context.globalAlpha = 0.38 + draw * 0.32 + fullDraw * 0.24;
+        context.fillStyle = "#fff2ad";
+        context.beginPath();
+        context.arc(nockX, 1, 4 + draw * 5 + fullDraw * 2, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+      }
+
+      drawBranchGrip(context);
+      context.restore();
+      context.globalAlpha = 1;
+    }
+
+    function drawBranchLimb(context) {
+      strokePath(context, BRANCH_LIMB, "#070707", 24);
+      strokePath(context, BRANCH_LIMB, "#9a6236", 11);
+      strokePath(context, BRANCH_MARK_TOP, "#070707", 6);
+      strokePath(context, BRANCH_MARK_BOTTOM, "#070707", 6);
+      context.save();
+      context.translate(48, -166);
+      context.rotate((-18 * Math.PI) / 180);
+      context.scale(0.74, 0.74);
+      fillAndStrokePath(context, LEAF_TIP_TOP, "#67dc55", "#070707", 8);
+      strokePath(context, new Path2D("M-15 -5 C-10 -25 -4 -43 5 -59"), "#1d421f", 4);
+      context.restore();
+      context.save();
+      context.translate(47, 166);
+      context.rotate((18 * Math.PI) / 180);
+      context.scale(0.74, 0.74);
+      fillAndStrokePath(context, LEAF_TIP_BOTTOM, "#67dc55", "#070707", 8);
+      strokePath(context, new Path2D("M-15 5 C-10 25 -4 43 5 59"), "#1d421f", 4);
+      context.restore();
+      context.fillStyle = "#fff2ad";
+      context.globalAlpha = 0.86;
+      context.beginPath();
+      context.arc(48, -166, 5, 0, Math.PI * 2);
+      context.arc(47, 166, 5, 0, Math.PI * 2);
+      context.fill();
+      context.globalAlpha = 1;
+    }
+
+    function drawBowChargeArc(context, draw, fullDraw, timeSeconds) {
+      if (draw <= 0.08) return;
+      context.save();
+      setupStroke(context, 7, "#fff2ad", 0.14 + draw * 0.32);
+      context.setLineDash([70 + draw * 330, 430]);
+      context.lineDashOffset = 210 - draw * 180;
+      context.stroke(BOW_CHARGE_ARC);
+      context.restore();
+      if (draw < 1) return;
+      context.save();
+      setupStroke(context, 5, "#fff2ad", 0.16 + fullDraw * 0.34);
+      context.setLineDash([42, 24]);
+      context.lineDashOffset = -timeSeconds * 42;
+      context.stroke(BOW_CHARGE_ARC);
+      context.restore();
+    }
+
+    function drawBowString(context, draw, fullDraw) {
+      const stringX = 60 - draw * 136;
+      const path = cubicPath({ x: 48, y: -166 }, { x: stringX, y: -64 }, { x: stringX, y: 64 }, { x: 47, y: 166 });
+      if (draw > 0) strokePath(context, path, "#fff2ad", 9 + draw * 8 + fullDraw * 2, 0.1 + draw * 0.32 + fullDraw * 0.16);
+      strokePath(context, path, "#fff2ad", 5.5);
+    }
+
+    function drawBranchGrip(context) {
+      strokePath(context, BRANCH_GRIP, "#070707", 24);
+      strokePath(context, BRANCH_GRIP, "#9a6236", 11);
+      strokePath(context, new Path2D("M71 -23 L92 -16 M68 -2 L98 4 M72 21 L92 27"), "#fff2ad", 5.5);
+    }
+
+    function drawArrowProjectile(context, x, y, scale, alpha = 1) {
+      context.save();
+      context.globalAlpha *= alpha;
+      context.translate(x, y);
+      context.scale(scale, scale);
+      setupStroke(context, 14, "#070707");
+      context.beginPath();
+      context.moveTo(-132, 0);
+      context.lineTo(128, 0);
+      context.moveTo(128, 0);
+      context.lineTo(96, -22);
+      context.moveTo(128, 0);
+      context.lineTo(96, 22);
+      context.stroke();
+      setupStroke(context, 7, "#fff2ad");
+      context.beginPath();
+      context.moveTo(-132, 0);
+      context.lineTo(128, 0);
+      context.moveTo(128, 0);
+      context.lineTo(96, -22);
+      context.moveTo(128, 0);
+      context.lineTo(96, 22);
+      context.stroke();
+      fillAndStrokePath(context, ARROW_TAIL_TOP, "#67dc55", "#070707", 8);
+      fillAndStrokePath(context, ARROW_TAIL_BOTTOM, "#67dc55", "#070707", 8);
+      strokePath(context, ARROW_TAIL_TOP_MARK, "#1d421f", 4);
+      strokePath(context, ARROW_TAIL_BOTTOM_MARK, "#1d421f", 4);
+      context.fillStyle = "#fff2ad";
+      context.globalAlpha *= 0.86;
+      context.beginPath();
+      context.arc(-132, 0, 5, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    }
+
+    function render(timeMs = 0) {
+      clearCanvas();
+      if (currentRole === "bowbert") drawBowbert(timeMs);
+      else if (currentRole === "dartGoober") drawDartGoober(timeMs);
+      else drawReferenceOnly();
+      requestAnimationFrame(render);
+    }
+
+    restoreState();
+    normalizeState();
+    loadImages();
+    populateRoles();
+    syncRoleUi();
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
