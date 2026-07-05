@@ -8,7 +8,7 @@
 - [x] `mvp-004-room-visuals-state`: implement single reference-style combat room, doors, decorations, room state. Merged from `task/mvp-004-room-visuals-state`.
 - [x] `mvp-005-player-bow-combat`: implement Bowbert, bow visuals, arrows, player damage/dodge basics. Merged from `task/mvp-005-player-bow-combat`.
 - [x] `mvp-006-dart-goober-ai`: implement Dart Goober spawn, AI, darts, hit/death. Merged from `task/mvp-006-dart-goober-ai`.
-- [ ] `mvp-007-feedback-hud-smoke`: implement required feedback, hearts HUD, smoke checks.
+- [ ] `mvp-007-feedback-hud-smoke`: implement required feedback, hearts HUD, smoke checks. Worker running in `/home/simpx/bowbert-workers/mvp-007-feedback-hud-smoke`.
 
 ## Later
 

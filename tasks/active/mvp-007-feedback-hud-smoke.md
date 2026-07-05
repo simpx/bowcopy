@@ -4,7 +4,7 @@ title: MVP feedback, hearts HUD, smoke verification
 status: active
 owner: worker-mvp-007
 branch: task/mvp-007-feedback-hud-smoke
-worktree:
+worktree: /home/simpx/bowbert-workers/mvp-007-feedback-hud-smoke
 allowed:
   - src/render/feedback/**
   - src/ui/**
