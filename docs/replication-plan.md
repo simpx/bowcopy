@@ -19,7 +19,8 @@
 - Renderer owns visuals: sprites, squash/stretch transforms, camera shake, particles, UI feedback.
 - Asset keys come from manifests, not raw filenames.
 - Reference crops in `refs/asset-crops/` are not runtime assets.
-- Final game assets must live under `assets/` and be original/recreated.
+- Temporary runtime crops may live under `assets/prototype-video-crops/` for MVP feasibility testing.
+- Final release assets must be original/recreated and must replace the prototype video crops.
 
 ## Mobile Direction
 
@@ -58,7 +59,7 @@ MVP must include the original video's procedural animation idea. This is not a p
 
 Required:
 
-- Player and enemies are built from simple runtime-drawn parts or layered primitives, not a full frame-by-frame sprite sheet.
+- Player and enemies may use temporary video crops for MVP, but animation should still be driven by runtime transforms instead of full frame-by-frame sprite sheets.
 - Squash/stretch animation uses sine-wave driven scale and rotation profiles.
 - Idle, walk, shoot, hit, and dodge each have distinct animation profiles.
 - Eyes track aim direction or target direction with clamped pupil offsets.
@@ -69,6 +70,8 @@ Required:
 - Enemy death spawns particles.
 - Dodge spawns ghost afterimages.
 - Camera shake is present for hit, damage, dodge, and room clear events.
+- The MVP room uses a reference-matching green floor, thick border, door/opening shapes, and scattered decorations.
+- Door close, enemy spawn, enemy clear, and room clear feedback are required.
 
 MVP can skip:
 

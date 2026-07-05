@@ -1,8 +1,8 @@
 # Assets
 
-This directory is for original/recreated game assets only.
+This directory is for original/recreated game assets by default.
 
-Do not place third-party video frames, YouTube screenshots, or raw copied artwork here. Reference crops live in `refs/asset-crops/`.
+For MVP feasibility testing only, temporary video-crop assets may live under `assets/prototype-video-crops/`. Reference crops still live in `refs/asset-crops/`.
 
 ## Layout
 
@@ -10,6 +10,7 @@ Do not place third-party video frames, YouTube screenshots, or raw copied artwor
 assets/
   characters/
     bowbert/
+  prototype-video-crops/
   weapons/
     bow/
   enemies/
@@ -35,6 +36,10 @@ assets/
 
 ## Asset Policy
 
+- Prototype video crops may be used only to validate whether a close gameplay replica is feasible.
+- Keep prototype video crops isolated under `assets/prototype-video-crops/`.
+- Load prototype crops through manifest keys so they can be replaced later.
+- Do not ship prototype crops in a public release.
 - Final assets should be recreated in our own style.
 - Keep thick outlines and simple silhouettes.
 - Prefer layered parts when animation can be procedural.
