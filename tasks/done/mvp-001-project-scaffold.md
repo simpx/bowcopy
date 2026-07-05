@@ -1,7 +1,7 @@
 ---
 id: mvp-001-project-scaffold
 title: Phaser TypeScript Vite scaffold
-status: active
+status: done
 owner: worker-mvp-001
 branch: task/mvp-001-project-scaffold
 worktree: /home/simpx/bowbert-workers/mvp-001-project-scaffold
@@ -38,3 +38,10 @@ Create the runnable browser-game base for the MVP using Phaser 3, TypeScript, an
 # Notes
 
 This task should land before gameplay implementation tasks are merged. Keep the scaffold minimal; do not implement joystick, combat, enemies, or room logic here.
+
+Reviewed and merged by manager from `task/mvp-001-project-scaffold` at worker commit `bd3f9b6`.
+
+Manager verification:
+
+- `npm install`: passed on integration branch.
+- `npm run build`: passed on integration branch with the expected Phaser/Vite large chunk warning.
