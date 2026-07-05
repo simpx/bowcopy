@@ -1,7 +1,7 @@
 ---
 id: mvp-006-dart-goober-ai
 title: Dart Goober spawn, AI, darts, death
-status: active
+status: done
 owner: worker-mvp-006
 branch: task/mvp-006-dart-goober-ai
 worktree: /home/simpx/bowbert-workers/mvp-006-dart-goober-ai
@@ -38,3 +38,9 @@ Implement the MVP enemy: Dart Goober with delayed spawn, randomized approach mov
 # Notes
 
 Depends on `mvp-001-project-scaffold`. Coordinate with player/projectile interfaces after `mvp-005-player-bow-combat` is available.
+
+# Manager Review
+
+- Merged commit `8ac3532` from `task/mvp-006-dart-goober-ai`.
+- Verified scope against the task brief and reviewed enemy simulation, enemy dart simulation, scene wiring, and render lifecycle.
+- Passed on `master`: `npm run build`.
