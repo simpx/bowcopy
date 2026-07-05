@@ -4,7 +4,7 @@ title: Reference-style single combat room
 status: active
 owner: worker-mvp-004
 branch: task/mvp-004-room-visuals-state
-worktree:
+worktree: /home/simpx/bowbert-workers/mvp-004-room-visuals-state
 allowed:
   - src/game/**
   - src/sim/rooms/**

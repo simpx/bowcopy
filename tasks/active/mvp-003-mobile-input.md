@@ -4,7 +4,7 @@ title: Mobile dual joystick and desktop debug input
 status: active
 owner: worker-mvp-003
 branch: task/mvp-003-mobile-input
-worktree:
+worktree: /home/simpx/bowbert-workers/mvp-003-mobile-input
 allowed:
   - src/input/**
   - src/ui/**
