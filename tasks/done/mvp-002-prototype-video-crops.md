@@ -1,7 +1,7 @@
 ---
 id: mvp-002-prototype-video-crops
 title: Prepare temporary runtime video-crop assets
-status: active
+status: done
 owner: worker-mvp-002
 branch: task/mvp-002-prototype-video-crops
 worktree: /home/simpx/bowbert-workers/mvp-002-prototype-video-crops
@@ -33,3 +33,5 @@ Prepare the temporary runtime assets needed by the MVP from the existing referen
 # Notes
 
 Use `refs/asset-crops/` as visual guidance. Keep these assets isolated so they can be replaced by original art later.
+
+Reviewed and merged by manager from `task/mvp-002-prototype-video-crops` at worker commit `1419209`.

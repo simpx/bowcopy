@@ -3,7 +3,7 @@
 ## Active MVP Tasks
 
 - [ ] `mvp-001-project-scaffold`: create Phaser + TypeScript + Vite base. Worker running in `/home/simpx/bowbert-workers/mvp-001-project-scaffold`.
-- [ ] `mvp-002-prototype-video-crops`: prepare temporary runtime crops from video references. Worker running in `/home/simpx/bowbert-workers/mvp-002-prototype-video-crops`.
+- [x] `mvp-002-prototype-video-crops`: prepare temporary runtime crops from video references. Merged from `task/mvp-002-prototype-video-crops`.
 - [ ] `mvp-003-mobile-input`: implement mobile dual-joystick and desktop debug input.
 - [ ] `mvp-004-room-visuals-state`: implement single reference-style combat room, doors, decorations, room state.
 - [ ] `mvp-005-player-bow-combat`: implement Bowbert, bow visuals, arrows, player damage/dodge basics.
