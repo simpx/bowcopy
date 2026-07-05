@@ -1,7 +1,7 @@
 ---
 id: mvp-005-player-bow-combat
 title: Bowbert movement, bow, arrows, dodge
-status: active
+status: done
 owner: worker-mvp-005
 branch: task/mvp-005-player-bow-combat
 worktree: /home/simpx/bowbert-workers/mvp-005-player-bow-combat
@@ -40,3 +40,9 @@ Implement Bowbert as a playable character with movement, right-stick hold-to-fir
 # Notes
 
 Depends on `mvp-001-project-scaffold` and should integrate with `mvp-003-mobile-input` after merge. Do not implement enemy AI here.
+
+Reviewed and merged by manager from `task/mvp-005-player-bow-combat` at worker commit `ec4be78`.
+
+Manager verification:
+
+- `npm run build`: passed on integration branch with the expected Phaser/Vite large chunk warning.
