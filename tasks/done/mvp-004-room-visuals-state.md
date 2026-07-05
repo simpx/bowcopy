@@ -1,7 +1,7 @@
 ---
 id: mvp-004-room-visuals-state
 title: Reference-style single combat room
-status: active
+status: done
 owner: worker-mvp-004
 branch: task/mvp-004-room-visuals-state
 worktree: /home/simpx/bowbert-workers/mvp-004-room-visuals-state
@@ -38,3 +38,9 @@ Implement the MVP room: dark green floor, thick dark borders, door/opening shape
 # Notes
 
 Depends on `mvp-001-project-scaffold`. This task may include placeholder room-state hooks, but should not implement Dart Goober AI.
+
+Reviewed and merged by manager from `task/mvp-004-room-visuals-state` at worker commit `4d404a0`.
+
+Manager verification:
+
+- `npm run build`: passed on integration branch with the expected Phaser/Vite large chunk warning.
