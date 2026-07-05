@@ -1,7 +1,7 @@
 ---
 id: mvp-007-feedback-hud-smoke
 title: MVP feedback, hearts HUD, smoke verification
-status: active
+status: done
 owner: worker-mvp-007
 branch: task/mvp-007-feedback-hud-smoke
 worktree: /home/simpx/bowbert-workers/mvp-007-feedback-hud-smoke
@@ -35,3 +35,9 @@ Add the baseline feedback layer required by the MVP and verify the whole MVP loo
 # Notes
 
 This task should run after the scaffold and core gameplay tasks are merged. Keep feedback systems parameterized so future enemies can reuse them.
+
+# Manager Review
+
+- Merged commit `57a2d0c` from `task/mvp-007-feedback-hud-smoke`.
+- Verified scope against the task brief and reviewed HUD lifecycle, feedback rendering, scene event routing, and result smoke notes.
+- Passed on `master`: `npm run build`.
