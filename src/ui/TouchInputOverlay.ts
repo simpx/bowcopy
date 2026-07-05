@@ -26,14 +26,27 @@ const TOUCH_INPUT_STYLES = `
 }
 
 .touch-input-joystick-left {
+  z-index: 2;
   left: max(18px, env(safe-area-inset-left));
   bottom: max(18px, env(safe-area-inset-bottom));
+}
+
+.touch-input-aim-zone {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 58%;
+  pointer-events: auto;
+  touch-action: none;
 }
 
 .touch-input-right-cluster {
   position: absolute;
   right: max(18px, env(safe-area-inset-right));
   bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 2;
   display: flex;
   align-items: end;
   gap: clamp(12px, 2.6vmin, 20px);
@@ -44,6 +57,7 @@ const TOUCH_INPUT_STYLES = `
   position: relative;
   right: auto;
   bottom: auto;
+  pointer-events: none;
 }
 
 .touch-input-joystick-ring {
@@ -115,9 +129,16 @@ const TOUCH_INPUT_STYLES = `
     width: clamp(56px, 14vh, 66px);
   }
 }
+
+@media (orientation: portrait) {
+  .touch-input-aim-zone {
+    width: 64%;
+  }
+}
 `;
 
 type JoystickMode = 'analog' | 'direction';
+type JoystickCenterMode = 'element' | 'pointer';
 
 type JoystickElements = {
   readonly root: HTMLDivElement;
@@ -127,7 +148,9 @@ type JoystickElements = {
 type JoystickOptions = {
   readonly root: HTMLElement;
   readonly stick: HTMLElement;
+  readonly eventRoot?: HTMLElement;
   readonly mode: JoystickMode;
+  readonly centerMode?: JoystickCenterMode;
   readonly onStart?: () => void;
   readonly onMove: (vector: InputVector) => void;
   readonly onEnd: () => void;
@@ -168,13 +191,15 @@ class VirtualJoystick {
   private centerX = 0;
   private centerY = 0;
   private radius = 1;
+  private readonly eventRoot: HTMLElement;
 
   constructor(private readonly options: JoystickOptions) {
-    options.root.addEventListener('pointerdown', this.handlePointerDown);
+    this.eventRoot = options.eventRoot ?? options.root;
+    this.eventRoot.addEventListener('pointerdown', this.handlePointerDown);
   }
 
   dispose() {
-    this.options.root.removeEventListener('pointerdown', this.handlePointerDown);
+    this.eventRoot.removeEventListener('pointerdown', this.handlePointerDown);
     this.removeWindowListeners();
     this.pointerId = undefined;
   }
@@ -186,9 +211,9 @@ class VirtualJoystick {
 
     event.preventDefault();
     this.pointerId = event.pointerId;
-    this.measure();
+    this.measure(event);
     this.options.root.classList.add('is-active');
-    this.options.root.setPointerCapture(event.pointerId);
+    this.eventRoot.setPointerCapture(event.pointerId);
     this.options.onStart?.();
     this.updateFromPointer(event);
 
@@ -212,8 +237,8 @@ class VirtualJoystick {
     }
 
     event.preventDefault();
-    if (this.options.root.hasPointerCapture(event.pointerId)) {
-      this.options.root.releasePointerCapture(event.pointerId);
+    if (this.eventRoot.hasPointerCapture(event.pointerId)) {
+      this.eventRoot.releasePointerCapture(event.pointerId);
     }
     this.options.root.classList.remove('is-active');
     this.options.stick.style.transform = 'translate3d(0, 0, 0)';
@@ -222,11 +247,17 @@ class VirtualJoystick {
     this.removeWindowListeners();
   };
 
-  private measure() {
+  private measure(event: PointerEvent) {
     const rect = this.options.root.getBoundingClientRect();
 
-    this.centerX = rect.left + rect.width / 2;
-    this.centerY = rect.top + rect.height / 2;
+    if (this.options.centerMode === 'pointer') {
+      this.centerX = event.clientX;
+      this.centerY = event.clientY;
+    } else {
+      this.centerX = rect.left + rect.width / 2;
+      this.centerY = rect.top + rect.height / 2;
+    }
+
     this.radius = Math.max(1, Math.min(rect.width, rect.height) * 0.38);
   }
 
@@ -243,7 +274,7 @@ class VirtualJoystick {
     this.options.stick.style.transform = `translate3d(${visualX}px, ${visualY}px, 0)`;
 
     if (this.options.mode === 'direction') {
-      this.options.onMove(distance > 0 ? makeVector(directionX, directionY) : makeVector(0, 0));
+      this.options.onMove(distance > this.radius * 0.12 ? makeVector(directionX, directionY) : makeVector(0, 0));
       return;
     }
 
@@ -270,7 +301,12 @@ export class TouchInputOverlay {
 
     const left = createJoystickElements('touch-input-joystick-left', 'Movement joystick');
     const right = createJoystickElements('touch-input-joystick-right', 'Aim and fire joystick');
+    const aimZone = document.createElement('div');
     const rightCluster = document.createElement('div');
+
+    aimZone.className = 'touch-input-aim-zone';
+    aimZone.setAttribute('aria-label', 'Aim and fire area');
+
     rightCluster.className = 'touch-input-right-cluster';
 
     this.dodgeButton.type = 'button';
@@ -280,7 +316,7 @@ export class TouchInputOverlay {
     this.dodgeButton.addEventListener('pointerdown', this.handleDodgePointerDown);
 
     rightCluster.append(this.dodgeButton, right.root);
-    this.root.append(left.root, rightCluster);
+    this.root.append(left.root, aimZone, rightCluster);
     parent.append(this.root);
 
     this.leftJoystick = new VirtualJoystick({
@@ -294,7 +330,9 @@ export class TouchInputOverlay {
     this.rightJoystick = new VirtualJoystick({
       root: right.root,
       stick: right.stick,
+      eventRoot: aimZone,
       mode: 'direction',
+      centerMode: 'pointer',
       onStart: () => input.setFiring(true, 'touch'),
       onMove: (vector) => input.setAimVector(vector, 'touch'),
       onEnd: () => input.releaseAim('touch')

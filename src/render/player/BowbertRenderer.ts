@@ -26,12 +26,6 @@ const HIT_FLASH_MS = 170;
 const HIT_SQUASH_MS = 210;
 const GHOST_LIFETIME_MS = 210;
 const GHOST_CADENCE_MS = 34;
-const EYE_RADIUS = 6.2;
-const PUPIL_RADIUS = 3.2;
-const EYE_POINTS = [
-  { x: -20, y: -7 },
-  { x: 17, y: -12 }
-] as const;
 
 interface GhostAfterimage {
   readonly image: Phaser.GameObjects.Image;
@@ -74,8 +68,6 @@ export class BowbertRenderer {
   private shadow?: Phaser.GameObjects.Ellipse;
   private body?: Phaser.GameObjects.Image;
   private bow?: Phaser.GameObjects.Image;
-  private readonly eyeWhites: Phaser.GameObjects.Arc[] = [];
-  private readonly pupils: Phaser.GameObjects.Arc[] = [];
   private readonly ghosts: GhostAfterimage[] = [];
   private ghostMs = 0;
 
@@ -95,22 +87,7 @@ export class BowbertRenderer {
       .setOrigin(0.5)
       .setScale(BOW_SCALE);
 
-    for (const eye of EYE_POINTS) {
-      const white = this.scene.add.circle(eye.x, eye.y, EYE_RADIUS, 0xffffff, 1);
-      const pupil = this.scene.add.circle(eye.x, eye.y, PUPIL_RADIUS, 0x050604, 1);
-
-      white.setStrokeStyle(1.4, 0x050604, 1);
-      this.eyeWhites.push(white);
-      this.pupils.push(pupil);
-    }
-
-    this.container = this.scene.add.container(0, 0, [
-      this.shadow,
-      this.body,
-      this.bow,
-      ...this.eyeWhites,
-      ...this.pupils
-    ]);
+    this.container = this.scene.add.container(0, 0, [this.shadow, this.body, this.bow]);
     this.container.setDepth(80);
   }
 
@@ -153,7 +130,6 @@ export class BowbertRenderer {
     this.body.setTint(hitFlash > 0 ? 0xfff0d4 : 0xffffff);
 
     this.updateBow(aim, state, recoil);
-    this.updateEyes(aim, facingSign, hitFlash);
     this.updateGhosts(deltaMs, state, dodgeWave);
   }
 
@@ -186,25 +162,6 @@ export class BowbertRenderer {
     this.bow.setScale(BOW_SCALE * (1 + state.drawProgress * 0.05), BOW_SCALE);
     this.bow.setFlipY(aim.x < 0);
     this.bow.setAlpha(state.isFiring || state.bowPose !== 'relaxed' ? 1 : 0.92);
-  }
-
-  private updateEyes(aim: SimVector, facingSign: number, hitFlash: number) {
-    const pupilOffset = {
-      x: aim.x * 3.1,
-      y: aim.y * 3.1
-    };
-
-    for (let index = 0; index < EYE_POINTS.length; index += 1) {
-      const eye = EYE_POINTS[index];
-      const white = this.eyeWhites[index];
-      const pupil = this.pupils[index];
-      const x = eye.x * facingSign;
-      const y = eye.y;
-
-      white.setPosition(x, y);
-      white.setFillStyle(hitFlash > 0 ? 0xfff0d4 : 0xffffff, 1);
-      pupil.setPosition(x + pupilOffset.x, y + pupilOffset.y);
-    }
   }
 
   private updateGhosts(deltaMs: number, state: BowbertPlayerState, dodgeWave: number) {

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { GAME_SIZE } from '../constants';
 import { DesktopInputAdapter } from '../../input/DesktopInputAdapter';
 import { InputController } from '../../input/InputController';
 import { PlayerHealth } from '../PlayerHealth';
@@ -27,6 +28,13 @@ import {
 } from '../../render/projectiles';
 
 type CameraShakeKind = 'arrow-fire' | 'hit' | 'damage' | 'dodge' | 'room-clear';
+
+const CAMERA_FRAME = {
+  x: 0,
+  y: 0,
+  width: GAME_SIZE.width,
+  height: GAME_SIZE.height
+} as const;
 
 const CAMERA_SHAKES: Record<CameraShakeKind, { readonly durationMs: number; readonly intensity: number }> = {
   'arrow-fire': { durationMs: 28, intensity: 0.0006 },
@@ -102,7 +110,10 @@ export class CombatRoomScene extends Phaser.Scene {
     this.desktopInput = new DesktopInputAdapter(this, this.inputController, () => this.player.state.position);
     this.createHeartsHud();
     this.createTouchInput();
+    this.configureCamera();
+    this.centerCameraOnPlayer();
 
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.handleScaleResize);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.disposeRuntime, this);
     this.events.once(Phaser.Scenes.Events.DESTROY, this.disposeRuntime, this);
   }
@@ -113,6 +124,7 @@ export class CombatRoomScene extends Phaser.Scene {
     const snapshot = this.inputController.consumeSnapshot();
     const playerFrame = this.player.update(snapshot, delta, referenceCombatRoom.bounds);
 
+    this.centerCameraOnPlayer();
     this.handlePlayerEvents(playerFrame.events);
     this.updateRoomTrigger();
     this.updateEnemyEncounter();
@@ -287,7 +299,47 @@ export class CombatRoomScene extends Phaser.Scene {
     this.cameras.main.shake(shake.durationMs, shake.intensity);
   }
 
+  private readonly handleScaleResize = () => {
+    this.configureCamera();
+    this.centerCameraOnPlayer();
+  };
+
+  private configureCamera() {
+    const camera = this.cameras.main;
+    const viewportWidth = Math.max(1, this.scale.width || GAME_SIZE.width);
+    const viewportHeight = Math.max(1, this.scale.height || GAME_SIZE.height);
+    const zoom = Math.max(
+      viewportWidth / CAMERA_FRAME.width,
+      viewportHeight / CAMERA_FRAME.height
+    );
+
+    camera.setViewport(0, 0, viewportWidth, viewportHeight);
+    camera.setZoom(zoom);
+    camera.setBounds(CAMERA_FRAME.x, CAMERA_FRAME.y, CAMERA_FRAME.width, CAMERA_FRAME.height);
+  }
+
+  private centerCameraOnPlayer() {
+    const camera = this.cameras.main;
+    const visibleWidth = camera.width / camera.zoom;
+    const visibleHeight = camera.height / camera.zoom;
+    const minCenterX = CAMERA_FRAME.x + visibleWidth / 2;
+    const maxCenterX = CAMERA_FRAME.x + CAMERA_FRAME.width - visibleWidth / 2;
+    const minCenterY = CAMERA_FRAME.y + visibleHeight / 2;
+    const maxCenterY = CAMERA_FRAME.y + CAMERA_FRAME.height - visibleHeight / 2;
+    const centerX =
+      minCenterX > maxCenterX
+        ? CAMERA_FRAME.x + CAMERA_FRAME.width / 2
+        : Phaser.Math.Clamp(this.player.state.position.x, minCenterX, maxCenterX);
+    const centerY =
+      minCenterY > maxCenterY
+        ? CAMERA_FRAME.y + CAMERA_FRAME.height / 2
+        : Phaser.Math.Clamp(this.player.state.position.y, minCenterY, maxCenterY);
+
+    camera.centerOn(centerX, centerY);
+  }
+
   private disposeRuntime() {
+    this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize);
     this.desktopInput?.dispose();
     this.desktopInput = undefined;
     this.heartsHud?.dispose();
