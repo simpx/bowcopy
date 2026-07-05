@@ -131,6 +131,10 @@ export class ArrowProjectileSystem {
     return Array.from(this.arrows.values());
   }
 
+  removeArrow(id: number): boolean {
+    return this.arrows.delete(id);
+  }
+
   clear() {
     this.arrows.clear();
   }

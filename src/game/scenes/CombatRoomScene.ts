@@ -4,8 +4,10 @@ import { DesktopInputAdapter } from '../../input/DesktopInputAdapter';
 import { InputController } from '../../input/InputController';
 import { TouchInputOverlay } from '../../ui/TouchInputOverlay';
 import { BowbertPlayerModel, type BowbertPlayerEvent } from '../../sim/player';
-import { ArrowProjectileSystem } from '../../sim/projectiles';
+import { DartGooberSystem } from '../../sim/enemies';
+import { ArrowProjectileSystem, EnemyDartProjectileSystem } from '../../sim/projectiles';
 import {
+  clearCombatRoom,
   createInitialCombatRoomState,
   referenceCombatRoom,
   startCombatFromTrigger,
@@ -13,7 +15,13 @@ import {
 } from '../../sim/rooms';
 import { CombatRoomRenderer, preloadCombatRoomAssets } from '../../render/rooms';
 import { BowbertRenderer, preloadBowbertPlayerAssets } from '../../render/player';
-import { ArrowProjectileRenderer, preloadArrowProjectileAssets } from '../../render/projectiles';
+import { DartGooberRenderer, preloadDartGooberAssets } from '../../render/enemies';
+import {
+  ArrowProjectileRenderer,
+  EnemyDartProjectileRenderer,
+  preloadArrowProjectileAssets,
+  preloadEnemyDartProjectileAssets
+} from '../../render/projectiles';
 
 export class CombatRoomScene extends Phaser.Scene {
   private readonly inputController = new InputController();
@@ -22,11 +30,15 @@ export class CombatRoomScene extends Phaser.Scene {
     y: referenceCombatRoom.trigger.y + 118
   });
   private readonly projectiles = new ArrowProjectileSystem();
+  private readonly enemies = new DartGooberSystem();
+  private readonly enemyDarts = new EnemyDartProjectileSystem();
   private desktopInput?: DesktopInputAdapter;
   private touchOverlay?: TouchInputOverlay;
   private roomRenderer?: CombatRoomRenderer;
   private playerRenderer?: BowbertRenderer;
   private projectileRenderer?: ArrowProjectileRenderer;
+  private enemyRenderer?: DartGooberRenderer;
+  private enemyDartRenderer?: EnemyDartProjectileRenderer;
   private roomState: CombatRoomState = createInitialCombatRoomState();
 
   constructor() {
@@ -37,6 +49,8 @@ export class CombatRoomScene extends Phaser.Scene {
     preloadCombatRoomAssets(this);
     preloadBowbertPlayerAssets(this);
     preloadArrowProjectileAssets(this);
+    preloadEnemyDartProjectileAssets(this);
+    preloadDartGooberAssets(this);
   }
 
   create() {
@@ -49,6 +63,8 @@ export class CombatRoomScene extends Phaser.Scene {
       y: referenceCombatRoom.trigger.y + 118
     });
     this.projectiles.clear();
+    this.enemies.clear();
+    this.enemyDarts.clear();
 
     this.roomRenderer = new CombatRoomRenderer(this, referenceCombatRoom);
     this.roomRenderer.create();
@@ -56,6 +72,10 @@ export class CombatRoomScene extends Phaser.Scene {
 
     this.projectileRenderer = new ArrowProjectileRenderer(this);
     this.projectileRenderer.create();
+    this.enemyDartRenderer = new EnemyDartProjectileRenderer(this);
+    this.enemyDartRenderer.create();
+    this.enemyRenderer = new DartGooberRenderer(this);
+    this.enemyRenderer.create();
     this.playerRenderer = new BowbertRenderer(this);
     this.playerRenderer.create();
     this.playerRenderer.update(0, 0, this.player.state);
@@ -75,11 +95,36 @@ export class CombatRoomScene extends Phaser.Scene {
 
     this.handlePlayerEvents(playerFrame.events);
     this.updateRoomTrigger();
+    this.updateEnemyEncounter();
 
     const projectileEvents = this.projectiles.update(delta, referenceCombatRoom.bounds);
+    const enemyFrame = this.enemies.update(
+      delta,
+      referenceCombatRoom.bounds,
+      playerFrame.state.position,
+      this.projectiles.getActiveArrows()
+    );
+
+    for (const arrowId of enemyFrame.consumedArrowIds) {
+      this.projectiles.removeArrow(arrowId);
+    }
+
+    this.handleEnemyEvents(enemyFrame.events);
+
+    const enemyDartEvents = this.enemyDarts.update(
+      delta,
+      referenceCombatRoom.bounds,
+      playerFrame.state.position
+    );
+
+    this.handleEnemyDartEvents(enemyDartEvents);
 
     this.projectileRenderer?.playEvents(projectileEvents);
+    this.enemyRenderer?.playEvents(enemyFrame.events);
+    this.enemyDartRenderer?.playEvents(enemyDartEvents);
     this.projectileRenderer?.update(delta, this.projectiles.getActiveArrows());
+    this.enemyDartRenderer?.update(delta, this.enemyDarts.getActiveDarts());
+    this.enemyRenderer?.update(time, delta, this.enemies.getActiveEnemies());
     this.playerRenderer?.update(time, delta, playerFrame.state);
   }
 
@@ -103,6 +148,42 @@ export class CombatRoomScene extends Phaser.Scene {
     }
   }
 
+  private handleEnemyEvents(events: ReturnType<DartGooberSystem['update']>['events']) {
+    for (const event of events) {
+      if (event.type === 'enemy-dart-fired') {
+        this.enemyDarts.fireDart(event);
+        continue;
+      }
+
+      if (event.type === 'dart-goober-hit') {
+        this.cameras.main.shake(35, 0.0008);
+        continue;
+      }
+
+      if (event.type === 'dart-goober-killed') {
+        this.cameras.main.shake(70, 0.0015);
+        continue;
+      }
+
+      if (event.type === 'dart-goober-encounter-cleared') {
+        this.applyRoomState(clearCombatRoom(this.roomState));
+      }
+    }
+  }
+
+  private handleEnemyDartEvents(
+    events: ReturnType<EnemyDartProjectileSystem['update']>
+  ) {
+    for (const event of events) {
+      if (event.type !== 'enemy-dart-hit-player') {
+        continue;
+      }
+
+      this.player.markHit();
+      this.cameras.main.shake(45, 0.001);
+    }
+  }
+
   private updateRoomTrigger() {
     if (this.roomState.phase !== 'open') {
       return;
@@ -119,6 +200,14 @@ export class CombatRoomScene extends Phaser.Scene {
     }
   }
 
+  private updateEnemyEncounter() {
+    if (this.roomState.phase !== 'combat' || this.enemies.hasEncounterStarted()) {
+      return;
+    }
+
+    this.enemies.startEncounter(referenceCombatRoom.spawnPoints);
+  }
+
   private applyRoomState(state: CombatRoomState) {
     this.roomState = state;
     this.roomRenderer?.setState(this.roomState);
@@ -133,6 +222,12 @@ export class CombatRoomScene extends Phaser.Scene {
     this.playerRenderer = undefined;
     this.projectileRenderer?.destroy();
     this.projectileRenderer = undefined;
+    this.enemyRenderer?.destroy();
+    this.enemyRenderer = undefined;
+    this.enemyDartRenderer?.destroy();
+    this.enemyDartRenderer = undefined;
     this.projectiles.clear();
+    this.enemyDarts.clear();
+    this.enemies.clear();
   }
 }
