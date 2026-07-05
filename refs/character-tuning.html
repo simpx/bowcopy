@@ -421,8 +421,8 @@
         name: "Bowbert",
         status: "可调",
         reference: "asset-crops/player/bowbert_close_reference.png",
-        image: "../assets/characters/bowbert/bowbert-body-skill-v1-trimmed.png",
-        note: "怎么调：先点右侧“站立/走路/攻击”看状态，再打开身体、眼睛或弓分组微调。中间是运行时效果，满意后复制参数。"
+        image: "../assets/characters/bowbert/bowbert-base-ai-v2-trimmed.png",
+        note: "现在是拆层角色：固定 AI base 图已经包含身体和完整眼睛；runtime 只保留弓和动作参数。"
       },
       {
         id: "dartGoober",
@@ -479,23 +479,18 @@
     const initialState = {
       bowbert: {
         architecture: {
-          fixedAiImage: "body",
-          attachments: ["runtime eyes", "procedural branch bow"],
-          runtimeGaze: "attached-eye-pupils",
+          fixedAiImage: "body-with-eyes",
+          attachments: ["procedural branch bow"],
+          runtimeGaze: "baked-static-eyes",
           motionParams: ["idle", "walk", "attack", "hit", "dodge"]
         },
         body: {
-          imageSize: { width: 654, height: 714 },
-          scale: 0.12,
+          imageSize: { width: 854, height: 878 },
+          scale: 0.095,
           y: -14,
           shadowWidth: 64,
           shadowHeight: 18,
           shadowY: 25
-        },
-        eyes: {
-          left: { x: 0.9403, y: 0.6001, outerRadius: 0.167, whiteRatio: 0.802, pupilRatio: 0.52 },
-          right: { x: 0.0999, y: 0.6001, outerRadius: 0.167, whiteRatio: 0.802, pupilRatio: 0.52 },
-          pupilOffsetScale: { x: 0.165, y: 0.11 }
         },
         bow: {
           texture: { width: 360, height: 420, anchorX: 180, anchorY: 210, drawScale: 0.58 },
@@ -674,24 +669,7 @@
           ]
         },
         {
-          title: "3. 眼睛",
-          fields: [
-            ["eyes.left.x", "Left X", -0.2, 1.2, 0.001],
-            ["eyes.left.y", "Left Y", -0.2, 1.2, 0.001],
-            ["eyes.left.outerRadius", "Left radius", 0.04, 0.28, 0.001],
-            ["eyes.left.whiteRatio", "Left white", 0.5, 0.92, 0.001],
-            ["eyes.left.pupilRatio", "Left pupil", 0.14, 0.56, 0.001],
-            ["eyes.right.x", "Right X", -0.2, 1.2, 0.001],
-            ["eyes.right.y", "Right Y", -0.2, 1.2, 0.001],
-            ["eyes.right.outerRadius", "Right radius", 0.04, 0.28, 0.001],
-            ["eyes.right.whiteRatio", "Right white", 0.5, 0.92, 0.001],
-            ["eyes.right.pupilRatio", "Right pupil", 0.14, 0.56, 0.001],
-            ["eyes.pupilOffsetScale.x", "Pupil X", 0, 0.32, 0.001],
-            ["eyes.pupilOffsetScale.y", "Pupil Y", 0, 0.24, 0.001]
-          ]
-        },
-        {
-          title: "4. 弓",
+          title: "3. 弓",
           fields: [
             ["bow.placement.scale", "Bow scale", 0.08, 0.42, 0.001],
             ["bow.placement.distance", "Distance", 0, 95, 0.1],
@@ -1166,6 +1144,21 @@
     }
 
     function normalizeState() {
+      normalizeBowbertState();
+      normalizeDartGooberState();
+    }
+
+    function normalizeBowbertState() {
+      const bowbert = state.bowbert;
+      if (!bowbert) return;
+
+      bowbert.architecture = structuredClone(initialState.bowbert.architecture);
+      bowbert.body.imageSize = structuredClone(initialState.bowbert.body.imageSize);
+      bowbert.body.scale = initialState.bowbert.body.scale;
+      delete bowbert.eyes;
+    }
+
+    function normalizeDartGooberState() {
       const dart = state.dartGoober;
       if (!dart) return;
 
@@ -1263,40 +1256,7 @@
       }
 
       drawBowbertBow(cfg, aim, aimAngle, cfg.preview.recoil, t);
-      drawBowbertEyes(cfg, bodyX, bodyY, scaleX, scaleY, aim);
       ctx.restore();
-    }
-
-    function drawBowbertEyes(cfg, bodyX, bodyY, scaleX, scaleY, aim) {
-      for (const name of ["left", "right"]) {
-        const eye = cfg.eyes[name];
-        const x = bodyX + (eye.x - 0.5) * cfg.body.imageSize.width * scaleX;
-        const y = bodyY + (eye.y - 0.5) * cfg.body.imageSize.height * scaleY;
-        const r = eye.outerRadius * cfg.body.imageSize.width * scaleX;
-        const whiteR = r * eye.whiteRatio;
-        const pupilR = whiteR * eye.pupilRatio;
-        const len = Math.hypot(aim.x, aim.y);
-        const aimScale = len > 1 ? 1 / len : 1;
-
-        ctx.fillStyle = "#090b08";
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#f7f2df";
-        ctx.beginPath();
-        ctx.arc(x, y, whiteR, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#151510";
-        ctx.beginPath();
-        ctx.arc(
-          x + aim.x * aimScale * r * 2 * cfg.eyes.pupilOffsetScale.x,
-          y + aim.y * aimScale * r * 2 * cfg.eyes.pupilOffsetScale.y,
-          pupilR,
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
-      }
     }
 
     function drawBowbertBow(cfg, aim, aimAngle, recoil, timeSeconds) {

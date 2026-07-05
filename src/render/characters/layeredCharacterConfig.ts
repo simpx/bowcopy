@@ -1,9 +1,9 @@
 import dartGooberBaseUrl from '../../../assets/characters/dart-goober/dart-goober-base-ai-v1-trimmed.png';
-import bowbertBodyUrl from '../../../assets/characters/bowbert/bowbert-body-skill-v1-trimmed.png';
+import bowbertBaseUrl from '../../../assets/characters/bowbert/bowbert-base-ai-v2-trimmed.png';
 
 export type CharacterBaseSource = 'fixed-ai-image';
 export type CharacterAttachmentSource = 'runtime-shape' | 'procedural-canvas' | 'baked-into-base';
-export type CharacterGazeMode = 'attached-eye-pupils' | 'embedded-eye-pupils';
+export type CharacterGazeMode = 'attached-eye-pupils' | 'embedded-eye-pupils' | 'baked-static-eyes';
 
 export type EyeName = 'left' | 'right';
 
@@ -55,17 +55,17 @@ export const BOWBERT_CHARACTER = {
   id: 'bowbert',
   base: {
     source: 'fixed-ai-image',
-    textureKey: 'bowbert-body-skill-v1-trimmed',
-    imageUrl: bowbertBodyUrl,
-    imageSize: { width: 654, height: 714 },
-    scale: 0.12,
+    textureKey: 'bowbert-base-ai-v2-trimmed',
+    imageUrl: bowbertBaseUrl,
+    imageSize: { width: 854, height: 878 },
+    scale: 0.095,
     y: -14,
     shadow: { width: 64, height: 18, y: 25 }
   },
   attachments: {
     eyes: {
-      source: 'runtime-shape',
-      role: 'large external eyeballs'
+      source: 'baked-into-base',
+      role: 'large external eyeballs baked into the fixed image'
     },
     bow: {
       source: 'procedural-canvas',
@@ -73,7 +73,7 @@ export const BOWBERT_CHARACTER = {
     }
   },
   gaze: {
-    mode: 'attached-eye-pupils',
+    mode: 'baked-static-eyes',
     eyes: {
       left: { x: 0.9403, y: 0.6001, outerRadius: 0.167, whiteRatio: 0.802, pupilRatio: 0.52 },
       right: { x: 0.0999, y: 0.6001, outerRadius: 0.167, whiteRatio: 0.802, pupilRatio: 0.52 }

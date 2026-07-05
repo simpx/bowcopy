@@ -59,7 +59,7 @@ Use attachments when a part naturally floats on top of the body. Bake it into th
 
 Current layered character assets:
 
-- `characters/bowbert/bowbert-body-skill-v1-trimmed.png`: fixed body image; eyes and bow are runtime attachments.
+- `characters/bowbert/bowbert-base-ai-v2-trimmed.png`: fixed body image with baked eyes; bow is a runtime attachment.
 - `characters/dart-goober/dart-goober-base-ai-v1-trimmed.png`: fixed body image with embedded eye sockets; black gaze shapes are runtime generated.
 
 ## First Asset Batch

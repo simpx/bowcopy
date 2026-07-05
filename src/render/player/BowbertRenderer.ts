@@ -1,6 +1,11 @@
 import Phaser from 'phaser';
 
-import { BOWBERT_CHARACTER, type AttachedEyeTuning, type EyeName } from '../characters/layeredCharacterConfig';
+import {
+  BOWBERT_CHARACTER,
+  type AttachedEyeTuning,
+  type CharacterAttachmentSource,
+  type EyeName
+} from '../characters/layeredCharacterConfig';
 import type { BowbertPlayerState, SimVector } from '../../sim/player';
 import {
   BOWBERT_BRANCH_BOW_TUNING,
@@ -29,6 +34,8 @@ const EYE_NAMES: readonly EyeName[] = ['left', 'right'];
 const EYE_OUTER_COLOR = 0x090b08;
 const EYE_WHITE_COLOR = 0xf7f2df;
 const EYE_PUPIL_COLOR = 0x151510;
+const BOWBERT_EYE_SOURCE = BOWBERT_CHARACTER.attachments.eyes.source as CharacterAttachmentSource;
+const HAS_RUNTIME_EYES = BOWBERT_EYE_SOURCE === 'runtime-shape';
 
 const normalize = (vector: SimVector): SimVector => {
   const length = Math.hypot(vector.x, vector.y);
@@ -70,12 +77,14 @@ export class BowbertRenderer {
       .image(0, base.y, base.textureKey)
       .setOrigin(0.5)
       .setScale(base.scale);
-    this.eyeLayer = this.scene.add.container(0, base.y);
+    this.eyeLayer = HAS_RUNTIME_EYES ? this.scene.add.container(0, base.y) : undefined;
 
-    for (const name of EYE_NAMES) {
-      const eye = this.createEye(BOWBERT_CHARACTER.gaze.eyes[name]);
-      this.eyes[name] = eye;
-      this.eyeLayer.add(eye.container);
+    if (this.eyeLayer) {
+      for (const name of EYE_NAMES) {
+        const eye = this.createEye(BOWBERT_CHARACTER.gaze.eyes[name]);
+        this.eyes[name] = eye;
+        this.eyeLayer.add(eye.container);
+      }
     }
 
     this.bowTexture = this.createBowTexture();
@@ -87,12 +96,17 @@ export class BowbertRenderer {
       )
       .setScale(BOWBERT_BRANCH_BOW_TUNING.placement.scale);
 
-    this.container = this.scene.add.container(0, 0, [this.shadow, this.body, this.bow, this.eyeLayer]);
+    this.container = this.scene.add.container(0, 0, [
+      this.shadow,
+      this.body,
+      this.bow,
+      ...(this.eyeLayer ? [this.eyeLayer] : [])
+    ]);
     this.container.setDepth(80);
   }
 
   update(timeMs: number, deltaMs: number, state: BowbertPlayerState) {
-    if (!this.container || !this.body || !this.eyeLayer || !this.bow || !this.shadow) {
+    if (!this.container || !this.body || !this.bow || !this.shadow) {
       return;
     }
 
@@ -130,9 +144,11 @@ export class BowbertRenderer {
     );
     this.body.setScale(scaleX, scaleY);
     this.body.setTint(hitFlash > 0 ? 0xfff0d4 : 0xffffff);
-    this.eyeLayer.setPosition(this.body.x, this.body.y);
-    this.eyeLayer.setScale(scaleX, scaleY);
-    this.updateEyes(aim);
+    if (this.eyeLayer) {
+      this.eyeLayer.setPosition(this.body.x, this.body.y);
+      this.eyeLayer.setScale(scaleX, scaleY);
+      this.updateEyes(aim);
+    }
 
     this.updateBow(timeMs, aim, state, recoil);
     this.updateGhosts(deltaMs, state, dodgeWave);
