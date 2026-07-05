@@ -187,6 +187,12 @@
       gap: 6px;
     }
 
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+      gap: 6px;
+    }
+
     .emotion-help {
       padding: 10px 10px 0;
       color: var(--muted);
@@ -302,6 +308,13 @@
     button:hover {
       border-color: #6f806f;
       background: #334432;
+    }
+
+    button.is-active {
+      border-color: #d7b36b;
+      background: #4a3b20;
+      color: #ffe7a3;
+      font-weight: 700;
     }
 
     .copy-button {
@@ -768,6 +781,77 @@
       ["lowerLid", "Lower lid", 0, 0.82, 0.001]
     ];
 
+    const simpleEyeFields = [
+      ["pupilScale", "大小", 0.25, 1.35, 0.001],
+      ["eyeTiltAdd", "角度", -0.5, 0.5, 0.001],
+      ["pupilShiftX", "位置 X", -0.06, 0.06, 0.001],
+      ["pupilShiftY", "位置 Y", -0.06, 0.06, 0.001],
+      ["eyeScaleX", "宽度", 0.55, 1.45, 0.001],
+      ["eyeScaleY", "高度", 0.45, 1.45, 0.001]
+    ];
+
+    const motionFieldDefs = {
+      bowbert: [
+        ["body.scale", "角色大小", 0.06, 0.22, 0.001],
+        ["walk.idleSquash", "Idle 弹性", 0, 0.08, 0.001],
+        ["walk.walkSquash", "Walk 弹性", 0, 0.12, 0.001],
+        ["walk.walkBob", "Walk 上下", 0, 8, 0.1],
+        ["walk.hitSquash", "受击压缩", 0, 0.24, 0.001],
+        ["walk.dodgeStretch", "闪避拉伸", 0, 0.28, 0.001],
+        ["walk.recoilX", "攻击后坐 X", 0, 16, 0.1],
+        ["walk.recoilY", "攻击后坐 Y", 0, 12, 0.1]
+      ],
+      dartGoober: [
+        ["body.scale", "角色大小", 0.04, 0.18, 0.001],
+        ["motion.idleBob", "Idle 上下", 0, 8, 0.1],
+        ["motion.walkBob", "Walk 上下", 0, 8, 0.1],
+        ["motion.walkSquash", "Walk 弹性", 0, 0.16, 0.001],
+        ["motion.walkTilt", "Walk 倾斜", 0, 0.16, 0.001],
+        ["motion.hitScaleX", "受击横向", 0, 0.24, 0.001],
+        ["motion.hitScaleY", "受击纵向", 0, 0.16, 0.001],
+        ["attack.anticipation", "攻击蓄力", 0, 0.24, 0.001],
+        ["attack.chargeShift", "攻击后移", 0, 18, 0.1]
+      ]
+    };
+
+    const attachmentFieldDefs = {
+      bowbert: [
+        ["bow.placement.scale", "弓大小", 0.08, 0.42, 0.001],
+        ["bow.placement.distance", "弓距离", 0, 95, 0.1],
+        ["bow.placement.yDistance", "上下距离", 0, 85, 0.1],
+        ["bow.placement.offsetX", "偏移 X", -80, 80, 0.1],
+        ["bow.placement.offsetY", "偏移 Y", -80, 60, 0.1],
+        ["bow.placement.rotationOffsetDeg", "角度", -45, 45, 0.1],
+        ["bow.placement.drawDistance", "拉弓距离", 0, 24, 0.1]
+      ],
+      dartGoober: []
+    };
+
+    const directionPreviewDefs = [
+      ["center", "中", 0],
+      ["left", "左", 180],
+      ["right", "右", 0],
+      ["up", "上", -90],
+      ["down", "下", 90]
+    ];
+
+    const actionPreviewDefs = {
+      bowbert: [
+        ["idle", "Idle"],
+        ["walk", "Walk"],
+        ["action", "Attack"],
+        ["dodge", "Dodge"],
+        ["hit", "Hit"]
+      ],
+      dartGoober: [
+        ["idle", "Idle"],
+        ["walk", "Walk"],
+        ["action", "Attack"],
+        ["hit", "Hit"],
+        ["spawn", "Spawn"]
+      ]
+    };
+
     const legacyDartFaceKeys = [
       "eyeX",
       "eyeY",
@@ -936,10 +1020,9 @@
     }
 
     function renderControls() {
-      const defs = controlDefs[currentRole];
       controlsEl.innerHTML = "";
 
-      if (!defs) {
+      if (!state[currentRole]) {
         const empty = document.createElement("div");
         empty.className = "empty";
         empty.textContent = "这个角色目前只有参考图，还没有 runtime renderer。先实现角色渲染后，再在这里暴露调参项。";
@@ -951,39 +1034,12 @@
 
       const howto = document.createElement("div");
       howto.className = "howto";
-      howto.innerHTML = `<strong>怎么调</strong><span>1. 先点下面的状态按钮看站立、走路、攻击。2. 打开对应分组微调。3. 中间满意后点 Copy params 发给我。</span>`;
+      howto.innerHTML = `<strong>怎么调</strong><span>只看三块：眼神、动作、附件。先用按钮切预览状态，再改少量参数。满意后点 Copy params。</span>`;
       controlsEl.append(howto);
 
-      const topButtons = document.createElement("div");
-      topButtons.className = "quick-actions";
-      for (const [kind, label] of [["idle", "站立"], ["walk", "走路"], ["action", "攻击"]]) {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = label;
-        button.addEventListener("click", () => applyPreset(kind));
-        topButtons.append(button);
-      }
-      controlsEl.append(topButtons);
-
-      if (currentRole === "dartGoober") {
-        appendDartEyeEmotionControls();
-      }
-
-      for (const group of defs) {
-        const details = document.createElement("details");
-        details.open = group === defs[0];
-        const summary = document.createElement("summary");
-        summary.textContent = group.title;
-        const fields = document.createElement("div");
-        fields.className = "group-fields";
-
-        for (const [path, label, min, max, step] of group.fields) {
-          appendSliderRow(fields, path, label, min, max, step);
-        }
-
-        details.append(summary, fields);
-        controlsEl.append(details);
-      }
+      appendEyeSection();
+      appendMotionSection();
+      appendAttachmentSection();
 
       const reset = document.createElement("button");
       reset.type = "button";
@@ -1000,18 +1056,63 @@
       renderOutput();
     }
 
-    function appendDartEyeEmotionControls() {
-      const activeId = state.dartGoober.preview.eyeEmotion || "default";
+    function appendSection(title, note, open = false) {
       const details = document.createElement("details");
-      details.open = true;
+      details.open = open;
 
       const summary = document.createElement("summary");
-      const activeLabel = dartEyeEmotionDefs.find((item) => item.id === activeId)?.label ?? activeId;
-      summary.textContent = `当前眼神：${activeLabel}`;
+      summary.textContent = title;
 
-      const help = document.createElement("div");
-      help.className = "emotion-help";
-      help.textContent = "这里调 runtime 眼神：黑色瞳孔/眼神的偏移、缩放和眯眼。蓝色眼窝和白眼球已经烘进 AI base 图；位置锚点在下面的“runtime 眼神 anchor”里调。";
+      const body = document.createElement("div");
+      body.className = "group-fields";
+
+      if (note) {
+        const noteEl = document.createElement("div");
+        noteEl.className = "empty";
+        noteEl.textContent = note;
+        body.append(noteEl);
+      }
+
+      details.append(summary, body);
+      controlsEl.append(details);
+
+      return body;
+    }
+
+    function appendButtonGrid(parent, items, onClick, activeId) {
+      const row = document.createElement("div");
+      row.className = "button-grid";
+
+      for (const [id, label, value] of items) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        button.classList.toggle("is-active", id === activeId);
+        button.addEventListener("click", () => onClick(id, value));
+        row.append(button);
+      }
+
+      parent.append(row);
+    }
+
+    function appendEyeSection() {
+      if (currentRole !== "dartGoober") {
+        const body = appendSection(
+          "1. 眼神",
+          "这个角色的眼睛已经画进 AI base 图里。这里可以用方向按钮预览弓和朝向；如果要改眼睛本身，应该重新生成 base 图，或者之后再加 runtime 眼神层。",
+          true
+        );
+        appendDirectionPreview(body);
+        return;
+      }
+
+      const activeId = state.dartGoober.preview.eyeEmotion || "default";
+      const activeLabel = dartEyeEmotionDefs.find((item) => item.id === activeId)?.label ?? activeId;
+      const body = appendSection(
+        `1. 眼神：${activeLabel}`,
+        "类型决定当前表情；方向按钮只改预览朝向；下面只调大小、角度和位置。",
+        true
+      );
 
       const tabs = document.createElement("div");
       tabs.className = "emotion-tabs";
@@ -1028,15 +1129,54 @@
         });
         tabs.append(button);
       }
+      body.append(tabs);
 
-      const fields = document.createElement("div");
-      fields.className = "group-fields";
-      for (const [key, label, min, max, step] of dartEyeEmotionFields) {
-        appendSliderRow(fields, `gaze.emotions.${activeId}.${key}`, label, min, max, step);
+      appendDirectionPreview(body);
+
+      for (const [key, label, min, max, step] of simpleEyeFields) {
+        appendSliderRow(body, `gaze.emotions.${activeId}.${key}`, label, min, max, step);
+      }
+    }
+
+    function appendMotionSection() {
+      const body = appendSection("2. 动作", "先切换动作预览，再调对应的弹性、上下浮动、后坐或受击形变。", true);
+      appendButtonGrid(body, actionPreviewDefs[currentRole] ?? [], (id) => {
+        applyPreset(id);
+      });
+
+      for (const field of motionFieldDefs[currentRole] ?? []) {
+        appendSliderRow(body, ...field);
+      }
+    }
+
+    function appendAttachmentSection() {
+      const fields = attachmentFieldDefs[currentRole] ?? [];
+      const body = appendSection(
+        "3. 附件",
+        fields.length ? "附件是独立挂在角色上的 runtime 部件，比如 Bowbert 的弓。" : "这个角色当前没有独立附件。Goober 的眼窝已经烘进 base 图，攻击光效属于动作预览。",
+        false
+      );
+
+      if (currentRole === "bowbert") {
+        appendDirectionPreview(body);
       }
 
-      details.append(summary, help, tabs, fields);
-      controlsEl.append(details);
+      for (const field of fields) {
+        appendSliderRow(body, ...field);
+      }
+    }
+
+    function appendDirectionPreview(parent) {
+      appendButtonGrid(parent, directionPreviewDefs, (_id, deg) => {
+        if (currentRole === "bowbert") {
+          state.bowbert.preview.aimDeg = deg;
+        } else if (currentRole === "dartGoober") {
+          state.dartGoober.preview.facingDeg = deg;
+        }
+        syncInputs();
+        renderOutput();
+        saveState();
+      });
     }
 
     function appendOutputControls() {
@@ -1079,14 +1219,18 @@
         const presets = {
           idle: { aimDeg: 0, moveAmount: 0, drawProgress: 0, recoil: 0, dodge: 0, hit: 0 },
           walk: { aimDeg: 0, moveAmount: 0.85, drawProgress: 0, recoil: 0, dodge: 0, hit: 0 },
-          action: { aimDeg: -12, moveAmount: 0.25, drawProgress: 0.72, recoil: 0.16, dodge: 0, hit: 0 }
+          action: { aimDeg: -12, moveAmount: 0.25, drawProgress: 0.72, recoil: 0.16, dodge: 0, hit: 0 },
+          dodge: { aimDeg: 0, moveAmount: 0.9, drawProgress: 0, recoil: 0, dodge: 0.82, hit: 0 },
+          hit: { aimDeg: 0, moveAmount: 0, drawProgress: 0, recoil: 0, dodge: 0, hit: 0.86 }
         };
         Object.assign(state.bowbert.preview, presets[kind] ?? presets.idle);
       } else if (currentRole === "dartGoober") {
         const presets = {
           idle: { facingDeg: 0, moveAmount: 0, charge: 0, hit: 0, spawn: 1, eyeEmotion: "default" },
           walk: { facingDeg: 0, moveAmount: 0.85, charge: 0, hit: 0, spawn: 1, eyeEmotion: "alert" },
-          action: { facingDeg: -14, moveAmount: 0.2, charge: 0.82, hit: 0, spawn: 1, eyeEmotion: "aim" }
+          action: { facingDeg: -14, moveAmount: 0.2, charge: 0.82, hit: 0, spawn: 1, eyeEmotion: "aim" },
+          hit: { facingDeg: 0, moveAmount: 0.1, charge: 0, hit: 0.9, spawn: 1, eyeEmotion: "hit" },
+          spawn: { facingDeg: 0, moveAmount: 0, charge: 0, hit: 0, spawn: 0.38, eyeEmotion: "alert" }
         };
         Object.assign(state.dartGoober.preview, presets[kind] ?? presets.idle);
       }
