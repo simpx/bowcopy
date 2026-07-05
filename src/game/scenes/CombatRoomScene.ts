@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 
 import { DesktopInputAdapter } from '../../input/DesktopInputAdapter';
 import { InputController } from '../../input/InputController';
+import { PlayerHealth } from '../PlayerHealth';
+import { HeartsHud } from '../../ui/HeartsHud';
 import { TouchInputOverlay } from '../../ui/TouchInputOverlay';
 import { BowbertPlayerModel, type BowbertPlayerEvent } from '../../sim/player';
 import { DartGooberSystem } from '../../sim/enemies';
@@ -16,6 +18,7 @@ import {
 import { CombatRoomRenderer, preloadCombatRoomAssets } from '../../render/rooms';
 import { BowbertRenderer, preloadBowbertPlayerAssets } from '../../render/player';
 import { DartGooberRenderer, preloadDartGooberAssets } from '../../render/enemies';
+import { CombatFeedbackRenderer } from '../../render/feedback';
 import {
   ArrowProjectileRenderer,
   EnemyDartProjectileRenderer,
@@ -23,22 +26,35 @@ import {
   preloadEnemyDartProjectileAssets
 } from '../../render/projectiles';
 
+type CameraShakeKind = 'arrow-fire' | 'hit' | 'damage' | 'dodge' | 'room-clear';
+
+const CAMERA_SHAKES: Record<CameraShakeKind, { readonly durationMs: number; readonly intensity: number }> = {
+  'arrow-fire': { durationMs: 28, intensity: 0.0006 },
+  hit: { durationMs: 42, intensity: 0.001 },
+  damage: { durationMs: 90, intensity: 0.0032 },
+  dodge: { durationMs: 36, intensity: 0.0014 },
+  'room-clear': { durationMs: 130, intensity: 0.0018 }
+};
+
 export class CombatRoomScene extends Phaser.Scene {
   private readonly inputController = new InputController();
   private player = new BowbertPlayerModel({
     x: referenceCombatRoom.trigger.x - 132,
     y: referenceCombatRoom.trigger.y + 118
   });
+  private readonly playerHealth = new PlayerHealth(3);
   private readonly projectiles = new ArrowProjectileSystem();
   private readonly enemies = new DartGooberSystem();
   private readonly enemyDarts = new EnemyDartProjectileSystem();
   private desktopInput?: DesktopInputAdapter;
+  private heartsHud?: HeartsHud;
   private touchOverlay?: TouchInputOverlay;
   private roomRenderer?: CombatRoomRenderer;
   private playerRenderer?: BowbertRenderer;
   private projectileRenderer?: ArrowProjectileRenderer;
   private enemyRenderer?: DartGooberRenderer;
   private enemyDartRenderer?: EnemyDartProjectileRenderer;
+  private feedbackRenderer?: CombatFeedbackRenderer;
   private roomState: CombatRoomState = createInitialCombatRoomState();
 
   constructor() {
@@ -65,6 +81,7 @@ export class CombatRoomScene extends Phaser.Scene {
     this.projectiles.clear();
     this.enemies.clear();
     this.enemyDarts.clear();
+    this.playerHealth.reset();
 
     this.roomRenderer = new CombatRoomRenderer(this, referenceCombatRoom);
     this.roomRenderer.create();
@@ -79,8 +96,11 @@ export class CombatRoomScene extends Phaser.Scene {
     this.playerRenderer = new BowbertRenderer(this);
     this.playerRenderer.create();
     this.playerRenderer.update(0, 0, this.player.state);
+    this.feedbackRenderer = new CombatFeedbackRenderer(this);
+    this.feedbackRenderer.create();
 
     this.desktopInput = new DesktopInputAdapter(this, this.inputController, () => this.player.state.position);
+    this.createHeartsHud();
     this.createTouchInput();
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.disposeRuntime, this);
@@ -98,6 +118,7 @@ export class CombatRoomScene extends Phaser.Scene {
     this.updateEnemyEncounter();
 
     const projectileEvents = this.projectiles.update(delta, referenceCombatRoom.bounds);
+    this.handleProjectileEvents(projectileEvents);
     const enemyFrame = this.enemies.update(
       delta,
       referenceCombatRoom.bounds,
@@ -126,6 +147,7 @@ export class CombatRoomScene extends Phaser.Scene {
     this.enemyDartRenderer?.update(delta, this.enemyDarts.getActiveDarts());
     this.enemyRenderer?.update(time, delta, this.enemies.getActiveEnemies());
     this.playerRenderer?.update(time, delta, playerFrame.state);
+    this.feedbackRenderer?.update(delta);
   }
 
   private createTouchInput() {
@@ -136,37 +158,63 @@ export class CombatRoomScene extends Phaser.Scene {
     }
   }
 
+  private createHeartsHud() {
+    const parent = this.game.canvas.parentElement;
+
+    if (parent) {
+      this.heartsHud = new HeartsHud(parent, this.playerHealth.state);
+    }
+  }
+
   private handlePlayerEvents(events: readonly BowbertPlayerEvent[]) {
     for (const event of events) {
       if (event.type === 'arrow-fired') {
         this.projectiles.fireArrow(event);
-        this.cameras.main.shake(35, 0.0008);
+        this.shakeCamera('arrow-fire');
         continue;
       }
 
-      this.cameras.main.shake(45, 0.0011);
+      this.feedbackRenderer?.playDodge(this.player.state.position, event.direction);
+      this.shakeCamera('dodge');
+    }
+  }
+
+  private handleProjectileEvents(events: ReturnType<ArrowProjectileSystem['update']>) {
+    for (const event of events) {
+      if (event.type === 'arrow-hit-boundary') {
+        this.feedbackRenderer?.playArrowWall(this.clampToRoomFeedbackPosition(event.position));
+      }
     }
   }
 
   private handleEnemyEvents(events: ReturnType<DartGooberSystem['update']>['events']) {
     for (const event of events) {
+      if (event.type === 'dart-goober-spawned') {
+        this.feedbackRenderer?.playEnemySpawn(event.position);
+        continue;
+      }
+
       if (event.type === 'enemy-dart-fired') {
         this.enemyDarts.fireDart(event);
         continue;
       }
 
       if (event.type === 'dart-goober-hit') {
-        this.cameras.main.shake(35, 0.0008);
+        this.feedbackRenderer?.playArrowEnemy(event.position, event.damage);
+        this.shakeCamera('hit');
         continue;
       }
 
       if (event.type === 'dart-goober-killed') {
-        this.cameras.main.shake(70, 0.0015);
+        this.feedbackRenderer?.playEnemyDeath(event.position);
+        this.shakeCamera('hit');
         continue;
       }
 
       if (event.type === 'dart-goober-encounter-cleared') {
         this.applyRoomState(clearCombatRoom(this.roomState));
+        this.feedbackRenderer?.playRoomClear(referenceCombatRoom.bounds);
+        this.shakeCamera('room-clear');
       }
     }
   }
@@ -179,8 +227,18 @@ export class CombatRoomScene extends Phaser.Scene {
         continue;
       }
 
+      if (this.player.state.dodge.invulnerableMs > 0) {
+        this.feedbackRenderer?.playDodge(this.player.state.position, this.player.state.dodge.direction);
+        this.shakeCamera('dodge');
+        continue;
+      }
+
       this.player.markHit();
-      this.cameras.main.shake(45, 0.001);
+      this.playerHealth.damage(event.damage);
+      this.heartsHud?.update(this.playerHealth.state);
+      this.heartsHud?.flashDamage();
+      this.feedbackRenderer?.playDamage(this.player.state.position, event.damage);
+      this.shakeCamera('damage');
     }
   }
 
@@ -213,9 +271,27 @@ export class CombatRoomScene extends Phaser.Scene {
     this.roomRenderer?.setState(this.roomState);
   }
 
+  private clampToRoomFeedbackPosition(position: { readonly x: number; readonly y: number }) {
+    const { bounds } = referenceCombatRoom;
+    const readableMargin = bounds.border + 54;
+
+    return {
+      x: Phaser.Math.Clamp(position.x, bounds.x + readableMargin, bounds.x + bounds.width - readableMargin),
+      y: Phaser.Math.Clamp(position.y, bounds.y + readableMargin, bounds.y + bounds.height - readableMargin)
+    };
+  }
+
+  private shakeCamera(kind: CameraShakeKind) {
+    const shake = CAMERA_SHAKES[kind];
+
+    this.cameras.main.shake(shake.durationMs, shake.intensity);
+  }
+
   private disposeRuntime() {
     this.desktopInput?.dispose();
     this.desktopInput = undefined;
+    this.heartsHud?.dispose();
+    this.heartsHud = undefined;
     this.touchOverlay?.dispose();
     this.touchOverlay = undefined;
     this.playerRenderer?.destroy();
@@ -226,6 +302,8 @@ export class CombatRoomScene extends Phaser.Scene {
     this.enemyRenderer = undefined;
     this.enemyDartRenderer?.destroy();
     this.enemyDartRenderer = undefined;
+    this.feedbackRenderer?.destroy();
+    this.feedbackRenderer = undefined;
     this.projectiles.clear();
     this.enemyDarts.clear();
     this.enemies.clear();
