@@ -1,0 +1,9 @@
+# Local capture scratch files
+*.tmp.mp4
+*.tmp.webm
+refs/raw/
+
+# Common local noise
+.DS_Store
+node_modules/
+dist/
