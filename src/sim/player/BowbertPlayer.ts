@@ -176,7 +176,7 @@ export class BowbertPlayerModel {
       return;
     }
 
-    if (isActiveVector(moveDirection)) {
+    if (snapshot.source === 'desktop' && isActiveVector(moveDirection)) {
       this.state.facing = moveDirection;
       this.state.aim = moveDirection;
       return;

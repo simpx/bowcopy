@@ -22,6 +22,7 @@
 - `refs/asset-crops/`：主角、弓和敌人的低清裁切参考。
 - `docs/replication-plan.md`：复刻实现路线。
 - `docs/mvp-spec.md`：第一版可玩 MVP 规格。
+- `docs/character-rig.md`：角色 rig、眼神模板和批量素材生产工作流。
 
 注意：`refs/` 中的截图来自第三方视频，仅用于本学习仓库的研究索引，不应作为最终游戏素材发布或再分发。
 

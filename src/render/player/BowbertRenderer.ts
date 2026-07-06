@@ -127,7 +127,7 @@ export class BowbertRenderer {
     const scaleX = base.scale * (1 + Math.abs(bodySquash) + dodgeStretch);
     const scaleY = base.scale * (1 - bodySquash - dodgeStretch * 0.52);
 
-    this.container.setPosition(state.position.x, state.position.y);
+    this.container.setPosition(Math.round(state.position.x), Math.round(state.position.y));
     this.container.setDepth(70 + state.position.y / 1000);
     this.container.setRotation(
       Phaser.Math.Clamp(state.velocity.x / 380, -1, 1) * motion.tiltVelocity +

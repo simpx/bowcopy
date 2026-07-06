@@ -18,6 +18,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   },
   render: {
     antialias: true,
-    pixelArt: false
+    pixelArt: false,
+    roundPixels: true
   }
 };

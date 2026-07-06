@@ -158,6 +158,8 @@ type JoystickOptions = {
 
 const makeVector = (x: number, y: number): InputVector => ({ x, y });
 
+const isActiveVector = (vector: InputVector) => Math.hypot(vector.x, vector.y) > 0;
+
 const ensureTouchInputStyles = () => {
   if (document.getElementById(TOUCH_INPUT_STYLE_ID)) {
     return;
@@ -333,8 +335,10 @@ export class TouchInputOverlay {
       eventRoot: aimZone,
       mode: 'direction',
       centerMode: 'pointer',
-      onStart: () => input.setFiring(true, 'touch'),
-      onMove: (vector) => input.setAimVector(vector, 'touch'),
+      onMove: (vector) => {
+        input.setAimVector(vector, 'touch');
+        input.setFiring(isActiveVector(vector), 'touch');
+      },
       onEnd: () => input.releaseAim('touch')
     });
 

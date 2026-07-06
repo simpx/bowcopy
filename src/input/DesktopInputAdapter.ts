@@ -49,7 +49,11 @@ export class DesktopInputAdapter {
     this.scene.input.off(Phaser.Input.Events.POINTER_DOWN, this.handlePointerKnown);
   }
 
-  private readonly handlePointerKnown = () => {
+  private readonly handlePointerKnown = (pointer: Phaser.Input.Pointer) => {
+    if (pointer !== this.scene.input.mousePointer) {
+      return;
+    }
+
     this.pointerIsKnown = true;
   };
 
@@ -72,23 +76,21 @@ export class DesktopInputAdapter {
   }
 
   private updateMouseAimAndFire() {
-    const pointer = this.scene.input.activePointer;
+    const pointer = this.scene.input.mousePointer;
 
-    if (!pointer) {
+    if (!pointer || !this.pointerIsKnown) {
       return;
     }
 
-    if (this.pointerIsKnown) {
-      const origin = this.getAimOrigin();
+    const origin = this.getAimOrigin();
 
-      this.input.setAimVector(
-        {
-          x: pointer.worldX - origin.x,
-          y: pointer.worldY - origin.y
-        },
-        'desktop'
-      );
-    }
+    this.input.setAimVector(
+      {
+        x: pointer.worldX - origin.x,
+        y: pointer.worldY - origin.y
+      },
+      'desktop'
+    );
 
     const firing = pointer.leftButtonDown();
 

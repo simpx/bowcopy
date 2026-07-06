@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { GAME_SIZE } from '../constants';
+import { applyHiDpiCanvas } from '../renderScale';
 import { DesktopInputAdapter } from '../../input/DesktopInputAdapter';
 import { InputController } from '../../input/InputController';
 import { PlayerHealth } from '../PlayerHealth';
@@ -79,7 +80,7 @@ export class CombatRoomScene extends Phaser.Scene {
 
   create() {
     this.cameras.main.setBackgroundColor('#0b120d');
-    this.cameras.main.setRoundPixels(false);
+    this.cameras.main.setRoundPixels(true);
 
     this.roomState = createInitialCombatRoomState();
     this.player = new BowbertPlayerModel({
@@ -306,14 +307,13 @@ export class CombatRoomScene extends Phaser.Scene {
 
   private configureCamera() {
     const camera = this.cameras.main;
-    const viewportWidth = Math.max(1, this.scale.width || GAME_SIZE.width);
-    const viewportHeight = Math.max(1, this.scale.height || GAME_SIZE.height);
+    const viewport = applyHiDpiCanvas(this);
     const zoom = Math.max(
-      viewportWidth / CAMERA_FRAME.width,
-      viewportHeight / CAMERA_FRAME.height
-    );
+      viewport.cssWidth / CAMERA_FRAME.width,
+      viewport.cssHeight / CAMERA_FRAME.height
+    ) * viewport.pixelRatio;
 
-    camera.setViewport(0, 0, viewportWidth, viewportHeight);
+    camera.setViewport(0, 0, viewport.renderWidth, viewport.renderHeight);
     camera.setZoom(zoom);
     camera.setBounds(CAMERA_FRAME.x, CAMERA_FRAME.y, CAMERA_FRAME.width, CAMERA_FRAME.height);
   }
