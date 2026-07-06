@@ -434,8 +434,8 @@
         name: "Bowbert",
         status: "可调",
         reference: "asset-crops/player/bowbert_close_reference.png",
-        image: "../assets/characters/bowbert/bowbert-base-ai-v2-trimmed.png",
-        note: "现在是拆层角色：固定 AI base 图已经包含身体和完整眼睛；runtime 只保留弓和动作参数。"
+        image: "../assets/characters/bowbert/bowbert-base-ai-v2-eye-whites.png",
+        note: "现在是拆层角色：固定 AI base 图保留身体和白眼；runtime 叠加黑瞳、弓和动作参数。"
       },
       {
         id: "dartGoober",
@@ -492,9 +492,9 @@
     const initialState = {
       bowbert: {
         architecture: {
-          fixedAiImage: "body-with-eyes",
+          fixedAiImage: "body-with-eye-whites",
           attachments: ["procedural branch bow"],
-          runtimeGaze: "baked-static-eyes",
+          runtimeGaze: "attached-eye-pupils",
           motionParams: ["idle", "walk", "attack", "hit", "dodge"]
         },
         body: {
@@ -536,7 +536,98 @@
           drawProgress: 0,
           recoil: 0,
           dodge: 0,
-          hit: 0
+          hit: 0,
+          eyeEmotion: "default"
+        },
+        gaze: {
+          mode: "attached-eye-pupils",
+          eyes: {
+            left: { x: 0.164, y: 0.572, outerRadius: 0.135, whiteRatio: 0.82, pupilRatio: 0.62 },
+            right: { x: 0.842, y: 0.573, outerRadius: 0.135, whiteRatio: 0.82, pupilRatio: 0.62 }
+          },
+          pupilOffsetScale: { x: 0.105, y: 0.075 },
+          emotions: {
+            default: {
+              eyeTiltAdd: 0,
+              eyeScaleX: 1,
+              eyeScaleY: 1,
+              pupilScale: 1,
+              pupilShiftX: 0,
+              pupilShiftY: 0,
+              upperLid: 0,
+              lowerLid: 0
+            },
+            aim: {
+              eyeTiltAdd: 0,
+              eyeScaleX: 0.96,
+              eyeScaleY: 0.96,
+              pupilScale: 0.98,
+              pupilShiftX: 0,
+              pupilShiftY: -0.004,
+              upperLid: 0,
+              lowerLid: 0
+            },
+            focused: {
+              eyeTiltAdd: 0,
+              eyeScaleX: 1.12,
+              eyeScaleY: 0.68,
+              pupilScale: 0.92,
+              pupilShiftX: 0,
+              pupilShiftY: -0.002,
+              upperLid: 0.18,
+              lowerLid: 0.04
+            },
+            alert: {
+              eyeTiltAdd: 0,
+              eyeScaleX: 0.82,
+              eyeScaleY: 0.82,
+              pupilScale: 0.72,
+              pupilShiftX: 0,
+              pupilShiftY: -0.006,
+              upperLid: 0,
+              lowerLid: 0
+            },
+            scared: {
+              eyeTiltAdd: 0,
+              eyeScaleX: 0.68,
+              eyeScaleY: 0.68,
+              pupilScale: 0.58,
+              pupilShiftX: 0,
+              pupilShiftY: -0.012,
+              upperLid: 0,
+              lowerLid: 0
+            },
+            confused: {
+              eyeTiltAdd: 0.18,
+              eyeScaleX: 0.92,
+              eyeScaleY: 1.08,
+              pupilScale: 0.9,
+              pupilShiftX: 0.004,
+              pupilShiftY: -0.002,
+              upperLid: 0.02,
+              lowerLid: 0
+            },
+            squint: {
+              eyeTiltAdd: 0,
+              eyeScaleX: 1.04,
+              eyeScaleY: 0.34,
+              pupilScale: 0.74,
+              pupilShiftX: 0,
+              pupilShiftY: 0.012,
+              upperLid: 0.56,
+              lowerLid: 0.12
+            },
+            hit: {
+              eyeTiltAdd: 0,
+              eyeScaleX: 0.9,
+              eyeScaleY: 0.58,
+              pupilScale: 0.82,
+              pupilShiftX: -0.004,
+              pupilShiftY: -0.006,
+              upperLid: 0.22,
+              lowerLid: 0.1
+            }
+          }
         }
       },
       dartGoober: {
@@ -578,6 +669,7 @@
         },
         preview: {
           facingDeg: 0,
+          lookAmount: 0,
           moveAmount: 0,
           charge: 0,
           hit: 0,
@@ -596,34 +688,50 @@
           },
           emotions: {
             default: {
-              eyeTiltAdd: 0.05,
-              eyeScaleX: 1.12,
-              eyeScaleY: 0.82,
-              pupilScale: 1.18,
+              shape: "cut-ellipse",
+              eyeTiltAdd: 0,
+              eyeScaleX: 1.32,
+              eyeScaleY: 1.35,
+              pupilScale: 1.12,
               pupilShiftX: 0,
-              pupilShiftY: 0,
-              upperLid: 0.08,
-              lowerLid: 0.02
+              pupilShiftY: 0.01,
+              cutSlope: 1.6,
+              cutOffset: -0.42,
+              upperLid: 0,
+              lowerLid: 0
             },
             angry: {
-              eyeTiltAdd: 0.08,
-              eyeScaleX: 1.1,
-              eyeScaleY: 0.72,
-              pupilScale: 1.28,
-              pupilShiftX: 0.01,
-              pupilShiftY: 0.004,
-              upperLid: 0.28,
-              lowerLid: 0.03
+              shape: "cut-ellipse",
+              eyeTiltAdd: -0.015,
+              eyeScaleX: 1.4,
+              eyeScaleY: 1.42,
+              pupilScale: 1.16,
+              pupilShiftX: 0,
+              pupilShiftY: 0.012,
+              cutSlope: 1.72,
+              cutOffset: -0.46,
+              upperLid: 0,
+              lowerLid: 0
             },
             alert: {
-              eyeTiltAdd: -0.03,
-              eyeScaleX: 0.88,
-              eyeScaleY: 0.88,
-              pupilScale: 0.78,
+              eyeTiltAdd: 0,
+              eyeScaleX: 0.82,
+              eyeScaleY: 0.9,
+              pupilScale: 0.62,
               pupilShiftX: 0,
               pupilShiftY: 0,
               upperLid: 0,
               lowerLid: 0
+            },
+            scared: {
+              eyeTiltAdd: 0.01,
+              eyeScaleX: 0.66,
+              eyeScaleY: 0.76,
+              pupilScale: 0.46,
+              pupilShiftX: -0.006,
+              pupilShiftY: -0.014,
+              upperLid: 0.04,
+              lowerLid: 0.02
             },
             hit: {
               eyeTiltAdd: 0.02,
@@ -636,14 +744,17 @@
               lowerLid: 0.18
             },
             aim: {
-              eyeTiltAdd: 0.06,
-              eyeScaleX: 1.05,
-              eyeScaleY: 0.7,
-              pupilScale: 1.12,
-              pupilShiftX: 0.014,
-              pupilShiftY: 0,
-              upperLid: 0.22,
-              lowerLid: 0.05
+              shape: "cut-ellipse",
+              eyeTiltAdd: 0.01,
+              eyeScaleX: 1.18,
+              eyeScaleY: 1.2,
+              pupilScale: 1.02,
+              pupilShiftX: 0,
+              pupilShiftY: 0.006,
+              cutSlope: 1.85,
+              cutOffset: -0.38,
+              upperLid: 0,
+              lowerLid: 0
             }
           }
         }
@@ -762,19 +873,31 @@
       ]
     };
 
-    const dartEyeEmotionDefs = [
+    const bowbertEyeEmotionDefs = [
       { id: "default", label: "默认" },
-      { id: "angry", label: "愤怒" },
+      { id: "aim", label: "瞄准" },
+      { id: "focused", label: "坚定" },
       { id: "alert", label: "警觉" },
+      { id: "scared", label: "惊恐" },
+      { id: "confused", label: "疑惑" },
+      { id: "squint", label: "眯眼" },
+      { id: "hit", label: "受击" }
+    ];
+
+    const dartEyeEmotionDefs = [
+      { id: "default", label: "原图怒脸" },
+      { id: "angry", label: "愤怒强化" },
+      { id: "alert", label: "警觉" },
+      { id: "scared", label: "惊恐" },
       { id: "hit", label: "受击" },
       { id: "aim", label: "瞄准" }
     ];
 
     const dartEyeEmotionFields = [
       ["eyeTiltAdd", "Tilt +", -0.5, 0.5, 0.001],
-      ["eyeScaleX", "Eye X scale", 0.55, 1.45, 0.001],
-      ["eyeScaleY", "Eye Y scale", 0.45, 1.45, 0.001],
-      ["pupilScale", "Pupil scale", 0.25, 1.35, 0.001],
+      ["eyeScaleX", "Eye X scale", 0.55, 1.9, 0.001],
+      ["eyeScaleY", "Eye Y scale", 0.45, 1.8, 0.001],
+      ["pupilScale", "Pupil scale", 0.25, 1.6, 0.001],
       ["pupilShiftX", "Pupil X bias", -0.06, 0.06, 0.001],
       ["pupilShiftY", "Pupil Y bias", -0.06, 0.06, 0.001],
       ["upperLid", "Upper lid", 0, 0.82, 0.001],
@@ -782,12 +905,17 @@
     ];
 
     const simpleEyeFields = [
-      ["pupilScale", "大小", 0.25, 1.35, 0.001],
+      ["pupilScale", "大小", 0.25, 1.6, 0.001],
       ["eyeTiltAdd", "角度", -0.5, 0.5, 0.001],
       ["pupilShiftX", "位置 X", -0.06, 0.06, 0.001],
       ["pupilShiftY", "位置 Y", -0.06, 0.06, 0.001],
-      ["eyeScaleX", "宽度", 0.55, 1.45, 0.001],
-      ["eyeScaleY", "高度", 0.45, 1.45, 0.001]
+      ["eyeScaleX", "宽度", 0.55, 1.9, 0.001],
+      ["eyeScaleY", "高度", 0.45, 1.8, 0.001]
+    ];
+
+    const cutEllipseFields = [
+      ["cutSlope", "切线角度", 0.2, 3.4, 0.001],
+      ["cutOffset", "切线位置", -0.8, 0.2, 0.001]
     ];
 
     const motionFieldDefs = {
@@ -828,11 +956,11 @@
     };
 
     const directionPreviewDefs = [
-      ["center", "中", 0],
-      ["left", "左", 180],
-      ["right", "右", 0],
-      ["up", "上", -90],
-      ["down", "下", 90]
+      ["center", "中", { deg: 0, amount: 0 }],
+      ["left", "左", { deg: 180, amount: 1 }],
+      ["right", "右", { deg: 0, amount: 1 }],
+      ["up", "上", { deg: -90, amount: 1 }],
+      ["down", "下", { deg: 90, amount: 1 }]
     ];
 
     const actionPreviewDefs = {
@@ -865,6 +993,7 @@
       "muzzleInnerRatio"
     ];
 
+    const STORAGE_KEY = "bowbert-character-tuning-v7";
     const state = structuredClone(initialState);
     const roleSelect = document.getElementById("roleSelect");
     const referenceImage = document.getElementById("referenceImage");
@@ -1096,7 +1225,7 @@
     }
 
     function appendEyeSection() {
-      if (currentRole !== "dartGoober") {
+      if (currentRole !== "dartGoober" && currentRole !== "bowbert") {
         const body = appendSection(
           "1. 眼神",
           "这个角色的眼睛已经画进 AI base 图里。这里可以用方向按钮预览弓和朝向；如果要改眼睛本身，应该重新生成 base 图，或者之后再加 runtime 眼神层。",
@@ -1106,8 +1235,10 @@
         return;
       }
 
-      const activeId = state.dartGoober.preview.eyeEmotion || "default";
-      const activeLabel = dartEyeEmotionDefs.find((item) => item.id === activeId)?.label ?? activeId;
+      const roleState = state[currentRole];
+      const emotionDefs = currentRole === "bowbert" ? bowbertEyeEmotionDefs : dartEyeEmotionDefs;
+      const activeId = roleState.preview.eyeEmotion || "default";
+      const activeLabel = emotionDefs.find((item) => item.id === activeId)?.label ?? activeId;
       const body = appendSection(
         `1. 眼神：${activeLabel}`,
         "类型决定当前表情；方向按钮只改预览朝向；下面只调大小、角度和位置。",
@@ -1116,13 +1247,13 @@
 
       const tabs = document.createElement("div");
       tabs.className = "emotion-tabs";
-      for (const item of dartEyeEmotionDefs) {
+      for (const item of emotionDefs) {
         const button = document.createElement("button");
         button.type = "button";
         button.textContent = item.label;
         button.classList.toggle("is-active", item.id === activeId);
         button.addEventListener("click", () => {
-          state.dartGoober.preview.eyeEmotion = item.id;
+          roleState.preview.eyeEmotion = item.id;
           renderControls();
           renderOutput();
           saveState();
@@ -1135,6 +1266,13 @@
 
       for (const [key, label, min, max, step] of simpleEyeFields) {
         appendSliderRow(body, `gaze.emotions.${activeId}.${key}`, label, min, max, step);
+      }
+
+      const activeEmotion = roleState.gaze.emotions[activeId];
+      if (activeEmotion?.shape === "cut-ellipse") {
+        for (const [key, label, min, max, step] of cutEllipseFields) {
+          appendSliderRow(body, `gaze.emotions.${activeId}.${key}`, label, min, max, step);
+        }
       }
     }
 
@@ -1167,16 +1305,35 @@
     }
 
     function appendDirectionPreview(parent) {
-      appendButtonGrid(parent, directionPreviewDefs, (_id, deg) => {
+      const preview = currentRole === "dartGoober" ? state.dartGoober.preview : state.bowbert.preview;
+      const directionItems = currentRole === "bowbert"
+        ? directionPreviewDefs.filter(([id]) => id !== "center")
+        : directionPreviewDefs;
+      const activeId = currentRole === "dartGoober"
+        ? getDirectionButtonId(preview.facingDeg, preview.lookAmount)
+        : getDirectionButtonId(preview.aimDeg, 1);
+
+      appendButtonGrid(parent, directionItems, (_id, value) => {
         if (currentRole === "bowbert") {
-          state.bowbert.preview.aimDeg = deg;
+          state.bowbert.preview.aimDeg = value.deg;
         } else if (currentRole === "dartGoober") {
-          state.dartGoober.preview.facingDeg = deg;
+          state.dartGoober.preview.facingDeg = value.deg;
+          state.dartGoober.preview.lookAmount = value.amount;
         }
+        renderControls();
         syncInputs();
         renderOutput();
         saveState();
-      });
+      }, activeId);
+    }
+
+    function getDirectionButtonId(deg, amount) {
+      if (amount === 0) return "center";
+      const normalized = ((Math.round(deg) % 360) + 360) % 360;
+      if (normalized === 180) return "left";
+      if (normalized === 270) return "up";
+      if (normalized === 90) return "down";
+      return "right";
     }
 
     function appendOutputControls() {
@@ -1217,20 +1374,20 @@
     function applyPreset(kind) {
       if (currentRole === "bowbert") {
         const presets = {
-          idle: { aimDeg: 0, moveAmount: 0, drawProgress: 0, recoil: 0, dodge: 0, hit: 0 },
-          walk: { aimDeg: 0, moveAmount: 0.85, drawProgress: 0, recoil: 0, dodge: 0, hit: 0 },
-          action: { aimDeg: -12, moveAmount: 0.25, drawProgress: 0.72, recoil: 0.16, dodge: 0, hit: 0 },
-          dodge: { aimDeg: 0, moveAmount: 0.9, drawProgress: 0, recoil: 0, dodge: 0.82, hit: 0 },
-          hit: { aimDeg: 0, moveAmount: 0, drawProgress: 0, recoil: 0, dodge: 0, hit: 0.86 }
+          idle: { aimDeg: 0, moveAmount: 0, drawProgress: 0, recoil: 0, dodge: 0, hit: 0, eyeEmotion: "default" },
+          walk: { aimDeg: 0, moveAmount: 0.85, drawProgress: 0, recoil: 0, dodge: 0, hit: 0, eyeEmotion: "default" },
+          action: { aimDeg: -12, moveAmount: 0.25, drawProgress: 0.72, recoil: 0.16, dodge: 0, hit: 0, eyeEmotion: "aim" },
+          dodge: { aimDeg: 0, moveAmount: 0.9, drawProgress: 0, recoil: 0, dodge: 0.82, hit: 0, eyeEmotion: "alert" },
+          hit: { aimDeg: 0, moveAmount: 0, drawProgress: 0, recoil: 0, dodge: 0, hit: 0.86, eyeEmotion: "hit" }
         };
         Object.assign(state.bowbert.preview, presets[kind] ?? presets.idle);
       } else if (currentRole === "dartGoober") {
         const presets = {
-          idle: { facingDeg: 0, moveAmount: 0, charge: 0, hit: 0, spawn: 1, eyeEmotion: "default" },
-          walk: { facingDeg: 0, moveAmount: 0.85, charge: 0, hit: 0, spawn: 1, eyeEmotion: "alert" },
-          action: { facingDeg: -14, moveAmount: 0.2, charge: 0.82, hit: 0, spawn: 1, eyeEmotion: "aim" },
-          hit: { facingDeg: 0, moveAmount: 0.1, charge: 0, hit: 0.9, spawn: 1, eyeEmotion: "hit" },
-          spawn: { facingDeg: 0, moveAmount: 0, charge: 0, hit: 0, spawn: 0.38, eyeEmotion: "alert" }
+          idle: { facingDeg: 0, lookAmount: 0, moveAmount: 0, charge: 0, hit: 0, spawn: 1, eyeEmotion: "default" },
+          walk: { facingDeg: 0, lookAmount: 1, moveAmount: 0.85, charge: 0, hit: 0, spawn: 1, eyeEmotion: "alert" },
+          action: { facingDeg: 0, lookAmount: 1, moveAmount: 0.2, charge: 0.82, hit: 0, spawn: 1, eyeEmotion: "aim" },
+          hit: { facingDeg: 0, lookAmount: 0, moveAmount: 0.1, charge: 0, hit: 0.9, spawn: 1, eyeEmotion: "hit" },
+          spawn: { facingDeg: 0, lookAmount: 0, moveAmount: 0, charge: 0, hit: 0, spawn: 0.38, eyeEmotion: "alert" }
         };
         Object.assign(state.dartGoober.preview, presets[kind] ?? presets.idle);
       }
@@ -1273,17 +1430,17 @@
     }
 
     function saveState() {
-      localStorage.setItem("bowbert-character-tuning-v1", JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
 
     function restoreState() {
       try {
-        const saved = JSON.parse(localStorage.getItem("bowbert-character-tuning-v1") ?? "{}");
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
         for (const key of Object.keys(initialState)) {
           if (saved[key]) state[key] = mergeDeep(structuredClone(initialState[key]), saved[key]);
         }
       } catch (error) {
-        localStorage.removeItem("bowbert-character-tuning-v1");
+        localStorage.removeItem(STORAGE_KEY);
       }
     }
 
@@ -1299,6 +1456,17 @@
       bowbert.architecture = structuredClone(initialState.bowbert.architecture);
       bowbert.body.imageSize = structuredClone(initialState.bowbert.body.imageSize);
       bowbert.body.scale = initialState.bowbert.body.scale;
+      bowbert.gaze = bowbert.gaze || structuredClone(initialState.bowbert.gaze);
+      if (!bowbertEyeEmotionDefs.some((item) => item.id === bowbert.preview.eyeEmotion)) {
+        bowbert.preview.eyeEmotion = "default";
+      }
+      for (const item of bowbertEyeEmotionDefs) {
+        const defaults = initialState.bowbert.gaze.emotions[item.id];
+        bowbert.gaze.emotions[item.id] = mergeDeep(
+          structuredClone(defaults),
+          bowbert.gaze.emotions[item.id] || {}
+        );
+      }
       delete bowbert.eyes;
     }
 
@@ -1308,6 +1476,9 @@
 
       if (!dartEyeEmotionDefs.some((item) => item.id === dart.preview.eyeEmotion)) {
         dart.preview.eyeEmotion = "default";
+      }
+      if (!Number.isFinite(dart.preview.lookAmount)) {
+        dart.preview.lookAmount = initialState.dartGoober.preview.lookAmount;
       }
 
       dart.gaze = dart.gaze || structuredClone(initialState.dartGoober.gaze);
@@ -1326,6 +1497,24 @@
 
       for (const key of legacyDartFaceKeys) {
         if (dart[key]) delete dart[key];
+      }
+    }
+
+    function applyUrlPreviewParams() {
+      const params = new URLSearchParams(window.location.search);
+
+      if (currentRole !== "dartGoober") return;
+
+      const emotion = params.get("emotion");
+      if (emotion && dartEyeEmotionDefs.some((item) => item.id === emotion)) {
+        state.dartGoober.preview.eyeEmotion = emotion;
+      }
+
+      const direction = params.get("dir");
+      const directionDef = directionPreviewDefs.find(([id]) => id === direction);
+      if (directionDef) {
+        state.dartGoober.preview.facingDeg = directionDef[2].deg;
+        state.dartGoober.preview.lookAmount = directionDef[2].amount;
       }
     }
 
@@ -1399,7 +1588,48 @@
         ctx.drawImage(image, bodyX - bodyW / 2, bodyY - bodyH / 2, bodyW, bodyH);
       }
 
+      drawBowbertGaze(cfg, aim, bodyX, bodyY, scaleX, scaleY);
       drawBowbertBow(cfg, aim, aimAngle, cfg.preview.recoil, t);
+      ctx.restore();
+    }
+
+    function drawBowbertGaze(cfg, aim, bodyX, bodyY, scaleX, scaleY) {
+      const width = cfg.body.imageSize.width;
+      const height = cfg.body.imageSize.height;
+      const eyeEmotion = cfg.gaze.emotions[cfg.preview.eyeEmotion] || cfg.gaze.emotions.default;
+      const aimLength = Math.hypot(aim.x, aim.y);
+      const aimScale = aimLength > 1 ? 1 / aimLength : 1;
+
+      ctx.save();
+      ctx.translate(bodyX, bodyY);
+      ctx.scale(scaleX, scaleY);
+      ctx.fillStyle = "#151510";
+
+      for (const eye of Object.values(cfg.gaze.eyes)) {
+        const outerRadiusPx = eye.outerRadius * width;
+        const basePupilDiameter = outerRadiusPx * 2 * eye.whiteRatio * eye.pupilRatio;
+        const offsetBasis = outerRadiusPx * 2;
+        const lidCompression = 1 - (eyeEmotion.upperLid + eyeEmotion.lowerLid) * 0.24;
+        const pupilWidth = basePupilDiameter * eyeEmotion.pupilScale * eyeEmotion.eyeScaleX;
+        const pupilHeight = basePupilDiameter * eyeEmotion.pupilScale * eyeEmotion.eyeScaleY * clamp(lidCompression, 0.45, 1);
+        const x =
+          (eye.x - 0.5) * width +
+          aim.x * aimScale * offsetBasis * cfg.gaze.pupilOffsetScale.x +
+          eyeEmotion.pupilShiftX * offsetBasis;
+        const y =
+          (eye.y - 0.5) * height +
+          aim.y * aimScale * offsetBasis * cfg.gaze.pupilOffsetScale.y +
+          eyeEmotion.pupilShiftY * offsetBasis;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(eyeEmotion.eyeTiltAdd);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, pupilWidth / 2, pupilHeight / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
       ctx.restore();
     }
 
@@ -1437,7 +1667,8 @@
       const image = images.dartGoober;
       const t = timeMs / 1000;
       const facingAngle = (cfg.preview.facingDeg * Math.PI) / 180;
-      const facing = { x: Math.cos(facingAngle), y: Math.sin(facingAngle) };
+      const lookAmount = Number.isFinite(cfg.preview.lookAmount) ? clamp(cfg.preview.lookAmount, 0, 1) : 1;
+      const facing = { x: Math.cos(facingAngle) * lookAmount, y: Math.sin(facingAngle) * lookAmount };
       const walkPhase = t * 7.6;
       const walkWave = Math.sin(walkPhase) * cfg.preview.moveAmount;
       const idleWave = Math.sin(timeMs * 0.004);
@@ -1506,19 +1737,89 @@
       for (const name of ["left", "right"]) {
         const eye = cfg.gaze.eyes[name];
         const side = name === "left" ? -1 : 1;
+        const tiltDirection = emotion.eyeTiltMode === "same" ? 1 : side;
         const lidCompression = 1 - (emotion.upperLid + emotion.lowerLid) * 0.24;
         const pupilWidth = eye.radiusX * width * 2 * emotion.pupilScale * emotion.eyeScaleX;
         const pupilHeight = eye.radiusY * height * 2 * emotion.pupilScale * emotion.eyeScaleY * clamp(lidCompression, 0.45, 1);
 
         context.save();
         context.translate((eye.x - 0.5) * width, (eye.y - 0.5) * height);
-        context.rotate(eye.rotation + side * emotion.eyeTiltAdd);
+        context.rotate(eye.rotation + tiltDirection * emotion.eyeTiltAdd);
         context.fillStyle = "#070707";
-        context.beginPath();
-        context.ellipse(offsetX, offsetY, pupilWidth / 2, pupilHeight / 2, 0, 0, Math.PI * 2);
-        context.fill();
+        context.translate(offsetX, offsetY);
+        if (emotion.shape === "cut-ellipse") {
+          drawCutEllipseGaze(
+            context,
+            name,
+            pupilWidth,
+            pupilHeight,
+            emotion.cutSlope ?? 1.6,
+            emotion.cutOffset ?? -0.42
+          );
+        } else {
+          context.beginPath();
+          context.ellipse(0, 0, pupilWidth / 2, pupilHeight / 2, 0, 0, Math.PI * 2);
+          context.fill();
+        }
         context.restore();
       }
+    }
+
+    function drawCutEllipseGaze(context, name, width, height, cutSlope, cutOffset) {
+      const inner = name === "left" ? 1 : -1;
+      const rx = width / 2;
+      const ry = height / 2;
+      const ellipsePoints = [];
+
+      for (let index = 0; index < 96; index += 1) {
+        const angle = (Math.PI * 2 * index) / 96;
+        ellipsePoints.push({ x: Math.cos(angle), y: Math.sin(angle) });
+      }
+
+      const points = clipNormalizedEllipse(ellipsePoints, cutSlope, cutOffset);
+      if (!points.length) return;
+
+      context.beginPath();
+      context.moveTo(points[0].x * rx * inner, points[0].y * ry);
+      for (const point of points.slice(1)) {
+        context.lineTo(point.x * rx * inner, point.y * ry);
+      }
+      context.closePath();
+      context.fill();
+    }
+
+    function clipNormalizedEllipse(points, cutSlope, cutOffset) {
+      const clipped = [];
+      const isInside = (point) => point.y - cutSlope * point.x - cutOffset >= 0;
+      const getIntersection = (start, end) => {
+        const startDistance = start.y - cutSlope * start.x - cutOffset;
+        const endDistance = end.y - cutSlope * end.x - cutOffset;
+        const ratio = Math.abs(startDistance - endDistance) > 0.000001
+          ? startDistance / (startDistance - endDistance)
+          : 0;
+
+        return {
+          x: start.x + (end.x - start.x) * ratio,
+          y: start.y + (end.y - start.y) * ratio
+        };
+      };
+
+      for (let index = 0; index < points.length; index += 1) {
+        const current = points[index];
+        const next = points[(index + 1) % points.length];
+        const currentInside = isInside(current);
+        const nextInside = isInside(next);
+
+        if (currentInside && nextInside) {
+          clipped.push(next);
+        } else if (currentInside && !nextInside) {
+          clipped.push(getIntersection(current, next));
+        } else if (!currentInside && nextInside) {
+          clipped.push(getIntersection(current, next), next);
+        }
+      }
+
+      return clipped;
     }
 
     function drawReferenceOnly() {
@@ -1686,6 +1987,7 @@
 
     restoreState();
     normalizeState();
+    applyUrlPreviewParams();
     loadImages();
     populateRoles();
     syncRoleUi();

@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bowbert Eye Expression Demo</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #101812;
+      color: #edf4e9;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      background: #101812;
+    }
+
+    main {
+      min-width: 0;
+      padding: 18px;
+      display: grid;
+      grid-template-rows: auto 560px 760px;
+      gap: 12px;
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .meta {
+      color: #aebba8;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .canvas-wrap {
+      min-height: 0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #142018;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    aside {
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      background: #162119;
+      padding: 16px;
+      overflow: auto;
+    }
+
+    .section {
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    }
+
+    .section:first-child {
+      padding-top: 0;
+    }
+
+    .section-title {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 760;
+      color: #f0c45b;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    button {
+      min-height: 36px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: #223029;
+      color: #edf4e9;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button.is-active {
+      border-color: #f0c45b;
+      color: #ffdb7a;
+      background: #302b1b;
+    }
+
+    .direction-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .note {
+      color: #aebba8;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    code {
+      color: #ffdb7a;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        grid-template-columns: 1fr;
+      }
+
+      main {
+        grid-template-rows: auto 430px 2920px;
+        padding: 12px;
+      }
+
+      aside {
+        border-left: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Bowbert 涂鸦眼神 Demo</h1>
+        <div class="meta">base 图只保留白眼；黑瞳、弧线、横线、X、斜压线全部 runtime 画。</div>
+      </div>
+      <div class="meta" id="activeMeta">loading</div>
+    </header>
+
+    <div class="canvas-wrap">
+      <canvas id="preview"></canvas>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="grid"></canvas>
+    </div>
+  </main>
+
+  <aside>
+    <section class="section">
+      <div class="section-title">眼神类型</div>
+      <div class="button-grid" id="expressionButtons"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">朝向预览</div>
+      <div class="direction-row" id="directionButtons"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">设计取舍</div>
+      <div class="note">
+        这个 demo 不再靠压扁黑瞳硬凑表情。每个眼神是一个简单涂鸦符号：圆点、缩瞳、斜压线、弧线、横线、X。<br><br>
+        可以成立的会迁移进正式 renderer；不成立的直接删，不继续调细碎参数。
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">实现模型</div>
+      <div class="note">
+        <code>base white eyes</code><br>
+        <code>+ runtime pupil / mark</code><br>
+        <code>+ optional black lid stroke</code>
+      </div>
+    </section>
+  </aside>
+
+  <script>
+    const image = new Image();
+    image.src = "../assets/characters/bowbert/bowbert-base-ai-v2-eye-whites.png";
+
+    const previewCanvas = document.getElementById("preview");
+    const previewCtx = previewCanvas.getContext("2d");
+    const gridCanvas = document.getElementById("grid");
+    const gridCtx = gridCanvas.getContext("2d");
+    const activeMeta = document.getElementById("activeMeta");
+    const expressionButtons = document.getElementById("expressionButtons");
+    const directionButtons = document.getElementById("directionButtons");
+
+    const eyes = [
+      { name: "left", x: 139.8, y: 502.32, whiteRadius: 92, pupilRadius: 58 },
+      { name: "right", x: 719.2, y: 503.2, whiteRadius: 96, pupilRadius: 58 }
+    ];
+
+    const expressions = [
+      {
+        id: "default",
+        label: "默认",
+        note: "大圆黑瞳，保持原版脸。",
+        type: "pupil",
+        pupilScale: 1
+      },
+      {
+        id: "aim",
+        label: "瞄准",
+        note: "黑瞳看向目标，加轻微斜压线。",
+        type: "pupil",
+        pupilScale: 0.94,
+        lid: "soft-angle"
+      },
+      {
+        id: "focused",
+        label: "坚定",
+        note: "黑色斜压线比瞳孔更重要。",
+        type: "pupil",
+        pupilScale: 0.9,
+        pupilShape: "oval",
+        lid: "angle"
+      },
+      {
+        id: "alert",
+        label: "警觉",
+        note: "缩瞳，保留白眼面积。",
+        type: "pupil",
+        pupilScale: 0.45
+      },
+      {
+        id: "scared",
+        label: "惊恐",
+        note: "极小点，往上收。",
+        type: "pupil",
+        pupilScale: 0.27,
+        pupilOffset: { x: 0, y: -16 }
+      },
+      {
+        id: "happy",
+        label: "开心",
+        note: "隐藏黑瞳，只画弯弧。",
+        type: "arc",
+        arc: "happy"
+      },
+      {
+        id: "sleepy",
+        label: "困倦",
+        note: "横线眼，不画黑瞳。",
+        type: "line",
+        lineTilt: -0.05
+      },
+      {
+        id: "hit",
+        label: "受击",
+        note: "X 眼是最清楚的受击符号。",
+        type: "x"
+      }
+    ];
+
+    const directions = [
+      { id: "center", label: "中", aim: { x: 0, y: 0 } },
+      { id: "right", label: "右", aim: { x: 1, y: 0 } },
+      { id: "left", label: "左", aim: { x: -1, y: 0 } },
+      { id: "up", label: "上", aim: { x: 0, y: -1 } },
+      { id: "down", label: "下", aim: { x: 0, y: 1 } }
+    ];
+
+    let activeExpression = "default";
+    let activeDirection = "center";
+
+    function resizeCanvas(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.round(rect.width * ratio));
+      canvas.height = Math.max(1, Math.round(rect.height * ratio));
+      const context = canvas.getContext("2d");
+      context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    }
+
+    function renderAll() {
+      if (!image.complete || !image.width) return;
+      resizeCanvas(previewCanvas);
+      resizeCanvas(gridCanvas);
+      renderPreview();
+      renderGrid();
+      renderButtons();
+    }
+
+    function drawBackground(context, width, height) {
+      context.fillStyle = "#142018";
+      context.fillRect(0, 0, width, height);
+      context.save();
+      context.globalAlpha = 0.08;
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = 1;
+      for (let x = 0; x < width; x += 28) {
+        context.beginPath();
+        context.moveTo(x, 0);
+        context.lineTo(x, height);
+        context.stroke();
+      }
+      for (let y = 0; y < height; y += 28) {
+        context.beginPath();
+        context.moveTo(0, y);
+        context.lineTo(width, y);
+        context.stroke();
+      }
+      context.restore();
+    }
+
+    function renderPreview() {
+      const rect = previewCanvas.getBoundingClientRect();
+      const expression = expressions.find((item) => item.id === activeExpression) || expressions[0];
+      const direction = directions.find((item) => item.id === activeDirection) || directions[0];
+      const scale = getFitScale(rect.width, rect.height, 20) * 1.02;
+      drawBackground(previewCtx, rect.width, rect.height);
+      previewCtx.save();
+      previewCtx.translate(rect.width * 0.5, rect.height * 0.55);
+      previewCtx.scale(scale, scale);
+      drawBowbert(previewCtx, expression, direction.aim);
+      previewCtx.restore();
+      activeMeta.textContent = `${expression.label} / ${direction.label}`;
+    }
+
+    function renderGrid() {
+      const rect = gridCanvas.getBoundingClientRect();
+      drawBackground(gridCtx, rect.width, rect.height);
+      const cols = rect.width < 640 ? 1 : rect.width < 1000 ? 2 : Math.min(4, expressions.length);
+      const rows = Math.ceil(expressions.length / cols);
+      const cellW = rect.width / cols;
+      const cellH = rect.height / rows;
+
+      for (let index = 0; index < expressions.length; index += 1) {
+        const expression = expressions[index];
+        const col = index % cols;
+        const row = Math.floor(index / cols);
+        const x = col * cellW;
+        const y = row * cellH;
+
+        gridCtx.save();
+        gridCtx.translate(x + cellW * 0.5, y + cellH * 0.59);
+        const scale = Math.min((cellW - 28) / image.width, (cellH - 54) / image.height) * 0.98;
+        gridCtx.scale(scale, scale);
+        drawBowbert(gridCtx, expression, { x: expression.id === "aim" ? 1 : 0, y: 0 });
+        gridCtx.restore();
+
+        gridCtx.fillStyle = "rgba(0, 0, 0, 0.32)";
+        gridCtx.fillRect(x + 8, y + 8, 74, 25);
+        gridCtx.fillStyle = "#ffdb7a";
+        gridCtx.font = "760 15px system-ui, sans-serif";
+        gridCtx.fillText(expression.label, x + 14, y + 26);
+      }
+    }
+
+    function getFitScale(width, height, padding) {
+      return Math.min((width - padding * 2) / image.width, (height - padding * 2) / image.height);
+    }
+
+    function drawBowbert(context, expression, aim) {
+      context.drawImage(image, -image.width / 2, -image.height / 2);
+
+      context.save();
+      context.translate(-image.width / 2, -image.height / 2);
+      for (const eye of eyes) {
+        drawEyeExpression(context, eye, expression, aim);
+      }
+      context.restore();
+    }
+
+    function drawEyeExpression(context, eye, expression, aim) {
+      const baseOffset = {
+        x: (expression.pupilOffset?.x || 0) + aim.x * 25,
+        y: (expression.pupilOffset?.y || 0) + aim.y * 16
+      };
+
+      if (expression.type === "pupil") {
+        drawPupil(context, eye, expression, baseOffset);
+      }
+
+      if (expression.type === "arc") {
+        drawHappyArc(context, eye);
+      }
+
+      if (expression.type === "line") {
+        drawSleepLine(context, eye, expression.lineTilt || 0);
+      }
+
+      if (expression.type === "x") {
+        drawXEye(context, eye);
+      }
+
+      if (expression.lid) {
+        drawLidMark(context, eye, expression.lid);
+      }
+    }
+
+    function clipEye(context, eye) {
+      context.beginPath();
+      context.arc(eye.x, eye.y, eye.whiteRadius, 0, Math.PI * 2);
+      context.clip();
+    }
+
+    function drawPupil(context, eye, expression, offset) {
+      const radius = eye.pupilRadius * (expression.pupilScale || 1);
+      const width = expression.pupilShape === "oval" ? radius * 2.25 : radius * 2;
+      const height = expression.pupilShape === "oval" ? radius * 1.25 : radius * 2;
+
+      context.save();
+      clipEye(context, eye);
+      context.fillStyle = "#11110e";
+      context.beginPath();
+      context.ellipse(eye.x + offset.x, eye.y + offset.y, width / 2, height / 2, 0, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    }
+
+    function drawLidMark(context, eye, kind) {
+      const inner = eye.name === "left" ? 1 : -1;
+      const strength = kind === "angle" ? 1 : 0.72;
+      const yTop = eye.y - eye.whiteRadius * 0.52;
+      const yInner = eye.y - eye.whiteRadius * (0.16 + strength * 0.08);
+      const xOuter = eye.x - inner * eye.whiteRadius * 0.78;
+      const xInner = eye.x + inner * eye.whiteRadius * 0.76;
+
+      context.save();
+      clipEye(context, eye);
+      context.strokeStyle = "#090b08";
+      context.lineWidth = kind === "angle" ? 19 : 13;
+      context.lineCap = "round";
+      context.beginPath();
+      context.moveTo(xOuter, yTop);
+      context.lineTo(xInner, yInner);
+      context.stroke();
+      context.restore();
+    }
+
+    function drawHappyArc(context, eye) {
+      context.save();
+      clipEye(context, eye);
+      context.strokeStyle = "#11110e";
+      context.lineWidth = 17;
+      context.lineCap = "round";
+      context.beginPath();
+      context.arc(eye.x, eye.y + 16, eye.whiteRadius * 0.44, Math.PI * 1.1, Math.PI * 1.9);
+      context.stroke();
+      context.restore();
+    }
+
+    function drawSleepLine(context, eye, tilt) {
+      context.save();
+      clipEye(context, eye);
+      context.translate(eye.x, eye.y + 2);
+      context.rotate(tilt);
+      context.strokeStyle = "#11110e";
+      context.lineWidth = 15;
+      context.lineCap = "round";
+      context.beginPath();
+      context.moveTo(-eye.whiteRadius * 0.48, 0);
+      context.lineTo(eye.whiteRadius * 0.48, 0);
+      context.stroke();
+      context.restore();
+    }
+
+    function drawXEye(context, eye) {
+      context.save();
+      clipEye(context, eye);
+      context.translate(eye.x, eye.y);
+      context.strokeStyle = "#11110e";
+      context.lineWidth = 16;
+      context.lineCap = "round";
+      for (const angle of [Math.PI / 4, -Math.PI / 4]) {
+        context.save();
+        context.rotate(angle);
+        context.beginPath();
+        context.moveTo(-eye.whiteRadius * 0.42, 0);
+        context.lineTo(eye.whiteRadius * 0.42, 0);
+        context.stroke();
+        context.restore();
+      }
+      context.restore();
+    }
+
+    function renderButtons() {
+      expressionButtons.innerHTML = "";
+      for (const expression of expressions) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = expression.label;
+        button.classList.toggle("is-active", expression.id === activeExpression);
+        button.title = expression.note;
+        button.addEventListener("click", () => {
+          activeExpression = expression.id;
+          renderAll();
+        });
+        expressionButtons.append(button);
+      }
+
+      directionButtons.innerHTML = "";
+      for (const direction of directions) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = direction.label;
+        button.classList.toggle("is-active", direction.id === activeDirection);
+        button.addEventListener("click", () => {
+          activeDirection = direction.id;
+          renderAll();
+        });
+        directionButtons.append(button);
+      }
+    }
+
+    image.onload = renderAll;
+    window.addEventListener("resize", renderAll);
+  </script>
+</body>
+</html>

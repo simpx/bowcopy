@@ -1,5 +1,5 @@
 import dartGooberBaseUrl from '../../../assets/characters/dart-goober/dart-goober-base-ai-v1-trimmed.png';
-import bowbertBaseUrl from '../../../assets/characters/bowbert/bowbert-base-ai-v2-trimmed.png';
+import bowbertBaseUrl from '../../../assets/characters/bowbert/bowbert-base-ai-v2-eye-whites.png';
 
 export type CharacterBaseSource = 'fixed-ai-image';
 export type CharacterAttachmentSource = 'runtime-shape' | 'procedural-canvas' | 'baked-into-base';
@@ -41,12 +41,16 @@ export interface EmbeddedEyeTuning {
 }
 
 export interface EyeEmotionTuning {
+  readonly shape?: 'ellipse' | 'cut-ellipse';
   readonly eyeTiltAdd: number;
+  readonly eyeTiltMode?: 'mirrored' | 'same';
   readonly eyeScaleX: number;
   readonly eyeScaleY: number;
   readonly pupilScale: number;
   readonly pupilShiftX: number;
   readonly pupilShiftY: number;
+  readonly cutSlope?: number;
+  readonly cutOffset?: number;
   readonly upperLid: number;
   readonly lowerLid: number;
 }
@@ -55,7 +59,7 @@ export const BOWBERT_CHARACTER = {
   id: 'bowbert',
   base: {
     source: 'fixed-ai-image',
-    textureKey: 'bowbert-base-ai-v2-trimmed',
+    textureKey: 'bowbert-base-ai-v2-eye-whites',
     imageUrl: bowbertBaseUrl,
     imageSize: { width: 854, height: 878 },
     scale: 0.095,
@@ -64,8 +68,8 @@ export const BOWBERT_CHARACTER = {
   },
   attachments: {
     eyes: {
-      source: 'baked-into-base',
-      role: 'large external eyeballs baked into the fixed image'
+      source: 'runtime-shape',
+      role: 'runtime black pupils over baked white eye sockets'
     },
     bow: {
       source: 'procedural-canvas',
@@ -73,12 +77,94 @@ export const BOWBERT_CHARACTER = {
     }
   },
   gaze: {
-    mode: 'baked-static-eyes',
+    mode: 'attached-eye-pupils',
     eyes: {
-      left: { x: 0.9403, y: 0.6001, outerRadius: 0.167, whiteRatio: 0.802, pupilRatio: 0.52 },
-      right: { x: 0.0999, y: 0.6001, outerRadius: 0.167, whiteRatio: 0.802, pupilRatio: 0.52 }
+      left: { x: 0.164, y: 0.572, outerRadius: 0.135, whiteRatio: 0.82, pupilRatio: 0.62 },
+      right: { x: 0.842, y: 0.573, outerRadius: 0.135, whiteRatio: 0.82, pupilRatio: 0.62 }
     },
-    pupilOffsetScale: { x: 0.165, y: 0.11 }
+    pupilOffsetScale: { x: 0.105, y: 0.075 },
+    emotions: {
+      default: {
+        eyeTiltAdd: 0,
+        eyeScaleX: 1,
+        eyeScaleY: 1,
+        pupilScale: 1,
+        pupilShiftX: 0,
+        pupilShiftY: 0,
+        upperLid: 0,
+        lowerLid: 0
+      },
+      aim: {
+        eyeTiltAdd: 0,
+        eyeScaleX: 0.96,
+        eyeScaleY: 0.96,
+        pupilScale: 0.98,
+        pupilShiftX: 0,
+        pupilShiftY: -0.004,
+        upperLid: 0,
+        lowerLid: 0
+      },
+      focused: {
+        eyeTiltAdd: 0,
+        eyeScaleX: 1.12,
+        eyeScaleY: 0.68,
+        pupilScale: 0.92,
+        pupilShiftX: 0,
+        pupilShiftY: -0.002,
+        upperLid: 0.18,
+        lowerLid: 0.04
+      },
+      alert: {
+        eyeTiltAdd: 0,
+        eyeScaleX: 0.82,
+        eyeScaleY: 0.82,
+        pupilScale: 0.72,
+        pupilShiftX: 0,
+        pupilShiftY: -0.006,
+        upperLid: 0,
+        lowerLid: 0
+      },
+      scared: {
+        eyeTiltAdd: 0,
+        eyeScaleX: 0.68,
+        eyeScaleY: 0.68,
+        pupilScale: 0.58,
+        pupilShiftX: 0,
+        pupilShiftY: -0.012,
+        upperLid: 0,
+        lowerLid: 0
+      },
+      confused: {
+        eyeTiltAdd: 0.18,
+        eyeScaleX: 0.92,
+        eyeScaleY: 1.08,
+        pupilScale: 0.9,
+        pupilShiftX: 0.004,
+        pupilShiftY: -0.002,
+        upperLid: 0.02,
+        lowerLid: 0
+      },
+      squint: {
+        eyeTiltAdd: 0,
+        eyeScaleX: 1.04,
+        eyeScaleY: 0.34,
+        pupilScale: 0.74,
+        pupilShiftX: 0,
+        pupilShiftY: 0.012,
+        upperLid: 0.56,
+        lowerLid: 0.12
+      },
+      hit: {
+        eyeTiltAdd: 0,
+        eyeScaleX: 0.9,
+        eyeScaleY: 0.58,
+        pupilScale: 0.82,
+        pupilShiftX: -0.004,
+        pupilShiftY: -0.006,
+        upperLid: 0.22,
+        lowerLid: 0.1
+      }
+    }
   },
   motion: {
     walkSquash: 0.045,
@@ -101,6 +187,7 @@ export const BOWBERT_CHARACTER = {
     readonly mode: CharacterGazeMode;
     readonly eyes: Record<EyeName, AttachedEyeTuning>;
     readonly pupilOffsetScale: { readonly x: number; readonly y: number };
+    readonly emotions: Record<string, EyeEmotionTuning>;
   };
   readonly motion: {
     readonly walkSquash: number;
@@ -140,34 +227,50 @@ export const DART_GOOBER_CHARACTER = {
     pupilOffsetScale: { x: 0.018, y: 0.012 },
     emotions: {
       default: {
-        eyeTiltAdd: 0.05,
-        eyeScaleX: 1.12,
-        eyeScaleY: 0.82,
-        pupilScale: 1.18,
+        shape: 'cut-ellipse',
+        eyeTiltAdd: 0,
+        eyeScaleX: 1.32,
+        eyeScaleY: 1.35,
+        pupilScale: 1.12,
         pupilShiftX: 0,
-        pupilShiftY: 0,
-        upperLid: 0.08,
-        lowerLid: 0.02
+        pupilShiftY: 0.01,
+        cutSlope: 1.6,
+        cutOffset: -0.42,
+        upperLid: 0,
+        lowerLid: 0
       },
       angry: {
-        eyeTiltAdd: 0.08,
-        eyeScaleX: 1.1,
-        eyeScaleY: 0.72,
-        pupilScale: 1.28,
-        pupilShiftX: 0.01,
-        pupilShiftY: 0.004,
-        upperLid: 0.28,
-        lowerLid: 0.03
+        shape: 'cut-ellipse',
+        eyeTiltAdd: -0.015,
+        eyeScaleX: 1.4,
+        eyeScaleY: 1.42,
+        pupilScale: 1.16,
+        pupilShiftX: 0,
+        pupilShiftY: 0.012,
+        cutSlope: 1.72,
+        cutOffset: -0.46,
+        upperLid: 0,
+        lowerLid: 0
       },
       alert: {
-        eyeTiltAdd: -0.03,
-        eyeScaleX: 0.88,
-        eyeScaleY: 0.88,
-        pupilScale: 0.72,
+        eyeTiltAdd: 0,
+        eyeScaleX: 0.82,
+        eyeScaleY: 0.9,
+        pupilScale: 0.62,
         pupilShiftX: 0,
         pupilShiftY: 0,
         upperLid: 0,
         lowerLid: 0
+      },
+      scared: {
+        eyeTiltAdd: 0.01,
+        eyeScaleX: 0.66,
+        eyeScaleY: 0.76,
+        pupilScale: 0.46,
+        pupilShiftX: -0.006,
+        pupilShiftY: -0.014,
+        upperLid: 0.04,
+        lowerLid: 0.02
       },
       hit: {
         eyeTiltAdd: 0.02,
@@ -180,14 +283,17 @@ export const DART_GOOBER_CHARACTER = {
         lowerLid: 0.18
       },
       aim: {
-        eyeTiltAdd: 0.06,
-        eyeScaleX: 1.05,
-        eyeScaleY: 0.7,
-        pupilScale: 1.12,
-        pupilShiftX: 0.014,
-        pupilShiftY: 0,
-        upperLid: 0.22,
-        lowerLid: 0.05
+        shape: 'cut-ellipse',
+        eyeTiltAdd: 0.01,
+        eyeScaleX: 1.18,
+        eyeScaleY: 1.2,
+        pupilScale: 1.02,
+        pupilShiftX: 0,
+        pupilShiftY: 0.006,
+        cutSlope: 1.85,
+        cutOffset: -0.38,
+        upperLid: 0,
+        lowerLid: 0
       }
     }
   },
@@ -250,3 +356,4 @@ export const DART_GOOBER_CHARACTER = {
 };
 
 export type DartGooberEyeEmotion = keyof typeof DART_GOOBER_CHARACTER.gaze.emotions;
+export type BowbertEyeEmotion = keyof typeof BOWBERT_CHARACTER.gaze.emotions;

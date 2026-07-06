@@ -12,7 +12,7 @@ import type { SimVector } from '../../sim/player';
 
 interface DartGooberEyeVisual {
   readonly container: Phaser.GameObjects.Container;
-  readonly pupil: Phaser.GameObjects.Ellipse;
+  readonly pupil: Phaser.GameObjects.Graphics;
   readonly tuning: EmbeddedEyeTuning;
 }
 
@@ -241,14 +241,7 @@ export class DartGooberRenderer {
       (tuning.x - 0.5) * width,
       (tuning.y - 0.5) * height
     );
-    const pupil = this.scene.add.ellipse(
-      0,
-      0,
-      tuning.radiusX * width * 2,
-      tuning.radiusY * height * 2,
-      EYE_PUPIL_COLOR,
-      1
-    );
+    const pupil = this.scene.add.graphics();
 
     container.add(pupil);
 
@@ -287,6 +280,7 @@ export class DartGooberRenderer {
   ) {
     const { width, height } = DART_GOOBER_CHARACTER.base.imageSize;
     const side = name === 'left' ? -1 : 1;
+    const tiltDirection = emotion.eyeTiltMode === 'same' ? 1 : side;
     const lidCompression = 1 - (emotion.upperLid + emotion.lowerLid) * 0.24;
     const pupilWidth = eye.tuning.radiusX * width * 2 * emotion.pupilScale * emotion.eyeScaleX;
     const pupilHeight =
@@ -297,9 +291,102 @@ export class DartGooberRenderer {
       emotion.eyeScaleY *
       Phaser.Math.Clamp(lidCompression, 0.45, 1);
 
-    eye.container.setRotation(eye.tuning.rotation + side * emotion.eyeTiltAdd);
+    eye.container.setRotation(eye.tuning.rotation + tiltDirection * emotion.eyeTiltAdd);
     eye.pupil.setPosition(offsetX, offsetY);
-    eye.pupil.setSize(pupilWidth, pupilHeight);
+    this.drawEyePupil(eye.pupil, name, emotion, pupilWidth, pupilHeight);
+  }
+
+  private drawEyePupil(
+    graphics: Phaser.GameObjects.Graphics,
+    name: EyeName,
+    emotion: EyeEmotionTuning,
+    width: number,
+    height: number
+  ) {
+    graphics.clear();
+    graphics.fillStyle(EYE_PUPIL_COLOR, 1);
+
+    if (emotion.shape !== 'cut-ellipse') {
+      graphics.fillEllipse(0, 0, width, height);
+      return;
+    }
+
+    this.drawCutEllipsePupil(
+      graphics,
+      name,
+      width,
+      height,
+      emotion.cutSlope ?? 1.6,
+      emotion.cutOffset ?? -0.42
+    );
+  }
+
+  private drawCutEllipsePupil(
+    graphics: Phaser.GameObjects.Graphics,
+    name: EyeName,
+    width: number,
+    height: number,
+    cutSlope: number,
+    cutOffset: number
+  ) {
+    const inner = name === 'left' ? 1 : -1;
+    const rx = width / 2;
+    const ry = height / 2;
+    const ellipsePoints: Phaser.Types.Math.Vector2Like[] = [];
+
+    for (let index = 0; index < 72; index += 1) {
+      const angle = (Math.PI * 2 * index) / 72;
+      ellipsePoints.push({ x: Math.cos(angle), y: Math.sin(angle) });
+    }
+
+    const points = this.clipNormalizedEllipse(ellipsePoints, cutSlope, cutOffset).map(
+      (point) => new Phaser.Math.Vector2(point.x * rx * inner, point.y * ry)
+    );
+
+    graphics.fillPoints(points, true, true);
+  }
+
+  private clipNormalizedEllipse(
+    points: Phaser.Types.Math.Vector2Like[],
+    cutSlope: number,
+    cutOffset: number
+  ): Phaser.Types.Math.Vector2Like[] {
+    const clipped: Phaser.Types.Math.Vector2Like[] = [];
+    const isInside = (point: Phaser.Types.Math.Vector2Like) =>
+      point.y - cutSlope * point.x - cutOffset >= 0;
+    const getIntersection = (
+      start: Phaser.Types.Math.Vector2Like,
+      end: Phaser.Types.Math.Vector2Like
+    ): Phaser.Types.Math.Vector2Like => {
+      const startDistance = start.y - cutSlope * start.x - cutOffset;
+      const endDistance = end.y - cutSlope * end.x - cutOffset;
+      const ratio =
+        Math.abs(startDistance - endDistance) > 0.000001
+          ? startDistance / (startDistance - endDistance)
+          : 0;
+
+      return {
+        x: start.x + (end.x - start.x) * ratio,
+        y: start.y + (end.y - start.y) * ratio
+      };
+    };
+
+    for (let index = 0; index < points.length; index += 1) {
+      const current = points[index];
+      const next = points[(index + 1) % points.length];
+      const currentInside = isInside(current);
+      const nextInside = isInside(next);
+
+      if (currentInside && nextInside) {
+        clipped.push(next);
+      } else if (currentInside && !nextInside) {
+        clipped.push(getIntersection(current, next));
+      } else if (!currentInside && nextInside) {
+        clipped.push(getIntersection(current, next), next);
+      }
+    }
+
+    return clipped;
   }
 
   private emitBurst(

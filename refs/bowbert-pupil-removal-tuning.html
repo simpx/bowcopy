@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bowbert Pupil Removal Tuning</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #101812;
+      color: #eef4e8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      background: #101812;
+    }
+
+    main {
+      min-width: 0;
+      padding: 18px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .hint {
+      color: #aebca9;
+      font-size: 13px;
+    }
+
+    .stage {
+      min-height: 0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #142018;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    aside {
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      background: #162119;
+      padding: 16px;
+      overflow: auto;
+    }
+
+    .section {
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    }
+
+    .section:first-child {
+      padding-top: 0;
+    }
+
+    .section-title {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 760;
+      color: #f0c45b;
+    }
+
+    .button-row,
+    .toggle-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button {
+      min-height: 34px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: #223029;
+      color: #eef4e8;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button.is-active {
+      border-color: #f0c45b;
+      color: #ffdb7a;
+      background: #302b1b;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    label.toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 32px;
+      color: #d8e2d2;
+      font-size: 13px;
+    }
+
+    .field {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) 78px;
+      gap: 8px;
+      align-items: center;
+      margin: 8px 0;
+      font-size: 13px;
+      color: #cdd8c8;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    input[type="number"],
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #101812;
+      color: #eef4e8;
+      border-radius: 5px;
+      padding: 6px 7px;
+      font: inherit;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 260px;
+      resize: vertical;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #101812;
+      color: #eef4e8;
+      border-radius: 6px;
+      padding: 10px;
+      font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .status {
+      min-height: 20px;
+      color: #9fd36d;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        border-left: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .stage {
+        min-height: 58vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Bowbert 黑瞳去除定位</h1>
+        <div class="hint">拖动画布上的圆，或用右侧滑杆微调。参数复制给我后，我用它生成去黑瞳 base。</div>
+      </div>
+      <div class="hint" id="imageMeta">loading</div>
+    </header>
+
+    <div class="stage">
+      <canvas id="canvas"></canvas>
+    </div>
+  </main>
+
+  <aside>
+    <section class="section">
+      <div class="section-title">选择眼珠</div>
+      <div class="button-row">
+        <button type="button" data-eye="left">左眼</button>
+        <button type="button" data-eye="right">右眼</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">预览</div>
+      <div class="toggle-row">
+        <label class="toggle"><input type="checkbox" id="showErase" checked />去除区域</label>
+        <label class="toggle"><input type="checkbox" id="showRuntime" />runtime 黑瞳</label>
+        <label class="toggle"><input type="checkbox" id="showCrosshair" checked />中心线</label>
+      </div>
+      <div class="field">
+        <label for="fillColor">补色</label>
+        <input id="fillColor" type="text" value="#fffffc" />
+        <button type="button" id="applyFill">应用</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">位置 / 半径</div>
+      <div id="fields"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">参数</div>
+      <textarea id="output" spellcheck="false"></textarea>
+      <div class="button-row" style="margin-top: 8px;">
+        <button type="button" id="copy">Copy params</button>
+        <button type="button" id="reset">重置检测值</button>
+      </div>
+      <div class="status" id="status"></div>
+    </section>
+  </aside>
+
+  <script>
+    const imageUrl = "../assets/characters/bowbert/bowbert-base-ai-v2-trimmed.png";
+    const storageKey = "bowbert-pupil-removal-tuning-v1";
+    const image = new Image();
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const fieldsEl = document.getElementById("fields");
+    const outputEl = document.getElementById("output");
+    const statusEl = document.getElementById("status");
+    const imageMetaEl = document.getElementById("imageMeta");
+    const showEraseEl = document.getElementById("showErase");
+    const showRuntimeEl = document.getElementById("showRuntime");
+    const showCrosshairEl = document.getElementById("showCrosshair");
+    const fillColorEl = document.getElementById("fillColor");
+
+    const defaults = {
+      image: imageUrl,
+      imageSize: { width: 854, height: 878 },
+      coordinateSpace: "image-pixels",
+      fill: "#fffffc",
+      pupils: {
+        left: { x: 139.8, y: 502.32, radius: 74.2 },
+        right: { x: 719.2, y: 503.2, radius: 79.5 }
+      },
+      runtimePupil: {
+        radius: 58.0
+      }
+    };
+
+    let state = structuredClone(defaults);
+    let activeEye = "left";
+    let view = { scale: 1, x: 0, y: 0 };
+    let dragging = false;
+
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const round = (value) => Math.round(value * 1000) / 1000;
+
+    function restore() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        state = mergeDeep(structuredClone(defaults), saved);
+      } catch (error) {
+        localStorage.removeItem(storageKey);
+      }
+    }
+
+    function mergeDeep(target, source) {
+      for (const [key, value] of Object.entries(source || {})) {
+        if (value && typeof value === "object" && !Array.isArray(value) && target[key]) {
+          mergeDeep(target[key], value);
+        } else {
+          target[key] = value;
+        }
+      }
+      return target;
+    }
+
+    function save() {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.round(rect.width * ratio));
+      canvas.height = Math.max(1, Math.round(rect.height * ratio));
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      render();
+    }
+
+    function updateView() {
+      const rect = canvas.getBoundingClientRect();
+      const padding = 28;
+      const scale = Math.min(
+        (rect.width - padding * 2) / image.width,
+        (rect.height - padding * 2) / image.height
+      );
+      view = {
+        scale,
+        x: (rect.width - image.width * scale) / 2,
+        y: (rect.height - image.height * scale) / 2
+      };
+    }
+
+    function imageToScreen(point) {
+      return {
+        x: view.x + point.x * view.scale,
+        y: view.y + point.y * view.scale
+      };
+    }
+
+    function screenToImage(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (clientX - rect.left - view.x) / view.scale,
+        y: (clientY - rect.top - view.y) / view.scale
+      };
+    }
+
+    function render() {
+      if (!image.complete || !image.width) return;
+
+      updateView();
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      ctx.fillStyle = "#142018";
+      ctx.fillRect(0, 0, rect.width, rect.height);
+      ctx.save();
+      ctx.translate(view.x, view.y);
+      ctx.scale(view.scale, view.scale);
+      ctx.drawImage(image, 0, 0);
+
+      if (showEraseEl.checked) {
+        for (const [name, pupil] of Object.entries(state.pupils)) {
+          drawEraseCircle(name, pupil);
+        }
+      }
+
+      if (showRuntimeEl.checked) {
+        for (const pupil of Object.values(state.pupils)) {
+          drawRuntimePupil(pupil);
+        }
+      }
+
+      if (showCrosshairEl.checked) {
+        for (const [name, pupil] of Object.entries(state.pupils)) {
+          drawCrosshair(name, pupil);
+        }
+      }
+
+      ctx.restore();
+      renderOutput();
+      updateButtons();
+    }
+
+    function drawEraseCircle(name, pupil) {
+      ctx.save();
+      ctx.globalAlpha = name === activeEye ? 0.92 : 0.68;
+      ctx.fillStyle = state.fill;
+      ctx.beginPath();
+      ctx.arc(pupil.x, pupil.y, pupil.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = name === activeEye ? "#f0c45b" : "#9fd36d";
+      ctx.lineWidth = 3 / view.scale;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawRuntimePupil(pupil) {
+      ctx.save();
+      ctx.globalAlpha = 0.96;
+      ctx.fillStyle = "#10100e";
+      ctx.beginPath();
+      ctx.arc(pupil.x, pupil.y, state.runtimePupil.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawCrosshair(name, pupil) {
+      const size = Math.max(12, pupil.radius * 0.38);
+      ctx.save();
+      ctx.strokeStyle = name === activeEye ? "#ffdb7a" : "#8dd6ff";
+      ctx.lineWidth = 2 / view.scale;
+      ctx.beginPath();
+      ctx.moveTo(pupil.x - size, pupil.y);
+      ctx.lineTo(pupil.x + size, pupil.y);
+      ctx.moveTo(pupil.x, pupil.y - size);
+      ctx.lineTo(pupil.x, pupil.y + size);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function updateButtons() {
+      for (const button of document.querySelectorAll("[data-eye]")) {
+        button.classList.toggle("is-active", button.dataset.eye === activeEye);
+      }
+    }
+
+    function appendFields() {
+      fieldsEl.innerHTML = "";
+      const specs = [
+        ["x", "X", 0, defaults.imageSize.width, 0.1],
+        ["y", "Y", 0, defaults.imageSize.height, 0.1],
+        ["radius", "半径", 20, 110, 0.1]
+      ];
+
+      for (const [key, label, min, max, step] of specs) {
+        const row = document.createElement("div");
+        row.className = "field";
+        const labelEl = document.createElement("label");
+        labelEl.textContent = label;
+        const range = document.createElement("input");
+        range.type = "range";
+        range.min = String(min);
+        range.max = String(max);
+        range.step = String(step);
+        const number = document.createElement("input");
+        number.type = "number";
+        number.min = String(min);
+        number.max = String(max);
+        number.step = String(step);
+
+        const sync = (raw) => {
+          const next = Number(raw);
+          if (!Number.isFinite(next)) return;
+          state.pupils[activeEye][key] = clamp(next, min, max);
+          syncFields();
+          save();
+          render();
+        };
+
+        range.addEventListener("input", () => sync(range.value));
+        number.addEventListener("input", () => sync(number.value));
+        range.dataset.key = key;
+        number.dataset.key = key;
+        row.append(labelEl, range, number);
+        fieldsEl.append(row);
+      }
+      syncFields();
+    }
+
+    function syncFields() {
+      const pupil = state.pupils[activeEye];
+      for (const input of fieldsEl.querySelectorAll("[data-key]")) {
+        input.value = Number(pupil[input.dataset.key]).toFixed(1);
+      }
+    }
+
+    function renderOutput() {
+      const params = {
+        ...state,
+        pupils: Object.fromEntries(
+          Object.entries(state.pupils).map(([name, pupil]) => [
+            name,
+            {
+              x: round(pupil.x),
+              y: round(pupil.y),
+              radius: round(pupil.radius),
+              normalized: {
+                x: round(pupil.x / state.imageSize.width),
+                y: round(pupil.y / state.imageSize.height),
+                radius: round(pupil.radius / state.imageSize.width)
+              }
+            }
+          ])
+        )
+      };
+      outputEl.value = `const BOWBERT_PUPIL_REMOVAL_TUNING = ${JSON.stringify(params, null, 2)};`;
+    }
+
+    function chooseNearest(point) {
+      let best = activeEye;
+      let bestDistance = Infinity;
+      for (const [name, pupil] of Object.entries(state.pupils)) {
+        const distance = Math.hypot(point.x - pupil.x, point.y - pupil.y);
+        if (distance < bestDistance) {
+          best = name;
+          bestDistance = distance;
+        }
+      }
+      activeEye = best;
+      syncFields();
+    }
+
+    canvas.addEventListener("pointerdown", (event) => {
+      canvas.setPointerCapture(event.pointerId);
+      const point = screenToImage(event.clientX, event.clientY);
+      chooseNearest(point);
+      state.pupils[activeEye].x = clamp(point.x, 0, image.width);
+      state.pupils[activeEye].y = clamp(point.y, 0, image.height);
+      dragging = true;
+      syncFields();
+      save();
+      render();
+    });
+
+    canvas.addEventListener("pointermove", (event) => {
+      if (!dragging) return;
+      const point = screenToImage(event.clientX, event.clientY);
+      state.pupils[activeEye].x = clamp(point.x, 0, image.width);
+      state.pupils[activeEye].y = clamp(point.y, 0, image.height);
+      syncFields();
+      save();
+      render();
+    });
+
+    canvas.addEventListener("pointerup", () => {
+      dragging = false;
+    });
+
+    canvas.addEventListener("pointercancel", () => {
+      dragging = false;
+    });
+
+    canvas.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const pupil = state.pupils[activeEye];
+      pupil.radius = clamp(pupil.radius - Math.sign(event.deltaY) * 1.4, 20, 110);
+      syncFields();
+      save();
+      render();
+    }, { passive: false });
+
+    for (const button of document.querySelectorAll("[data-eye]")) {
+      button.addEventListener("click", () => {
+        activeEye = button.dataset.eye;
+        syncFields();
+        render();
+      });
+    }
+
+    for (const input of [showEraseEl, showRuntimeEl, showCrosshairEl]) {
+      input.addEventListener("change", render);
+    }
+
+    document.getElementById("applyFill").addEventListener("click", () => {
+      if (/^#[0-9a-f]{6}$/i.test(fillColorEl.value.trim())) {
+        state.fill = fillColorEl.value.trim();
+        save();
+        render();
+      }
+    });
+
+    document.getElementById("copy").addEventListener("click", async () => {
+      outputEl.select();
+      try {
+        await navigator.clipboard.writeText(outputEl.value);
+      } catch (error) {
+        document.execCommand("copy");
+      }
+      statusEl.textContent = "Copied.";
+      window.setTimeout(() => {
+        statusEl.textContent = "";
+      }, 1500);
+    });
+
+    document.getElementById("reset").addEventListener("click", () => {
+      state = structuredClone(defaults);
+      fillColorEl.value = state.fill;
+      save();
+      syncFields();
+      render();
+    });
+
+    image.onload = () => {
+      state.imageSize = { width: image.width, height: image.height };
+      imageMetaEl.textContent = `${image.width} x ${image.height}`;
+      appendFields();
+      resizeCanvas();
+    };
+    image.src = imageUrl;
+
+    restore();
+    fillColorEl.value = state.fill;
+    window.addEventListener("resize", resizeCanvas);
+  </script>
+</body>
+</html>
