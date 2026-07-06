@@ -5,27 +5,34 @@ const DAMAGE_CLASS_MS = 360;
 const HEARTS_HUD_STYLES = `
 .hearts-hud {
   position: absolute;
-  top: max(14px, env(safe-area-inset-top));
-  left: max(14px, env(safe-area-inset-left));
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
   z-index: 6;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border: 1px solid rgb(249 238 204 / 34%);
-  border-radius: 8px;
-  background: rgb(12 18 15 / 58%);
-  box-shadow: 0 10px 26px rgb(0 0 0 / 26%);
+  gap: 7px;
   pointer-events: none;
+}
+
+.hearts-hud-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: clamp(22px, 4.4vmin, 34px);
 }
 
 .hearts-hud-heart {
   position: relative;
-  width: clamp(20px, 3.2vmin, 28px);
+  width: clamp(15px, 2.9vmin, 22px);
   aspect-ratio: 1;
   transform: rotate(-45deg);
   opacity: 0.38;
-  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 28%));
+  filter:
+    drop-shadow(2px 0 0 #050805)
+    drop-shadow(-2px 0 0 #050805)
+    drop-shadow(0 2px 0 #050805)
+    drop-shadow(0 -2px 0 #050805)
+    drop-shadow(0 3px 2px rgb(0 0 0 / 34%));
 }
 
 .hearts-hud-heart,
@@ -115,13 +122,18 @@ const HEARTS_HUD_STYLES = `
   .hearts-hud {
     top: max(10px, env(safe-area-inset-top));
     left: max(10px, env(safe-area-inset-left));
+    gap: 5px;
+  }
+
+  .hearts-hud-row {
     gap: 6px;
-    padding: 6px 8px;
+    height: clamp(16px, 4.6vh, 20px);
   }
 
   .hearts-hud-heart {
-    width: clamp(18px, 6vh, 23px);
+    width: clamp(13px, 4vh, 17px);
   }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -145,6 +157,7 @@ const ensureHeartsHudStyles = () => {
 
 export class HeartsHud {
   private readonly root = document.createElement('div');
+  private readonly heartsRow = document.createElement('div');
   private readonly hearts: HTMLDivElement[] = [];
   private damageTimeout?: number;
 
@@ -152,6 +165,8 @@ export class HeartsHud {
     ensureHeartsHudStyles();
 
     this.root.className = 'hearts-hud';
+    this.heartsRow.className = 'hearts-hud-row';
+    this.root.append(this.heartsRow);
     parent.append(this.root);
     this.update(state);
   }
@@ -161,7 +176,7 @@ export class HeartsHud {
       const heart = document.createElement('div');
 
       heart.className = 'hearts-hud-heart';
-      this.root.append(heart);
+      this.heartsRow.append(heart);
       this.hearts.push(heart);
     }
 

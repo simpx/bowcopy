@@ -5,13 +5,16 @@ import type {
   CombatRoomState,
   FloorMark,
   RoomDoor,
-  RoomDoorSide
+  RoomDoorSide,
+  RoomTheme
 } from '../../sim/rooms';
 import { areCombatRoomDoorsOpen } from '../../sim/rooms';
 
-const FLOOR_COLOR = 0x3d6447;
-const FLOOR_SHADOW = 0x14251c;
-const FLOOR_GRASS = 0x243e2f;
+const OUTSIDE_COLOR = 0x0b1711;
+const OUTSIDE_DEEP = 0x030806;
+const FLOOR_COLOR = 0x3f694b;
+const FLOOR_SHADOW = 0x17291f;
+const FLOOR_GRASS = 0x254634;
 const FLOOR_GRASS_SOFT = 0x6e8c62;
 const FLOOR_STONE = 0x7c8372;
 const FLOOR_SCUFF = 0x79392f;
@@ -20,10 +23,12 @@ const FLOOR_WOOD_DARK = 0x241811;
 const FLOOR_MUSHROOM_CAP = 0xa94842;
 const FLOOR_MUSHROOM_STEM = 0xc2b38b;
 const WALL_DARK = 0x020503;
-const WALL_MAIN = 0x07140e;
-const WALL_EDGE = 0x1d3525;
-const DOOR_OPEN = 0x2f553a;
-const DOOR_CLEARED = 0x406b48;
+const WALL_MAIN = 0x0a1c13;
+const WALL_INNER = 0x10271a;
+const WALL_EDGE = 0x020503;
+const WALL_HIGHLIGHT = 0x234430;
+const DOOR_OPEN = 0x16291e;
+const DOOR_CLEARED = 0x264632;
 const SPAWN_IDLE = 0x7fa46a;
 const TRIGGER_IDLE = 0x8dab76;
 
@@ -51,9 +56,34 @@ const FLOOR_PROPS: readonly FloorProp[] = [
   { kind: 'stump', x: 392, y: 610, scale: 0.52, rotation: -0.05 }
 ] as const;
 
+const THEME_FLOOR_COLORS: Record<RoomTheme, number> = {
+  forest: FLOOR_COLOR,
+  stone: 0x415f4e,
+  mushroom: 0x3f654f,
+  wizard: 0x3d604f
+};
+
+const THEME_EXTRA_PROPS: Record<RoomTheme, readonly FloorProp[]> = {
+  forest: [],
+  stone: [
+    { kind: 'stone', x: 330, y: 202, scale: 0.48, rotation: 0.12 },
+    { kind: 'stone', x: 944, y: 448, scale: 0.62, rotation: -0.04 }
+  ],
+  mushroom: [
+    { kind: 'mushroom', x: 318, y: 210, scale: 0.48, rotation: 0.1 },
+    { kind: 'mushroom', x: 910, y: 170, scale: 0.44, rotation: -0.08 },
+    { kind: 'mushroom', x: 758, y: 566, scale: 0.52, rotation: 0.04 }
+  ],
+  wizard: [
+    { kind: 'stump', x: 324, y: 218, scale: 0.6, rotation: 0.1 },
+    { kind: 'mushroom', x: 900, y: 504, scale: 0.62, rotation: -0.12 }
+  ]
+};
+
 export const preloadCombatRoomAssets = (_scene: Phaser.Scene) => {};
 
 export class CombatRoomRenderer {
+  private readonly staticObjects: Phaser.GameObjects.GameObject[] = [];
   private baseGraphics?: Phaser.GameObjects.Graphics;
   private doorGraphics?: Phaser.GameObjects.Graphics;
   private spawnGraphics?: Phaser.GameObjects.Graphics;
@@ -65,17 +95,7 @@ export class CombatRoomRenderer {
   ) {}
 
   create() {
-    const { bounds } = this.room;
-
-    this.scene.add
-      .rectangle(
-        bounds.x + bounds.width / 2,
-        bounds.y + bounds.height / 2,
-        bounds.width,
-        bounds.height,
-        FLOOR_COLOR
-      )
-      .setDepth(0);
+    this.drawRoomBase();
     this.drawSimpleFloorDetails();
 
     this.baseGraphics = this.scene.add.graphics().setDepth(2);
@@ -100,30 +120,54 @@ export class CombatRoomRenderer {
   }
 
   private drawFloorMark(mark: FloorMark) {
-    this.scene.add
+    const markObject = this.scene.add
       .rectangle(mark.x, mark.y, mark.width, mark.height, FLOOR_SHADOW, mark.alpha)
       .setRotation(mark.rotation)
       .setDepth(3);
+
+    this.staticObjects.push(markObject);
+  }
+
+  private drawRoomBase() {
+    const { bounds } = this.room;
+    const graphics = this.scene.add.graphics().setDepth(0);
+    const floor = this.getInnerFloorRect();
+    const worldPadding = 140;
+
+    graphics.fillStyle(OUTSIDE_DEEP, 1);
+    graphics.fillRect(
+      bounds.x - worldPadding,
+      bounds.y - worldPadding,
+      bounds.width + worldPadding * 2,
+      bounds.height + worldPadding * 2
+    );
+    graphics.fillStyle(OUTSIDE_COLOR, 1);
+    graphics.fillRect(bounds.x - 20, bounds.y - 20, bounds.width + 40, bounds.height + 40);
+    graphics.fillStyle(this.getThemeFloorColor(), 1);
+    graphics.fillRect(floor.x, floor.y, floor.width, floor.height);
+    graphics.lineStyle(4, WALL_EDGE, 0.78);
+    graphics.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+    this.staticObjects.push(graphics);
   }
 
   private drawSimpleFloorDetails() {
-    const { bounds } = this.room;
     const graphics = this.scene.add.graphics().setDepth(1);
-    const left = bounds.x + bounds.border + 34;
-    const right = bounds.x + bounds.width - bounds.border - 34;
-    const top = bounds.y + bounds.border + 30;
-    const bottom = bounds.y + bounds.height - bounds.border - 30;
+    const floor = this.getInnerFloorRect();
+    const left = floor.x + 26;
+    const right = floor.x + floor.width - 26;
+    const top = floor.y + 24;
+    const bottom = floor.y + floor.height - 24;
 
-    for (let y = top; y <= bottom; y += 68) {
-      for (let x = left; x <= right; x += 104) {
+    for (let y = top; y <= bottom; y += 58) {
+      for (let x = left; x <= right; x += 78) {
         const seed = this.getFloorSeed(x, y);
 
-        if (seed < 0.18) {
+        if (seed < 0.12) {
           continue;
         }
 
-        const detailX = x + (seed - 0.5) * 48;
-        const detailY = y + (this.getFloorSeed(y, x) - 0.5) * 34;
+        const detailX = x + (seed - 0.5) * 52;
+        const detailY = y + (this.getFloorSeed(y, x) - 0.5) * 38;
         const scale = 0.78 + this.getFloorSeed(x + 31, y - 17) * 0.54;
         const shapeSeed = this.getFloorSeed(x - 43, y + 71);
 
@@ -148,6 +192,7 @@ export class CombatRoomRenderer {
     }
 
     this.drawFloorProps(graphics);
+    this.staticObjects.push(graphics);
   }
 
   private getFloorSeed(x: number, y: number): number {
@@ -240,7 +285,7 @@ export class CombatRoomRenderer {
   }
 
   private drawFloorProps(graphics: Phaser.GameObjects.Graphics) {
-    for (const prop of FLOOR_PROPS) {
+    for (const prop of this.getFloorProps()) {
       if (prop.kind === 'stump') {
         this.drawStump(graphics, prop);
       } else if (prop.kind === 'stone') {
@@ -249,6 +294,12 @@ export class CombatRoomRenderer {
         this.drawMushrooms(graphics, prop);
       }
     }
+  }
+
+  private getFloorProps(): readonly FloorProp[] {
+    const theme = this.getRoomTheme();
+
+    return [...FLOOR_PROPS, ...THEME_EXTRA_PROPS[theme]];
   }
 
   private drawStump(graphics: Phaser.GameObjects.Graphics, prop: FloorProp) {
@@ -313,14 +364,56 @@ export class CombatRoomRenderer {
 
     graphics.clear();
     graphics.fillStyle(WALL_DARK, 1);
-    graphics.fillRect(bounds.x - 8, bounds.y - 8, bounds.width + 16, 8);
-    graphics.fillRect(bounds.x - 8, bounds.y + bounds.height, bounds.width + 16, 8);
-    graphics.fillRect(bounds.x - 8, bounds.y, 8, bounds.height);
-    graphics.fillRect(bounds.x + bounds.width, bounds.y, 8, bounds.height);
+    graphics.fillRect(bounds.x - 6, bounds.y - 6, bounds.width + 12, 6);
+    graphics.fillRect(bounds.x - 6, bounds.y + bounds.height, bounds.width + 12, 6);
+    graphics.fillRect(bounds.x - 6, bounds.y, 6, bounds.height);
+    graphics.fillRect(bounds.x + bounds.width, bounds.y, 6, bounds.height);
+
+    this.drawCornerCaps(graphics);
+
+    for (const door of this.room.doors) {
+      this.drawDoorTunnel(graphics, door);
+    }
 
     for (const side of ['north', 'south', 'east', 'west'] as const) {
       this.drawWallSide(graphics, side);
     }
+  }
+
+  private drawCornerCaps(graphics: Phaser.GameObjects.Graphics) {
+    const { bounds } = this.room;
+    const { x, y, width, height, border } = bounds;
+
+    graphics.fillStyle(WALL_DARK, 1);
+    graphics.fillRect(x, y, border, border);
+    graphics.fillRect(x + width - border, y, border, border);
+    graphics.fillRect(x, y + height - border, border, border);
+    graphics.fillRect(x + width - border, y + height - border, border, border);
+    graphics.fillStyle(WALL_MAIN, 1);
+    graphics.fillRect(x + 4, y + 4, border - 4, border - 4);
+    graphics.fillRect(x + width - border, y + 4, border - 4, border - 4);
+    graphics.fillRect(x + 4, y + height - border, border - 4, border - 4);
+    graphics.fillRect(x + width - border, y + height - border, border - 4, border - 4);
+  }
+
+  private drawDoorTunnel(graphics: Phaser.GameObjects.Graphics, door: RoomDoor) {
+    const passage = this.getDoorPassageRect(door);
+    const [start, end] = this.getDoorGap(door);
+
+    graphics.fillStyle(OUTSIDE_DEEP, 1);
+    graphics.fillRect(passage.x, passage.y, passage.width, passage.height);
+    graphics.fillStyle(DOOR_OPEN, 0.82);
+    graphics.fillRect(passage.x + 4, passage.y + 4, passage.width - 8, passage.height - 8);
+    graphics.lineStyle(3, WALL_EDGE, 0.78);
+
+    if (door.side === 'east' || door.side === 'west') {
+      graphics.lineBetween(passage.x, start, passage.x + passage.width, start);
+      graphics.lineBetween(passage.x, end, passage.x + passage.width, end);
+      return;
+    }
+
+    graphics.lineBetween(start, passage.y, start, passage.y + passage.height);
+    graphics.lineBetween(end, passage.y, end, passage.y + passage.height);
   }
 
   private drawWallSide(graphics: Phaser.GameObjects.Graphics, side: RoomDoorSide) {
@@ -338,26 +431,46 @@ export class CombatRoomRenderer {
     const { x, y, width, height, border } = bounds;
     const rect = this.getWallSegmentRect(side, segment);
 
-    graphics.fillStyle(WALL_MAIN, 1);
+    graphics.fillStyle(WALL_DARK, 1);
     graphics.fillRect(rect.x, rect.y, rect.width, rect.height);
-    graphics.lineStyle(2, WALL_EDGE, 0.72);
+    graphics.fillStyle(WALL_MAIN, 1);
+
+    if (side === 'north') {
+      graphics.fillRect(rect.x, rect.y + 4, rect.width, rect.height - 4);
+    } else if (side === 'south') {
+      graphics.fillRect(rect.x, rect.y, rect.width, rect.height - 4);
+    } else if (side === 'west') {
+      graphics.fillRect(rect.x + 4, rect.y, rect.width - 4, rect.height);
+    } else {
+      graphics.fillRect(rect.x, rect.y, rect.width - 4, rect.height);
+    }
+
+    graphics.lineStyle(4, WALL_EDGE, 0.9);
 
     if (side === 'north') {
       graphics.lineBetween(segment.start, y + border, segment.end, y + border);
+      graphics.lineStyle(2, WALL_HIGHLIGHT, 0.5);
+      graphics.lineBetween(segment.start + 4, y + border - 7, segment.end - 4, y + border - 7);
       return;
     }
 
     if (side === 'south') {
       graphics.lineBetween(segment.start, y + height - border, segment.end, y + height - border);
+      graphics.lineStyle(2, WALL_HIGHLIGHT, 0.36);
+      graphics.lineBetween(segment.start + 4, y + height - border + 7, segment.end - 4, y + height - border + 7);
       return;
     }
 
     if (side === 'west') {
       graphics.lineBetween(x + border, segment.start, x + border, segment.end);
+      graphics.lineStyle(2, WALL_HIGHLIGHT, 0.42);
+      graphics.lineBetween(x + border - 7, segment.start + 4, x + border - 7, segment.end - 4);
       return;
     }
 
     graphics.lineBetween(x + width - border, segment.start, x + width - border, segment.end);
+    graphics.lineStyle(2, WALL_HIGHLIGHT, 0.42);
+    graphics.lineBetween(x + width - border + 7, segment.start + 4, x + width - border + 7, segment.end - 4);
   }
 
   private getWallSegments(side: RoomDoorSide): Segment[] {
@@ -463,9 +576,11 @@ export class CombatRoomRenderer {
     const [start, end] = this.getDoorGap(door);
     const color = isCleared ? DOOR_CLEARED : DOOR_OPEN;
 
-    graphics.fillStyle(color, 0.92);
+    graphics.fillStyle(OUTSIDE_DEEP, 0.98);
     graphics.fillRect(passage.x, passage.y, passage.width, passage.height);
-    graphics.lineStyle(2, WALL_EDGE, isCleared ? 0.62 : 0.48);
+    graphics.fillStyle(color, 0.84);
+    graphics.fillRect(passage.x + 6, passage.y + 6, passage.width - 12, passage.height - 12);
+    graphics.lineStyle(3, WALL_EDGE, isCleared ? 0.72 : 0.56);
 
     if (door.side === 'east' || door.side === 'west') {
       graphics.lineBetween(passage.x, start, passage.x + passage.width, start);
@@ -483,19 +598,21 @@ export class CombatRoomRenderer {
     graphics.fillStyle(WALL_DARK, 1);
     graphics.fillRect(slab.x, slab.y, slab.width, slab.height);
     graphics.fillStyle(WALL_MAIN, 1);
-    graphics.fillRect(slab.x + 2, slab.y + 2, slab.width - 4, slab.height - 4);
-    graphics.lineStyle(2, WALL_EDGE, 0.8);
-    graphics.strokeRect(slab.x + 2, slab.y + 2, slab.width - 4, slab.height - 4);
-    graphics.lineStyle(2, 0x273a2e, 0.65);
+    graphics.fillRect(slab.x + 4, slab.y + 4, slab.width - 8, slab.height - 8);
+    graphics.fillStyle(WALL_INNER, 0.72);
+    graphics.fillRect(slab.x + 10, slab.y + 10, slab.width - 20, slab.height - 20);
+    graphics.lineStyle(4, WALL_EDGE, 0.9);
+    graphics.strokeRect(slab.x + 4, slab.y + 4, slab.width - 8, slab.height - 8);
+    graphics.lineStyle(2, WALL_HIGHLIGHT, 0.48);
 
     if (door.side === 'east' || door.side === 'west') {
       const centerX = slab.x + slab.width / 2;
-      graphics.lineBetween(centerX, slab.y + 8, centerX, slab.y + slab.height - 8);
+      graphics.lineBetween(centerX, slab.y + 12, centerX, slab.y + slab.height - 12);
       return;
     }
 
     const centerY = slab.y + slab.height / 2;
-    graphics.lineBetween(slab.x + 8, centerY, slab.x + slab.width - 8, centerY);
+    graphics.lineBetween(slab.x + 12, centerY, slab.x + slab.width - 12, centerY);
   }
 
   private getDoorGap(door: RoomDoor): readonly [number, number] {
@@ -551,6 +668,25 @@ export class CombatRoomRenderer {
     return this.getDoorPassageRect(door);
   }
 
+  private getInnerFloorRect() {
+    const { bounds } = this.room;
+
+    return {
+      x: bounds.x + bounds.border,
+      y: bounds.y + bounds.border,
+      width: bounds.width - bounds.border * 2,
+      height: bounds.height - bounds.border * 2
+    };
+  }
+
+  private getRoomTheme(): RoomTheme {
+    return this.room.theme ?? 'forest';
+  }
+
+  private getThemeFloorColor(): number {
+    return THEME_FLOOR_COLORS[this.getRoomTheme()];
+  }
+
   private drawTriggerState(state: CombatRoomState) {
     const graphics = this.triggerGraphics;
 
@@ -599,5 +735,21 @@ export class CombatRoomRenderer {
       graphics.lineStyle(1, color, ringAlpha);
       graphics.strokeCircle(spawn.x, spawn.y, 7);
     }
+  }
+
+  destroy() {
+    for (const object of this.staticObjects) {
+      object.destroy();
+    }
+
+    this.staticObjects.length = 0;
+    this.baseGraphics?.destroy();
+    this.baseGraphics = undefined;
+    this.doorGraphics?.destroy();
+    this.doorGraphics = undefined;
+    this.spawnGraphics?.destroy();
+    this.spawnGraphics = undefined;
+    this.triggerGraphics?.destroy();
+    this.triggerGraphics = undefined;
   }
 }

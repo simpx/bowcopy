@@ -12,10 +12,19 @@ import { DartGooberSystem } from '../../sim/enemies';
 import { ArrowProjectileSystem, EnemyDartProjectileSystem } from '../../sim/projectiles';
 import { CombatSfxDirector, preloadCombatSfx } from '../../audio/CombatSfxDirector';
 import {
-  advanceCombatRoomWave,
-  createInitialCombatRoomState,
+  OPPOSITE_DOOR_SIDE,
+  clearCurrentDungeonRoom,
+  createCombatRoomDefinitionForDungeonRoom,
+  createInitialDungeonState,
+  enterDungeonRoom,
+  getCurrentDungeonRoom,
+  getNeighborDungeonRoom,
+  isInsideRoomTrigger,
   referenceCombatRoom,
-  type CombatRoomState
+  startCurrentDungeonRoomCombat,
+  type CombatRoomDefinition,
+  type DungeonState,
+  type RoomDoorSide
 } from '../../sim/rooms';
 import { CombatRoomRenderer, preloadCombatRoomAssets } from '../../render/rooms';
 import { BowbertRenderer, preloadBowbertPlayerAssets } from '../../render/player';
@@ -35,6 +44,9 @@ const PLAYER_START = {
   x: referenceCombatRoom.bounds.x + referenceCombatRoom.bounds.width / 2,
   y: referenceCombatRoom.bounds.y + referenceCombatRoom.bounds.height / 2 + 120
 } as const;
+const DOOR_EXIT_MOVE_THRESHOLD = 0.32;
+const DOOR_EXIT_INSET = 38;
+const DOOR_ENTRY_INSET = 64;
 
 const CAMERA_SHAKES: Record<CameraShakeKind, { readonly durationMs: number; readonly intensity: number }> = {
   'arrow-fire': { durationMs: 28, intensity: 0.0006 },
@@ -64,7 +76,8 @@ export class CombatRoomScene extends Phaser.Scene {
   private enemyDartRenderer?: EnemyDartProjectileRenderer;
   private feedbackRenderer?: CombatFeedbackRenderer;
   private sfx?: CombatSfxDirector;
-  private roomState: CombatRoomState = createInitialCombatRoomState();
+  private dungeonState: DungeonState = createInitialDungeonState();
+  private currentRoomDefinition: CombatRoomDefinition = referenceCombatRoom;
 
   constructor() {
     super('CombatRoomScene');
@@ -83,7 +96,11 @@ export class CombatRoomScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#0b120d');
     this.cameras.main.setRoundPixels(true);
 
-    this.roomState = createInitialCombatRoomState();
+    this.dungeonState = createInitialDungeonState();
+    this.currentRoomDefinition = createCombatRoomDefinitionForDungeonRoom(
+      this.dungeonState,
+      getCurrentDungeonRoom(this.dungeonState)
+    );
     this.player = new BowbertPlayerModel({
       x: PLAYER_START.x,
       y: PLAYER_START.y
@@ -93,9 +110,9 @@ export class CombatRoomScene extends Phaser.Scene {
     this.enemyDarts.clear();
     this.playerHealth.reset();
 
-    this.roomRenderer = new CombatRoomRenderer(this, referenceCombatRoom);
+    this.roomRenderer = new CombatRoomRenderer(this, this.currentRoomDefinition);
     this.roomRenderer.create();
-    this.applyRoomState(this.roomState);
+    this.applyCurrentRoomState();
 
     this.projectileRenderer = new ArrowProjectileRenderer(this);
     this.projectileRenderer.create();
@@ -114,7 +131,7 @@ export class CombatRoomScene extends Phaser.Scene {
     this.createHeartsHud();
     this.createTouchInput();
     this.configureCamera();
-    this.centerCameraOnPlayer();
+    this.centerCameraOnRoom();
 
     this.scale.on(Phaser.Scale.Events.RESIZE, this.handleScaleResize);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.disposeRuntime, this);
@@ -125,17 +142,19 @@ export class CombatRoomScene extends Phaser.Scene {
     this.desktopInput?.update();
 
     const snapshot = this.inputController.consumeSnapshot();
-    const playerFrame = this.player.update(snapshot, delta, referenceCombatRoom.bounds);
+    const playerFrame = this.player.update(snapshot, delta, this.currentRoomDefinition.bounds);
 
-    this.centerCameraOnPlayer();
+    this.tryMoveThroughOpenDoor(snapshot.move);
+    this.startCombatIfTriggered();
+    this.centerCameraOnRoom();
     this.handlePlayerEvents(playerFrame.events);
     this.updateEnemyEncounter();
 
-    const projectileEvents = this.projectiles.update(delta, referenceCombatRoom.bounds);
+    const projectileEvents = this.projectiles.update(delta, this.currentRoomDefinition.bounds);
     this.handleProjectileEvents(projectileEvents);
     const enemyFrame = this.enemies.update(
       delta,
-      referenceCombatRoom.bounds,
+      this.currentRoomDefinition.bounds,
       playerFrame.state.position,
       this.projectiles.getActiveArrows()
     );
@@ -148,7 +167,7 @@ export class CombatRoomScene extends Phaser.Scene {
 
     const enemyDartEvents = this.enemyDarts.update(
       delta,
-      referenceCombatRoom.bounds,
+      this.currentRoomDefinition.bounds,
       playerFrame.state.position
     );
 
@@ -231,10 +250,10 @@ export class CombatRoomScene extends Phaser.Scene {
       }
 
       if (event.type === 'dart-goober-encounter-cleared') {
-        this.applyRoomState(advanceCombatRoomWave(this.roomState));
-        this.feedbackRenderer?.playRoomClear(referenceCombatRoom.bounds);
+        clearCurrentDungeonRoom(this.dungeonState);
+        this.applyCurrentRoomState();
+        this.feedbackRenderer?.playRoomClear(this.currentRoomDefinition.bounds);
         this.shakeCamera('room-clear');
-        this.startCurrentWave();
       }
     }
   }
@@ -269,27 +288,148 @@ export class CombatRoomScene extends Phaser.Scene {
   }
 
   private updateEnemyEncounter() {
-    if (this.roomState.phase !== 'combat' || this.enemies.hasEncounterStarted()) {
+    const roomState = getCurrentDungeonRoom(this.dungeonState);
+
+    if (roomState.phase !== 'combat' || this.enemies.hasEncounterStarted()) {
       return;
     }
 
-    this.startCurrentWave();
+    this.startCurrentRoomEncounter();
   }
 
-  private startCurrentWave() {
-    this.enemies.startEncounter(referenceCombatRoom.spawnPoints, {
-      enemyCount: this.roomState.remainingSpawnMarkers,
-      waveIndex: this.roomState.wave
+  private startCurrentRoomEncounter() {
+    const roomState = getCurrentDungeonRoom(this.dungeonState);
+
+    this.enemies.startEncounter(this.currentRoomDefinition.spawnPoints, {
+      enemyCount: roomState.remainingSpawnMarkers,
+      waveIndex: roomState.wave
     });
   }
 
-  private applyRoomState(state: CombatRoomState) {
-    this.roomState = state;
-    this.roomRenderer?.setState(this.roomState);
+  private startCombatIfTriggered() {
+    const roomState = getCurrentDungeonRoom(this.dungeonState);
+
+    if (roomState.phase !== 'open' || !isInsideRoomTrigger(this.currentRoomDefinition, this.player.state.position)) {
+      return;
+    }
+
+    startCurrentDungeonRoomCombat(this.dungeonState);
+    this.enemies.clear();
+    this.enemyDarts.clear();
+    this.projectiles.clear();
+    this.applyCurrentRoomState();
+  }
+
+  private applyCurrentRoomState() {
+    this.roomRenderer?.setState(getCurrentDungeonRoom(this.dungeonState));
+  }
+
+  private tryMoveThroughOpenDoor(move: { readonly x: number; readonly y: number }) {
+    const currentRoom = getCurrentDungeonRoom(this.dungeonState);
+
+    if (currentRoom.phase === 'combat') {
+      return;
+    }
+
+    const exitSide = this.getRequestedExitSide(move);
+
+    if (!exitSide) {
+      return;
+    }
+
+    const nextRoom = getNeighborDungeonRoom(this.dungeonState, currentRoom, exitSide);
+
+    if (!nextRoom) {
+      return;
+    }
+
+    enterDungeonRoom(this.dungeonState, nextRoom.id);
+    this.currentRoomDefinition = createCombatRoomDefinitionForDungeonRoom(
+      this.dungeonState,
+      nextRoom
+    );
+    this.rebuildRoomRenderer();
+    this.clearRoomRuntime();
+    this.placePlayerAtEntry(OPPOSITE_DOOR_SIDE[exitSide]);
+    this.centerCameraOnRoom();
+  }
+
+  private getRequestedExitSide(move: { readonly x: number; readonly y: number }): RoomDoorSide | undefined {
+    const { bounds } = this.currentRoomDefinition;
+    const position = this.player.state.position;
+    const minX = bounds.x + bounds.border + DOOR_EXIT_INSET;
+    const maxX = bounds.x + bounds.width - bounds.border - DOOR_EXIT_INSET;
+    const minY = bounds.y + bounds.border + DOOR_EXIT_INSET;
+    const maxY = bounds.y + bounds.height - bounds.border - DOOR_EXIT_INSET;
+
+    if (move.x > DOOR_EXIT_MOVE_THRESHOLD && position.x >= maxX && this.isPlayerAlignedWithDoor('east')) return 'east';
+    if (move.x < -DOOR_EXIT_MOVE_THRESHOLD && position.x <= minX && this.isPlayerAlignedWithDoor('west')) return 'west';
+    if (move.y > DOOR_EXIT_MOVE_THRESHOLD && position.y >= maxY && this.isPlayerAlignedWithDoor('south')) return 'south';
+    if (move.y < -DOOR_EXIT_MOVE_THRESHOLD && position.y <= minY && this.isPlayerAlignedWithDoor('north')) return 'north';
+
+    return undefined;
+  }
+
+  private isPlayerAlignedWithDoor(side: RoomDoorSide): boolean {
+    const door = this.currentRoomDefinition.doors.find((candidate) => candidate.side === side);
+
+    if (!door) {
+      return false;
+    }
+
+    const position = this.player.state.position;
+    const margin = 30;
+    const axisPosition = side === 'east' || side === 'west' ? position.y : position.x;
+
+    return axisPosition >= door.center - door.span / 2 - margin && axisPosition <= door.center + door.span / 2 + margin;
+  }
+
+  private rebuildRoomRenderer() {
+    this.roomRenderer?.destroy();
+    this.roomRenderer = new CombatRoomRenderer(this, this.currentRoomDefinition);
+    this.roomRenderer.create();
+    this.applyCurrentRoomState();
+  }
+
+  private clearRoomRuntime() {
+    this.enemies.clear();
+    this.projectiles.clear();
+    this.enemyDarts.clear();
+  }
+
+  private placePlayerAtEntry(entrySide: RoomDoorSide) {
+    const { bounds, doors } = this.currentRoomDefinition;
+    const entryDoor = doors.find((door) => door.side === entrySide);
+    const horizontalCenter = bounds.x + bounds.width / 2;
+    const verticalCenter = bounds.y + bounds.height / 2;
+
+    if (entrySide === 'west') {
+      this.player.state.position = {
+        x: bounds.x + bounds.border + DOOR_ENTRY_INSET,
+        y: entryDoor?.center ?? verticalCenter
+      };
+    } else if (entrySide === 'east') {
+      this.player.state.position = {
+        x: bounds.x + bounds.width - bounds.border - DOOR_ENTRY_INSET,
+        y: entryDoor?.center ?? verticalCenter
+      };
+    } else if (entrySide === 'north') {
+      this.player.state.position = {
+        x: entryDoor?.center ?? horizontalCenter,
+        y: bounds.y + bounds.border + DOOR_ENTRY_INSET
+      };
+    } else {
+      this.player.state.position = {
+        x: entryDoor?.center ?? horizontalCenter,
+        y: bounds.y + bounds.height - bounds.border - DOOR_ENTRY_INSET
+      };
+    }
+
+    this.player.state.velocity = { x: 0, y: 0 };
   }
 
   private clampToRoomFeedbackPosition(position: { readonly x: number; readonly y: number }) {
-    const { bounds } = referenceCombatRoom;
+    const { bounds } = this.currentRoomDefinition;
     const readableMargin = bounds.border + 54;
 
     return {
@@ -306,46 +446,34 @@ export class CombatRoomScene extends Phaser.Scene {
 
   private readonly handleScaleResize = () => {
     this.configureCamera();
-    this.centerCameraOnPlayer();
+    this.centerCameraOnRoom();
   };
 
   private configureCamera() {
     const camera = this.cameras.main;
     const viewport = applyHiDpiCanvas(this);
-    const zoom = Math.max(
-      viewport.cssWidth / CAMERA_VIEW.width,
-      viewport.cssHeight / CAMERA_VIEW.height
+    const targetWidth = Math.max(CAMERA_VIEW.width, this.currentRoomDefinition.bounds.width + 44);
+    const targetHeight = Math.max(CAMERA_VIEW.height, this.currentRoomDefinition.bounds.height + 44);
+    const zoom = Math.min(
+      viewport.cssWidth / targetWidth,
+      viewport.cssHeight / targetHeight
     ) * viewport.pixelRatio;
 
     camera.setViewport(0, 0, viewport.renderWidth, viewport.renderHeight);
     camera.setZoom(zoom);
     camera.setBounds(
-      referenceCombatRoom.bounds.x,
-      referenceCombatRoom.bounds.y,
-      referenceCombatRoom.bounds.width,
-      referenceCombatRoom.bounds.height
+      this.currentRoomDefinition.bounds.x - 96,
+      this.currentRoomDefinition.bounds.y - 96,
+      this.currentRoomDefinition.bounds.width + 192,
+      this.currentRoomDefinition.bounds.height + 192
     );
   }
 
-  private centerCameraOnPlayer() {
+  private centerCameraOnRoom() {
     const camera = this.cameras.main;
-    const { bounds } = referenceCombatRoom;
-    const visibleWidth = camera.width / camera.zoom;
-    const visibleHeight = camera.height / camera.zoom;
-    const minCenterX = bounds.x + visibleWidth / 2;
-    const maxCenterX = bounds.x + bounds.width - visibleWidth / 2;
-    const minCenterY = bounds.y + visibleHeight / 2;
-    const maxCenterY = bounds.y + bounds.height - visibleHeight / 2;
-    const centerX =
-      minCenterX > maxCenterX
-        ? bounds.x + bounds.width / 2
-        : Phaser.Math.Clamp(this.player.state.position.x, minCenterX, maxCenterX);
-    const centerY =
-      minCenterY > maxCenterY
-        ? bounds.y + bounds.height / 2
-        : Phaser.Math.Clamp(this.player.state.position.y, minCenterY, maxCenterY);
+    const { bounds } = this.currentRoomDefinition;
 
-    camera.centerOn(centerX, centerY);
+    camera.centerOn(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
   }
 
   private disposeRuntime() {
@@ -356,6 +484,8 @@ export class CombatRoomScene extends Phaser.Scene {
     this.heartsHud = undefined;
     this.touchOverlay?.dispose();
     this.touchOverlay = undefined;
+    this.roomRenderer?.destroy();
+    this.roomRenderer = undefined;
     this.playerRenderer?.destroy();
     this.playerRenderer = undefined;
     this.projectileRenderer?.destroy();
