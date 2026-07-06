@@ -19,7 +19,6 @@ import {
   enterDungeonRoom,
   getCurrentDungeonRoom,
   getNeighborDungeonRoom,
-  isInsideRoomTrigger,
   referenceCombatRoom,
   startCurrentDungeonRoomCombat,
   type CombatRoomDefinition,
@@ -145,7 +144,6 @@ export class CombatRoomScene extends Phaser.Scene {
     const playerFrame = this.player.update(snapshot, delta, this.currentRoomDefinition.bounds);
 
     this.tryMoveThroughOpenDoor(snapshot.move);
-    this.startCombatIfTriggered();
     this.centerCameraOnRoom();
     this.handlePlayerEvents(playerFrame.events);
     this.updateEnemyEncounter();
@@ -306,10 +304,10 @@ export class CombatRoomScene extends Phaser.Scene {
     });
   }
 
-  private startCombatIfTriggered() {
+  private startCombatInCurrentRoomIfNeeded() {
     const roomState = getCurrentDungeonRoom(this.dungeonState);
 
-    if (roomState.phase !== 'open' || !isInsideRoomTrigger(this.currentRoomDefinition, this.player.state.position)) {
+    if (roomState.phase !== 'open') {
       return;
     }
 
@@ -351,6 +349,7 @@ export class CombatRoomScene extends Phaser.Scene {
     this.rebuildRoomRenderer();
     this.clearRoomRuntime();
     this.placePlayerAtEntry(OPPOSITE_DOOR_SIDE[exitSide]);
+    this.startCombatInCurrentRoomIfNeeded();
     this.centerCameraOnRoom();
   }
 

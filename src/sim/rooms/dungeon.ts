@@ -31,14 +31,15 @@ export interface DungeonState {
   currentRoomId: string;
 }
 
-const START_GRID = { x: 2, y: 2 } as const;
+const START_GRID = { x: 2, y: 4 } as const;
 
 const DUNGEON_BLUEPRINT = [
-  '.....',
-  '.....',
-  '..SNN',
-  '..NW.',
-  '..B..'
+  '..B..',
+  '..N..',
+  '.NNN.',
+  '..N..',
+  '.NS..',
+  '.W...'
 ] as const;
 
 const ROOM_KIND_BY_SYMBOL: Partial<Record<string, DungeonRoomKind>> = {
