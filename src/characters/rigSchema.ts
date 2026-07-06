@@ -160,8 +160,10 @@ export interface DartGooberCharacterRig {
   readonly attack: DartGooberAttackRig;
 }
 
+export type ShroomCharacterId = 'red-shroom' | 'purple-shroom';
+
 export interface RedShroomCharacterRig {
-  readonly id: 'red-shroom';
+  readonly id: ShroomCharacterId;
   readonly base: FixedImageRigLayer;
   readonly attachments: {
     readonly eyes: { readonly source: CharacterAttachmentSource; readonly role: string };

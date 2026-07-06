@@ -2,11 +2,13 @@ import type { SimVector } from '../player';
 import type { ArrowProjectile, ShroomSporeBurstRequest } from '../projectiles';
 import type { RoomBounds, RoomSpawnPoint } from '../rooms';
 
+export type ShroomVariant = 'red' | 'purple';
 export type RedShroomPhase = 'spawning' | 'charging' | 'recovering';
 
 export interface RedShroomEnemy {
   readonly id: number;
   readonly spawnId: string;
+  readonly variant: ShroomVariant;
   position: SimVector;
   facing: SimVector;
   hp: number;
@@ -30,11 +32,13 @@ export type RedShroomEvent =
   | {
       type: 'red-shroom-spawned';
       id: number;
+      variant: ShroomVariant;
       position: SimVector;
     }
   | {
       type: 'red-shroom-hit';
       id: number;
+      variant: ShroomVariant;
       arrowId: number;
       position: SimVector;
       hp: number;
@@ -43,6 +47,7 @@ export type RedShroomEvent =
   | {
       type: 'red-shroom-killed';
       id: number;
+      variant: ShroomVariant;
       position: SimVector;
     }
   | ({
@@ -61,6 +66,7 @@ export interface RedShroomFrame {
 export interface RedShroomEncounterOptions {
   readonly enemyCount?: number;
   readonly waveIndex?: number;
+  readonly variant?: ShroomVariant;
 }
 
 const DEFAULT_ENCOUNTER_SIZE = 2;
@@ -82,6 +88,35 @@ const SPORE_LINGER_MS = 860;
 const SPORE_ORIGIN_Y = -46;
 const SPORE_COLOR = 0xff4d54;
 const DEAD_ZONE = 0.001;
+
+const SHROOM_RULES: Record<
+  ShroomVariant,
+  {
+    readonly maxHp: number;
+    readonly sporeDistance: number;
+    readonly sporeTravelMs: number;
+    readonly sporeLingerMs: number;
+    readonly sporeOriginY: number;
+    readonly sporeColor: number;
+  }
+> = {
+  red: {
+    maxHp: MAX_HP,
+    sporeDistance: SPORE_DISTANCE,
+    sporeTravelMs: SPORE_TRAVEL_MS,
+    sporeLingerMs: SPORE_LINGER_MS,
+    sporeOriginY: SPORE_ORIGIN_Y,
+    sporeColor: SPORE_COLOR
+  },
+  purple: {
+    maxHp: MAX_HP,
+    sporeDistance: 178,
+    sporeTravelMs: 610,
+    sporeLingerMs: 820,
+    sporeOriginY: -48,
+    sporeColor: 0x8d75ff
+  }
+};
 
 const copyVector = (vector: SimVector): SimVector => ({
   x: vector.x,
@@ -170,6 +205,7 @@ export class RedShroomSystem {
   private nextSpawnMs = 0;
   private encounterStarted = false;
   private encounterCleared = false;
+  private encounterVariant: ShroomVariant = 'red';
 
   startEncounter(
     spawnPoints: readonly RoomSpawnPoint[],
@@ -177,6 +213,7 @@ export class RedShroomSystem {
   ) {
     this.clear();
     this.encounterStarted = true;
+    this.encounterVariant = options.variant ?? 'red';
     this.pendingSpawns = pickEncounterSpawns(spawnPoints, options.enemyCount ?? DEFAULT_ENCOUNTER_SIZE);
     this.nextSpawnMs = Math.max(130, FIRST_SPAWN_DELAY_MS - (options.waveIndex ?? 1) * 16);
   }
@@ -257,18 +294,22 @@ export class RedShroomSystem {
     events.push({
       type: 'red-shroom-spawned',
       id: enemy.id,
+      variant: enemy.variant,
       position: copyVector(enemy.position)
     });
   }
 
   private createEnemy(spawn: RoomSpawnPoint): RedShroomRuntime {
+    const rules = SHROOM_RULES[this.encounterVariant];
+
     return {
       id: this.nextId++,
       spawnId: spawn.id,
+      variant: this.encounterVariant,
       position: { x: spawn.x, y: spawn.y },
       facing: { x: 0, y: 1 },
-      hp: MAX_HP,
-      maxHp: MAX_HP,
+      hp: rules.maxHp,
+      maxHp: rules.maxHp,
       phase: 'spawning',
       phaseElapsedMs: 0,
       phaseDurationMs: SPAWN_DURATION_MS,
@@ -312,6 +353,7 @@ export class RedShroomSystem {
         events.push({
           type: 'red-shroom-hit',
           id: enemy.id,
+          variant: enemy.variant,
           arrowId: arrow.id,
           position: copyVector(enemy.position),
           hp: enemy.hp,
@@ -323,6 +365,7 @@ export class RedShroomSystem {
           events.push({
             type: 'red-shroom-killed',
             id: enemy.id,
+            variant: enemy.variant,
             position: copyVector(enemy.position)
           });
           break;
@@ -368,21 +411,24 @@ export class RedShroomSystem {
     enemy.sporeCharge = clamp01(enemy.phaseElapsedMs / CHARGE_FIRE_AT_MS);
 
     if (!enemy.burstFired && enemy.phaseElapsedMs >= CHARGE_FIRE_AT_MS) {
+      const rules = SHROOM_RULES[enemy.variant];
+
       enemy.burstFired = true;
       enemy.releasePulse = 1;
       events.push({
         type: 'red-shroom-spore-burst',
         enemyId: enemy.id,
+        variant: enemy.variant,
         origin: {
           x: enemy.position.x,
-          y: enemy.position.y + SPORE_ORIGIN_Y
+          y: enemy.position.y + rules.sporeOriginY
         },
-        distance: SPORE_DISTANCE,
-        travelMs: SPORE_TRAVEL_MS,
-        lingerMs: SPORE_LINGER_MS,
+        distance: rules.sporeDistance,
+        travelMs: rules.sporeTravelMs,
+        lingerMs: rules.sporeLingerMs,
         damage: SPORE_DAMAGE,
         radius: SPORE_RADIUS,
-        color: SPORE_COLOR
+        color: rules.sporeColor
       });
     }
 

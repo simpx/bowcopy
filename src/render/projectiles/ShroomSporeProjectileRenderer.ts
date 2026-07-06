@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-import { RED_SHROOM_CHARACTER } from '../characters/layeredCharacterConfig';
+import { PURPLE_SHROOM_CHARACTER, RED_SHROOM_CHARACTER } from '../characters/layeredCharacterConfig';
 import type {
   ShroomSporeProjectile,
   ShroomSporeProjectileEvent
@@ -24,10 +24,16 @@ const IMPACT_DEPTH = 60;
 const PLAYER_IMPACT_COLOR = 0xffd0d5;
 const EXPIRE_COLOR = 0xff7380;
 const IMPACT_DURATION_MS = 210;
+const SPORE_CONFIGS = {
+  red: RED_SHROOM_CHARACTER.spores,
+  purple: PURPLE_SHROOM_CHARACTER.spores
+} as const;
 
 export const preloadShroomSporeProjectileAssets = (scene: Phaser.Scene) => {
-  if (!scene.textures.exists(RED_SHROOM_CHARACTER.spores.textureKey)) {
-    scene.load.image(RED_SHROOM_CHARACTER.spores.textureKey, RED_SHROOM_CHARACTER.spores.imageUrl);
+  for (const config of Object.values(SPORE_CONFIGS)) {
+    if (!scene.textures.exists(config.textureKey)) {
+      scene.load.image(config.textureKey, config.imageUrl);
+    }
   }
 };
 
@@ -91,7 +97,7 @@ export class ShroomSporeProjectileRenderer {
         const previous = spore.trail[index - 1];
         const point = spore.trail[index];
         const progress = index / Math.max(1, spore.trail.length - 1);
-        const width = RED_SHROOM_CHARACTER.spores.trailWidth * progress;
+        const width = SPORE_CONFIGS[spore.variant].trailWidth * progress;
 
         graphics.lineStyle(width, spore.color, 0.04 + progress * 0.28);
         graphics.lineBetween(previous.x, previous.y, point.x, point.y);
@@ -105,10 +111,15 @@ export class ShroomSporeProjectileRenderer {
     for (const spore of spores) {
       activeIds.add(spore.id);
 
-      const visual = this.spores.get(spore.id) ?? this.createSporeVisual(spore.id);
+      const visual = this.spores.get(spore.id) ?? this.createSporeVisual(spore.id, spore.variant);
       const travelProgress = Math.min(1, spore.ageMs / spore.travelMs);
       const wobble = Math.sin(spore.ageMs * 0.026 + spore.id) * 0.08;
-      const scale = RED_SHROOM_CHARACTER.spores.scale * (0.78 + travelProgress * 0.22);
+      const config = SPORE_CONFIGS[spore.variant];
+      const scale = config.scale * (0.78 + travelProgress * 0.22);
+
+      if (visual.sprite.texture.key !== config.textureKey) {
+        visual.sprite.setTexture(config.textureKey);
+      }
 
       visual.sprite.setPosition(spore.position.x, spore.position.y);
       visual.sprite.setRotation(Math.atan2(spore.direction.y, spore.direction.x) + wobble);
@@ -125,9 +136,9 @@ export class ShroomSporeProjectileRenderer {
     }
   }
 
-  private createSporeVisual(id: number): SporeVisual {
+  private createSporeVisual(id: number, variant: ShroomSporeProjectile['variant']): SporeVisual {
     const sprite = this.scene.add
-      .image(0, 0, RED_SHROOM_CHARACTER.spores.textureKey)
+      .image(0, 0, SPORE_CONFIGS[variant].textureKey)
       .setOrigin(0.5);
     const visual = { sprite };
 

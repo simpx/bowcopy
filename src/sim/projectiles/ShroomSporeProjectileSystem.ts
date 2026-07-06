@@ -1,8 +1,11 @@
 import type { SimVector } from '../player';
 import type { RoomBounds } from '../rooms';
 
+export type ShroomSporeVariant = 'red' | 'purple';
+
 export interface ShroomSporeProjectile {
   readonly id: number;
+  readonly variant: ShroomSporeVariant;
   readonly origin: SimVector;
   readonly target: SimVector;
   readonly direction: SimVector;
@@ -18,6 +21,7 @@ export interface ShroomSporeProjectile {
 }
 
 export interface ShroomSporeBurstRequest {
+  readonly variant: ShroomSporeVariant;
   readonly origin: SimVector;
   readonly distance: number;
   readonly travelMs: number;
@@ -121,6 +125,7 @@ export class ShroomSporeProjectileSystem {
       const direction = normalize(burstDirection);
       const spore: ShroomSporeProjectile = {
         id: this.nextId,
+        variant: request.variant,
         origin: copyVector(request.origin),
         target: {
           x: request.origin.x + direction.x * request.distance,

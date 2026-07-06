@@ -9,7 +9,7 @@ import { DungeonMinimap } from '../../ui/DungeonMinimap';
 import { HeartsHud } from '../../ui/HeartsHud';
 import { TouchInputOverlay } from '../../ui/TouchInputOverlay';
 import { BowbertPlayerModel, type BowbertPlayerEvent } from '../../sim/player';
-import { DartGooberSystem, RedShroomSystem } from '../../sim/enemies';
+import { DartGooberSystem, RedShroomSystem, type ShroomVariant } from '../../sim/enemies';
 import { ArrowProjectileSystem, EnemyDartProjectileSystem, ShroomSporeProjectileSystem } from '../../sim/projectiles';
 import { CombatSfxDirector, preloadCombatSfx } from '../../audio/CombatSfxDirector';
 import {
@@ -411,7 +411,8 @@ export class CombatRoomScene extends Phaser.Scene {
     if (this.getCurrentEncounterKind() === 'red-shroom') {
       this.redShrooms.startEncounter(this.currentRoomDefinition.spawnPoints, {
         enemyCount: Math.max(1, Math.ceil(roomState.remainingSpawnMarkers * 0.55)),
-        waveIndex: roomState.wave
+        waveIndex: roomState.wave,
+        variant: this.getCurrentShroomVariant()
       });
     } else {
       this.enemies.startEncounter(this.currentRoomDefinition.spawnPoints, {
@@ -439,6 +440,10 @@ export class CombatRoomScene extends Phaser.Scene {
 
   private getCurrentEncounterKind(): EncounterKind {
     return this.currentRoomDefinition.theme === 'mushroom' ? 'red-shroom' : 'dart-goober';
+  }
+
+  private getCurrentShroomVariant(): ShroomVariant {
+    return (this.currentRoomDefinition.decorSeed ?? 0) > 0.5 ? 'purple' : 'red';
   }
 
   private hasCurrentEncounterStarted(): boolean {

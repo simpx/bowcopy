@@ -1,13 +1,14 @@
 import Phaser from 'phaser';
 
 import {
+  PURPLE_SHROOM_CHARACTER,
   RED_SHROOM_CHARACTER,
   type EmbeddedEyeTuning,
   type EyeEmotionTuning,
   type EyeName,
   type RedShroomEyeEmotion
 } from '../characters/layeredCharacterConfig';
-import type { RedShroomEnemy, RedShroomEvent } from '../../sim/enemies';
+import type { RedShroomEnemy, RedShroomEvent, ShroomVariant } from '../../sim/enemies';
 import type { SimVector } from '../../sim/player';
 
 interface RedShroomEyeVisual {
@@ -17,6 +18,7 @@ interface RedShroomEyeVisual {
 }
 
 interface RedShroomVisual {
+  readonly variant: ShroomVariant;
   readonly container: Phaser.GameObjects.Container;
   readonly shadow: Phaser.GameObjects.Ellipse;
   readonly artLayer: Phaser.GameObjects.Container;
@@ -34,7 +36,6 @@ interface RedShroomParticle {
   durationMs: number;
 }
 
-const BODY_SCALE = RED_SHROOM_CHARACTER.base.scale;
 const HIT_FLASH_MS = 190;
 const PARTICLE_DEPTH = 78;
 const EYE_NAMES: readonly EyeName[] = ['left', 'right'];
@@ -43,6 +44,10 @@ const HIT_COLORS = [0xfff1b5, 0xff5a68] as const;
 const BURST_COLORS = [0xff4d54, 0xff8a7b, 0xfff1d0] as const;
 const DEATH_COLORS = [0xff4d54, 0xf5e38a, 0x111111] as const;
 const EYE_PUPIL_COLOR = 0x050505;
+const SHROOM_CHARACTERS = {
+  red: RED_SHROOM_CHARACTER,
+  purple: PURPLE_SHROOM_CHARACTER
+} as const;
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
@@ -65,8 +70,10 @@ const normalize = (vector: SimVector): SimVector => {
 };
 
 export const preloadRedShroomAssets = (scene: Phaser.Scene) => {
-  if (!scene.textures.exists(RED_SHROOM_CHARACTER.base.textureKey)) {
-    scene.load.image(RED_SHROOM_CHARACTER.base.textureKey, RED_SHROOM_CHARACTER.base.imageUrl);
+  for (const character of Object.values(SHROOM_CHARACTERS)) {
+    if (!scene.textures.exists(character.base.textureKey)) {
+      scene.load.image(character.base.textureKey, character.base.imageUrl);
+    }
   }
 };
 
@@ -126,7 +133,7 @@ export class RedShroomRenderer {
     for (const enemy of enemies) {
       activeIds.add(enemy.id);
 
-      const visual = this.visuals.get(enemy.id) ?? this.createVisual(enemy.id);
+      const visual = this.visuals.get(enemy.id) ?? this.createVisual(enemy.id, enemy.variant);
 
       this.updateVisual(timeMs, enemy, visual);
     }
@@ -139,8 +146,8 @@ export class RedShroomRenderer {
     }
   }
 
-  private createVisual(id: number): RedShroomVisual {
-    const { base, gaze } = RED_SHROOM_CHARACTER;
+  private createVisual(id: number, variant: ShroomVariant): RedShroomVisual {
+    const { base, gaze } = SHROOM_CHARACTERS[variant];
     const shadow = this.scene.add.ellipse(
       0,
       base.shadow.y,
@@ -153,7 +160,7 @@ export class RedShroomRenderer {
       .image(0, 0, base.textureKey)
       .setOrigin(0.5);
     const eyes = Object.fromEntries(
-      EYE_NAMES.map((name) => [name, this.createEye(gaze.eyes[name])])
+      EYE_NAMES.map((name) => [name, this.createEye(gaze.eyes[name], variant)])
     ) as Record<EyeName, RedShroomEyeVisual>;
     const artLayer = this.scene.add.container(
       0,
@@ -163,6 +170,7 @@ export class RedShroomRenderer {
     const chargeGlow = this.scene.add.circle(0, -42, 12, 0xff4d54, 0);
     const container = this.scene.add.container(0, 0, [shadow, artLayer, chargeGlow]);
     const visual = {
+      variant,
       container,
       shadow,
       artLayer,
@@ -177,6 +185,7 @@ export class RedShroomRenderer {
   }
 
   private updateVisual(timeMs: number, enemy: RedShroomEnemy, visual: RedShroomVisual) {
+    const character = SHROOM_CHARACTERS[enemy.variant];
     const idleWave = Math.sin(timeMs * 0.0038 + enemy.id * 0.9);
     const hitFlash = clamp01(enemy.hitFlashMs / HIT_FLASH_MS);
     const spawnEase = this.getSpawnEase(enemy.spawnProgress);
@@ -185,11 +194,11 @@ export class RedShroomRenderer {
     const facing = normalize(enemy.facing);
     const emotion = this.getEyeEmotion(enemy, charge, hitFlash, release);
     const squash =
-      idleWave * RED_SHROOM_CHARACTER.motion.idleSquash +
-      charge * RED_SHROOM_CHARACTER.motion.chargeSquash -
-      release * RED_SHROOM_CHARACTER.motion.releaseSquash;
-    const scaleX = BODY_SCALE * (1 + squash + hitFlash * RED_SHROOM_CHARACTER.motion.hitScaleX);
-    const scaleY = BODY_SCALE * (1 - squash - hitFlash * RED_SHROOM_CHARACTER.motion.hitScaleY);
+      idleWave * character.motion.idleSquash +
+      charge * character.motion.chargeSquash -
+      release * character.motion.releaseSquash;
+    const scaleX = character.base.scale * (1 + squash + hitFlash * character.motion.hitScaleX);
+    const scaleY = character.base.scale * (1 - squash - hitFlash * character.motion.hitScaleY);
 
     visual.container.setPosition(enemy.position.x, enemy.position.y);
     visual.container.setDepth(68 + enemy.position.y / 1000);
@@ -200,12 +209,12 @@ export class RedShroomRenderer {
     visual.shadow.setScale(0.82 + spawnEase * 0.18 + charge * 0.1, 1);
     visual.shadow.setAlpha(0.12 + spawnEase * 0.22);
 
-    visual.artLayer.setPosition(0, RED_SHROOM_CHARACTER.base.y + idleWave * RED_SHROOM_CHARACTER.motion.idleBob - release * 4);
+    visual.artLayer.setPosition(0, character.base.y + idleWave * character.motion.idleBob - release * 4);
     visual.artLayer.setScale(scaleX, scaleY);
     visual.body.setTint(hitFlash > 0 ? 0xfff0df : charge > 0.1 ? 0xffd2d6 : 0xffffff);
-    this.updateEyes(visual.eyes, facing, emotion, timeMs);
+    this.updateEyes(visual.eyes, enemy.variant, facing, emotion, timeMs);
 
-    visual.chargeGlow.setPosition(0, RED_SHROOM_CHARACTER.spores.originOffsetY);
+    visual.chargeGlow.setPosition(0, character.spores.originOffsetY);
     visual.chargeGlow.setScale(0.4 + charge * 1.2 + release * 0.7);
     visual.chargeGlow.setAlpha(charge * 0.28 + release * 0.38);
   }
@@ -237,8 +246,8 @@ export class RedShroomRenderer {
     return enemy.phase === 'charging' ? 'angry' : 'default';
   }
 
-  private createEye(tuning: EmbeddedEyeTuning): RedShroomEyeVisual {
-    const { width, height } = RED_SHROOM_CHARACTER.base.imageSize;
+  private createEye(tuning: EmbeddedEyeTuning, variant: ShroomVariant): RedShroomEyeVisual {
+    const { width, height } = SHROOM_CHARACTERS[variant].base.imageSize;
     const container = this.scene.add.container(
       (tuning.x - 0.5) * width,
       (tuning.y - 0.5) * height
@@ -256,33 +265,36 @@ export class RedShroomRenderer {
 
   private updateEyes(
     eyes: Record<EyeName, RedShroomEyeVisual>,
+    variant: ShroomVariant,
     facing: SimVector,
     eyeEmotion: RedShroomEyeEmotion,
     timeMs: number
   ) {
-    const emotion = RED_SHROOM_CHARACTER.gaze.emotions[eyeEmotion];
-    const { width, height } = RED_SHROOM_CHARACTER.base.imageSize;
+    const character = SHROOM_CHARACTERS[variant];
+    const emotion = character.gaze.emotions[eyeEmotion];
+    const { width, height } = character.base.imageSize;
     const offsetX =
-      Phaser.Math.Clamp(facing.x, -1, 1) * width * RED_SHROOM_CHARACTER.gaze.pupilOffsetScale.x +
+      Phaser.Math.Clamp(facing.x, -1, 1) * width * character.gaze.pupilOffsetScale.x +
       emotion.pupilShiftX * width;
     const offsetY =
-      Phaser.Math.Clamp(facing.y, -1, 1) * height * RED_SHROOM_CHARACTER.gaze.pupilOffsetScale.y +
+      Phaser.Math.Clamp(facing.y, -1, 1) * height * character.gaze.pupilOffsetScale.y +
       emotion.pupilShiftY * height;
 
     for (const name of EYE_NAMES) {
-      this.updateEye(eyes[name], name, emotion, offsetX, offsetY, timeMs);
+      this.updateEye(eyes[name], variant, name, emotion, offsetX, offsetY, timeMs);
     }
   }
 
   private updateEye(
     eye: RedShroomEyeVisual,
+    variant: ShroomVariant,
     name: EyeName,
     emotion: EyeEmotionTuning,
     offsetX: number,
     offsetY: number,
     timeMs: number
   ) {
-    const { width, height } = RED_SHROOM_CHARACTER.base.imageSize;
+    const { width, height } = SHROOM_CHARACTERS[variant].base.imageSize;
     const side = name === 'left' ? -1 : 1;
     const tiltDirection = emotion.eyeTiltMode === 'same' ? 1 : side;
     const lidCompression = 1 - (emotion.upperLid + emotion.lowerLid) * 0.24;

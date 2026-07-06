@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Red Shroom Tuning</title>
+  <title>Shroom Tuning</title>
   <style>
     :root {
       color-scheme: dark;
@@ -222,15 +222,21 @@
 <body>
   <header class="topbar">
     <div>
-      <h1>Red Shroom Tuning</h1>
+      <h1>Shroom Tuning</h1>
       <div class="meta">runtime eyes, motion, spore burst</div>
     </div>
-    <select id="previewMode">
-      <option value="idle">idle</option>
-      <option value="charge">charge</option>
-      <option value="release">release</option>
-      <option value="hit">hit</option>
-    </select>
+    <div class="copy-row">
+      <select id="shroomSelect">
+        <option value="red">red shroom</option>
+        <option value="purple">purple shroom</option>
+      </select>
+      <select id="previewMode">
+        <option value="idle">idle</option>
+        <option value="charge">charge</option>
+        <option value="release">release</option>
+        <option value="hit">hit</option>
+      </select>
+    </div>
   </header>
 
   <main class="layout">
@@ -334,44 +340,40 @@
   </main>
 
   <script>
-    const BODY_SRC = '../assets/enemies/red_shroom/red-shroom-ai-v2-base.png';
-    const SPORE_SRC = '../assets/enemies/red_shroom/red-spore-ai-v3.png';
-    const BODY_SIZE = { width: 708, height: 778 };
-    const SPORE_SIZE = { width: 597, height: 604 };
-    const EYE_POSITIONS = {
-      left: { x: 0.135, y: 0.535, radiusX: 0.062, radiusY: 0.062, rotation: -0.04 },
-      right: { x: 0.866, y: 0.535, radiusX: 0.062, radiusY: 0.062, rotation: 0.04 }
-    };
-    const DEFAULTS = {
-      eyes: {
-        shape: 'cut-ellipse',
-        eyeTiltAdd: 0.02,
-        eyeScaleX: 1.18,
-        eyeScaleY: 1.02,
-        pupilScale: 1.08,
-        pupilShiftX: 0,
-        pupilShiftY: -0.002,
-        cutSlope: 1.52,
-        cutOffset: -0.34
+    const SHROOMS = {
+      red: {
+        id: 'red-shroom',
+        bodySrc: '../assets/enemies/red_shroom/red-shroom-ai-v2-base.png',
+        sporeSrc: '../assets/enemies/red_shroom/red-spore-ai-v3.png',
+        bodySize: { width: 708, height: 778 },
+        sporeSize: { width: 597, height: 604 },
+        eyePositions: {
+          left: { x: 0.135, y: 0.535, radiusX: 0.062, radiusY: 0.062, rotation: -0.04 },
+          right: { x: 0.866, y: 0.535, radiusX: 0.062, radiusY: 0.062, rotation: 0.04 }
+        },
+        defaults: {
+          eyes: { shape: 'cut-ellipse', eyeTiltAdd: 0.02, eyeScaleX: 1.18, eyeScaleY: 1.02, pupilScale: 1.08, pupilShiftX: 0, pupilShiftY: -0.002, cutSlope: 1.52, cutOffset: -0.34 },
+          motion: { idleBob: 2.8, idleSquash: 0.02, chargeSquash: 0.12, releaseSquash: 0.16 },
+          spores: { scale: 0.048, originOffsetY: -46, burstDistance: 184, travelMs: 560, lingerMs: 860, trailLength: 12, trailWidth: 16, trailColor: 0xff4d54 },
+          preview: { sporeProgress: 0.72 }
+        }
       },
-      motion: {
-        idleBob: 2.8,
-        idleSquash: 0.02,
-        chargeSquash: 0.12,
-        releaseSquash: 0.16
-      },
-      spores: {
-        scale: 0.048,
-        originOffsetY: -46,
-        burstDistance: 184,
-        travelMs: 560,
-        lingerMs: 860,
-        trailLength: 12,
-        trailWidth: 16,
-        trailColor: 0xff4d54
-      },
-      preview: {
-        sporeProgress: 0.72
+      purple: {
+        id: 'purple-shroom',
+        bodySrc: '../assets/enemies/purple_shroom/purple-shroom-ai-v1-base.png',
+        sporeSrc: '../assets/enemies/purple_shroom/purple-spore-ai-v1.png',
+        bodySize: { width: 856, height: 905 },
+        sporeSize: { width: 596, height: 607 },
+        eyePositions: {
+          left: { x: 0.161, y: 0.552, radiusX: 0.063, radiusY: 0.058, rotation: -0.03 },
+          right: { x: 0.842, y: 0.552, radiusX: 0.063, radiusY: 0.058, rotation: 0.03 }
+        },
+        defaults: {
+          eyes: { shape: 'cut-ellipse', eyeTiltAdd: 0.018, eyeScaleX: 1.12, eyeScaleY: 0.98, pupilScale: 1.06, pupilShiftX: 0, pupilShiftY: -0.002, cutSlope: 1.45, cutOffset: -0.34 },
+          motion: { idleBob: 2.6, idleSquash: 0.018, chargeSquash: 0.1, releaseSquash: 0.14 },
+          spores: { scale: 0.046, originOffsetY: -48, burstDistance: 178, travelMs: 610, lingerMs: 820, trailLength: 13, trailWidth: 13, trailColor: 0x8d75ff },
+          preview: { sporeProgress: 0.72 }
+        }
       }
     };
     const EMOTIONS = {
@@ -387,24 +389,36 @@
     const ctx = canvas.getContext('2d');
     const bodyImage = new Image();
     const sporeImage = new Image();
-    const state = structuredClone(DEFAULTS);
+    let activeShroom = 'red';
+    let config = SHROOMS[activeShroom];
+    let state = structuredClone(config.defaults);
     let direction = { x: 1, y: 0 };
     let previewMode = 'idle';
     let emotionName = 'angry';
     let startedAt = performance.now();
 
-    bodyImage.src = BODY_SRC;
-    sporeImage.src = SPORE_SRC;
-
     const loadStatus = document.querySelector('#assetStatus');
-    Promise.all([
-      new Promise((resolve) => { bodyImage.onload = resolve; }),
-      new Promise((resolve) => { sporeImage.onload = resolve; })
-    ]).then(() => {
+    loadActiveImages().then(() => {
       loadStatus.textContent = 'ready';
       bindControls();
       requestAnimationFrame(draw);
     });
+
+    function loadActiveImages() {
+      loadStatus.textContent = 'loading';
+      return Promise.all([
+        new Promise((resolve) => {
+          bodyImage.onload = resolve;
+          bodyImage.src = `${config.bodySrc}?v=${Date.now()}`;
+        }),
+        new Promise((resolve) => {
+          sporeImage.onload = resolve;
+          sporeImage.src = `${config.sporeSrc}?v=${Date.now()}`;
+        })
+      ]).then(() => {
+        loadStatus.textContent = 'ready';
+      });
+    }
 
     function bindControls() {
       const emotionSelect = document.querySelector('#emotion');
@@ -424,6 +438,16 @@
 
       document.querySelector('#eyeShape').addEventListener('change', (event) => {
         state.eyes.shape = event.target.value;
+        updateOutput();
+      });
+      document.querySelector('#shroomSelect').addEventListener('change', async (event) => {
+        activeShroom = event.target.value;
+        config = SHROOMS[activeShroom];
+        state = structuredClone(config.defaults);
+        emotionName = 'angry';
+        emotionSelect.value = emotionName;
+        await loadActiveImages();
+        syncInputs();
         updateOutput();
       });
       document.querySelector('#previewMode').addEventListener('change', (event) => {
@@ -453,10 +477,10 @@
         setTimeout(() => { document.querySelector('#copyStatus').textContent = ''; }, 900);
       });
       document.querySelector('#reset').addEventListener('click', () => {
-        Object.assign(state.eyes, structuredClone(DEFAULTS.eyes));
-        Object.assign(state.motion, structuredClone(DEFAULTS.motion));
-        Object.assign(state.spores, structuredClone(DEFAULTS.spores));
-        Object.assign(state.preview, structuredClone(DEFAULTS.preview));
+        Object.assign(state.eyes, structuredClone(config.defaults.eyes));
+        Object.assign(state.motion, structuredClone(config.defaults.motion));
+        Object.assign(state.spores, structuredClone(config.defaults.spores));
+        Object.assign(state.preview, structuredClone(config.defaults.preview));
         emotionName = 'angry';
         emotionSelect.value = emotionName;
         syncInputs();
@@ -542,22 +566,22 @@
       ctx.fill();
       ctx.translate(0, bob);
       ctx.scale(scaleX, scaleY);
-      ctx.drawImage(bodyImage, -BODY_SIZE.width / 2, -BODY_SIZE.height / 2);
+      ctx.drawImage(bodyImage, -config.bodySize.width / 2, -config.bodySize.height / 2);
       drawEyes(now);
       ctx.restore();
     }
 
     function drawEyes(now) {
-      for (const [name, eye] of Object.entries(EYE_POSITIONS)) {
+      for (const [name, eye] of Object.entries(config.eyePositions)) {
         const side = name === 'left' ? -1 : 1;
         const tilt = eye.rotation + side * state.eyes.eyeTiltAdd;
-        const offsetX = direction.x * BODY_SIZE.width * 0.026 + state.eyes.pupilShiftX * BODY_SIZE.width;
-        const offsetY = direction.y * BODY_SIZE.height * 0.018 + state.eyes.pupilShiftY * BODY_SIZE.height;
-        const width = eye.radiusX * BODY_SIZE.width * 2 * state.eyes.pupilScale * state.eyes.eyeScaleX;
-        const height = eye.radiusY * BODY_SIZE.height * 2 * state.eyes.pupilScale * state.eyes.eyeScaleY;
+        const offsetX = direction.x * config.bodySize.width * 0.026 + state.eyes.pupilShiftX * config.bodySize.width;
+        const offsetY = direction.y * config.bodySize.height * 0.018 + state.eyes.pupilShiftY * config.bodySize.height;
+        const width = eye.radiusX * config.bodySize.width * 2 * state.eyes.pupilScale * state.eyes.eyeScaleX;
+        const height = eye.radiusY * config.bodySize.height * 2 * state.eyes.pupilScale * state.eyes.eyeScaleY;
 
         ctx.save();
-        ctx.translate((eye.x - 0.5) * BODY_SIZE.width + offsetX, (eye.y - 0.5) * BODY_SIZE.height + offsetY);
+        ctx.translate((eye.x - 0.5) * config.bodySize.width + offsetX, (eye.y - 0.5) * config.bodySize.height + offsetY);
         ctx.rotate(tilt);
         drawPupilShape(name, width, height, now);
         ctx.restore();
@@ -675,7 +699,7 @@
         ctx.rotate(Math.atan2(dir.y, dir.x));
         const scale = state.spores.scale * 1.45;
         ctx.scale(scale, scale);
-        ctx.drawImage(sporeImage, -SPORE_SIZE.width / 2, -SPORE_SIZE.height / 2);
+        ctx.drawImage(sporeImage, -config.sporeSize.width / 2, -config.sporeSize.height / 2);
         ctx.restore();
       }
     }
@@ -695,7 +719,7 @@
           x: point.x + (target.x - point.x) * 0.34,
           y: point.y + (target.y - point.y) * 0.34
         };
-        ctx.strokeStyle = `rgba(255, 77, 84, ${alphaBase * local})`;
+        ctx.strokeStyle = colorToRgba(state.spores.trailColor, alphaBase * local);
         ctx.lineWidth = state.spores.trailWidth * local;
         ctx.lineCap = 'round';
         ctx.beginPath();
@@ -705,28 +729,33 @@
       }
     }
 
+    function colorToRgba(color, alpha) {
+      const red = (color >> 16) & 255;
+      const green = (color >> 8) & 255;
+      const blue = color & 255;
+      return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+    }
+
     function updateOutput() {
       const exportObject = {
-        id: 'red-shroom',
+        id: config.id,
         base: {
-          imageAsset: 'assets/enemies/red_shroom/red-shroom-ai-v2-base.png',
-          imageSize: BODY_SIZE,
-          scale: 0.15,
-          y: -42
+          imageAsset: config.bodySrc.replace('../', ''),
+          imageSize: config.bodySize
         },
         gaze: {
-          eyes: EYE_POSITIONS,
+          eyes: config.eyePositions,
           emotion: emotionName,
           tuning: state.eyes
         },
         motion: state.motion,
         spores: {
-          imageAsset: 'assets/enemies/red_shroom/red-spore-ai-v3.png',
-          imageSize: SPORE_SIZE,
+          imageAsset: config.sporeSrc.replace('../', ''),
+          imageSize: config.sporeSize,
           ...state.spores
         }
       };
-      document.querySelector('#output').value = `const RED_SHROOM_TUNING = ${JSON.stringify(exportObject, null, 2)};`;
+      document.querySelector('#output').value = `const SHROOM_TUNING = ${JSON.stringify(exportObject, null, 2)};`;
     }
   </script>
 </body>
