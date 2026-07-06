@@ -1,5 +1,9 @@
 export type CharacterBaseSource = 'fixed-ai-image';
-export type CharacterAttachmentSource = 'runtime-shape' | 'procedural-canvas' | 'baked-into-base';
+export type CharacterAttachmentSource =
+  | 'runtime-shape'
+  | 'procedural-canvas'
+  | 'baked-into-base'
+  | 'fixed-ai-image';
 export type CharacterGazeMode = 'attached-eye-pupils' | 'embedded-eye-pupils' | 'baked-static-eyes';
 export type CharacterEyeArchetype = 'round-external' | 'angry-embedded';
 
@@ -43,7 +47,7 @@ export interface EmbeddedEyeTuning {
 }
 
 export interface EyeEmotionTuning {
-  readonly shape?: 'ellipse' | 'cut-ellipse';
+  readonly shape?: 'ellipse' | 'cut-ellipse' | 'spiral' | 'x';
   readonly eyeTiltAdd: number;
   readonly eyeTiltMode?: 'mirrored' | 'same';
   readonly eyeScaleX: number;
@@ -108,6 +112,32 @@ export interface DartGooberAttackRig {
   readonly muzzleAlphaCharge: number;
 }
 
+export interface RedShroomMotionRig {
+  readonly idleBob: number;
+  readonly idleSquash: number;
+  readonly chargeSquash: number;
+  readonly releaseSquash: number;
+  readonly hitScaleX: number;
+  readonly hitScaleY: number;
+}
+
+export interface RedShroomSporeRig {
+  readonly textureKey: string;
+  readonly imageAsset: string;
+  readonly imageSize: {
+    readonly width: number;
+    readonly height: number;
+  };
+  readonly scale: number;
+  readonly originOffsetY: number;
+  readonly burstDistance: number;
+  readonly travelMs: number;
+  readonly lingerMs: number;
+  readonly trailLength: number;
+  readonly trailWidth: number;
+  readonly trailColor: number;
+}
+
 export interface BowbertCharacterRig {
   readonly id: 'bowbert';
   readonly base: FixedImageRigLayer;
@@ -128,4 +158,16 @@ export interface DartGooberCharacterRig {
   readonly gaze: EmbeddedEyeGazeRig;
   readonly motion: DartGooberMotionRig;
   readonly attack: DartGooberAttackRig;
+}
+
+export interface RedShroomCharacterRig {
+  readonly id: 'red-shroom';
+  readonly base: FixedImageRigLayer;
+  readonly attachments: {
+    readonly eyes: { readonly source: CharacterAttachmentSource; readonly role: string };
+    readonly spores: { readonly source: CharacterAttachmentSource; readonly role: string };
+  };
+  readonly gaze: EmbeddedEyeGazeRig;
+  readonly motion: RedShroomMotionRig;
+  readonly spores: RedShroomSporeRig;
 }

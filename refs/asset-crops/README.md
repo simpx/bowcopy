@@ -36,6 +36,16 @@ Quick overview:
 - `enemies/kaboomlet_reference.png`: bomb enemy reference.
 - `enemies/spooper_gooper_reference.png`: ghost enemy reference.
 
+## Effects
+
+- `effects/red_shroom_spore_gameplay_reference.png`: Red Shroom spore attack in gameplay context.
+- `effects/red_shroom_spore_pattern_reference.png`: Red Shroom four-spore diamond layout.
+- `effects/red_shroom_spore_core_reference.png`: single Red Shroom spore core.
+- `effects/purple_shroom_spore_gameplay_reference.png`: Purple Shroom spore attack in gameplay context.
+- `effects/purple_shroom_spore_pattern_reference.png`: Purple Shroom spore/trail layout.
+- `effects/purple_shroom_spore_core_reference.png`: single Purple Shroom spiky spore core.
+- `effects/shroom_spore_sequence_contact_reference.jpg`: contact sheet around the shroom/spore segment.
+
 ## Group
 
 - `groups/enemy_lineup_reference.png`: relative scale and family comparison.

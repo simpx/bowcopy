@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Red Shroom Tuning</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101710;
+      --panel: #19231b;
+      --panel-2: #223024;
+      --line: #3d4f3e;
+      --text: #eef4e9;
+      --muted: #adbaa8;
+      --accent: #f2c35d;
+      --danger: #ff6b6e;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body { padding: 16px; }
+
+    button,
+    input,
+    select,
+    textarea { font: inherit; }
+
+    .topbar {
+      max-width: 1440px;
+      margin: 0 auto 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .layout {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(420px, 1fr) 430px;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #ffe3a0;
+    }
+
+    .stage {
+      display: grid;
+      place-items: center;
+      min-height: 680px;
+      padding: 14px;
+      background:
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px) 0 0 / 40px 40px,
+        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px) 0 0 / 40px 40px,
+        #142017;
+    }
+
+    canvas {
+      width: min(100%, 920px);
+      height: auto;
+      max-height: calc(100vh - 120px);
+      border-radius: 6px;
+      touch-action: none;
+    }
+
+    .controls {
+      max-height: calc(100vh - 84px);
+      overflow: auto;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+      overflow: hidden;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 9px 10px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #ffe8a8;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .group {
+      padding: 10px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 118px 1fr 58px;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .row select,
+    .row input[type="range"] {
+      width: 100%;
+    }
+
+    .row output {
+      color: var(--text);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    select,
+    button,
+    textarea {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #111911;
+      color: var(--text);
+    }
+
+    select {
+      min-height: 34px;
+      padding: 5px 8px;
+    }
+
+    button {
+      min-height: 34px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    button.is-active {
+      border-color: var(--accent);
+      background: #4a3b20;
+      color: #ffe7a3;
+      font-weight: 800;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .copy-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      resize: vertical;
+      padding: 10px;
+      color: #dfead7;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 920px) {
+      body { padding: 10px; }
+      .topbar { align-items: start; flex-direction: column; }
+      .layout { grid-template-columns: 1fr; }
+      .stage { min-height: 520px; }
+      .controls { max-height: none; }
+      .row { grid-template-columns: 92px 1fr 52px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Red Shroom Tuning</h1>
+      <div class="meta">runtime eyes, motion, spore burst</div>
+    </div>
+    <select id="previewMode">
+      <option value="idle">idle</option>
+      <option value="charge">charge</option>
+      <option value="release">release</option>
+      <option value="hit">hit</option>
+    </select>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Preview</div>
+        <div id="assetStatus" class="meta">loading</div>
+      </div>
+      <div class="stage">
+        <canvas id="stage" width="960" height="760"></canvas>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Params</div>
+        <div id="copyStatus" class="meta"></div>
+      </div>
+      <div class="controls">
+        <details open>
+          <summary>眼神</summary>
+          <div class="group">
+            <label class="row">
+              <span>类型</span>
+              <select id="emotion"></select>
+              <output></output>
+            </label>
+            <label class="row">
+              <span>形状</span>
+              <select id="eyeShape">
+                <option value="ellipse">ellipse</option>
+                <option value="cut-ellipse">cut</option>
+                <option value="spiral">dizzy</option>
+                <option value="x">x</option>
+              </select>
+              <output></output>
+            </label>
+            <label class="row"><span>大小</span><input data-path="eyes.pupilScale" type="range" min="0.3" max="1.6" step="0.01"><output></output></label>
+            <label class="row"><span>宽度</span><input data-path="eyes.eyeScaleX" type="range" min="0.35" max="1.8" step="0.01"><output></output></label>
+            <label class="row"><span>高度</span><input data-path="eyes.eyeScaleY" type="range" min="0.25" max="1.8" step="0.01"><output></output></label>
+            <label class="row"><span>角度</span><input data-path="eyes.eyeTiltAdd" type="range" min="-0.7" max="0.7" step="0.005"><output></output></label>
+            <label class="row"><span>位置 X</span><input data-path="eyes.pupilShiftX" type="range" min="-0.04" max="0.04" step="0.001"><output></output></label>
+            <label class="row"><span>位置 Y</span><input data-path="eyes.pupilShiftY" type="range" min="-0.04" max="0.04" step="0.001"><output></output></label>
+            <label class="row"><span>斜切</span><input data-path="eyes.cutSlope" type="range" min="0.2" max="3" step="0.01"><output></output></label>
+            <label class="row"><span>切位</span><input data-path="eyes.cutOffset" type="range" min="-1" max="0.4" step="0.01"><output></output></label>
+          </div>
+        </details>
+
+        <details open>
+          <summary>方向预览</summary>
+          <div class="group">
+            <div class="button-grid" id="directionButtons">
+              <button data-dir="0,-1">↑</button>
+              <button data-dir="1,-1">↗</button>
+              <button data-dir="1,0" class="is-active">→</button>
+              <button data-dir="1,1">↘</button>
+              <button data-dir="0,1">↓</button>
+              <button data-dir="-1,1">↙</button>
+              <button data-dir="-1,0">←</button>
+              <button data-dir="-1,-1">↖</button>
+            </div>
+          </div>
+        </details>
+
+        <details open>
+          <summary>运动</summary>
+          <div class="group">
+            <label class="row"><span>idle bob</span><input data-path="motion.idleBob" type="range" min="0" max="10" step="0.1"><output></output></label>
+            <label class="row"><span>idle squash</span><input data-path="motion.idleSquash" type="range" min="0" max="0.08" step="0.001"><output></output></label>
+            <label class="row"><span>charge</span><input data-path="motion.chargeSquash" type="range" min="0" max="0.25" step="0.005"><output></output></label>
+            <label class="row"><span>release</span><input data-path="motion.releaseSquash" type="range" min="0" max="0.3" step="0.005"><output></output></label>
+          </div>
+        </details>
+
+        <details open>
+          <summary>孢子</summary>
+          <div class="group">
+            <label class="row"><span>大小</span><input data-path="spores.scale" type="range" min="0.018" max="0.09" step="0.001"><output></output></label>
+            <label class="row"><span>起点 Y</span><input data-path="spores.originOffsetY" type="range" min="-110" max="20" step="1"><output></output></label>
+            <label class="row"><span>距离</span><input data-path="spores.burstDistance" type="range" min="60" max="320" step="1"><output></output></label>
+            <label class="row"><span>进度</span><input data-path="preview.sporeProgress" type="range" min="0" max="1" step="0.01"><output></output></label>
+            <label class="row"><span>拖尾宽</span><input data-path="spores.trailWidth" type="range" min="2" max="32" step="1"><output></output></label>
+            <label class="row"><span>拖尾长</span><input data-path="spores.trailLength" type="range" min="3" max="22" step="1"><output></output></label>
+            <label class="row"><span>飞行 ms</span><input data-path="spores.travelMs" type="range" min="220" max="1200" step="10"><output></output></label>
+            <label class="row"><span>停留 ms</span><input data-path="spores.lingerMs" type="range" min="120" max="1800" step="10"><output></output></label>
+          </div>
+        </details>
+
+        <details open>
+          <summary>复制</summary>
+          <div class="group">
+            <div class="copy-row">
+              <button id="copyAll">复制全部</button>
+              <button id="reset">重置</button>
+            </div>
+            <textarea id="output" spellcheck="false"></textarea>
+          </div>
+        </details>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const BODY_SRC = '../assets/enemies/red_shroom/red-shroom-ai-v2-base.png';
+    const SPORE_SRC = '../assets/enemies/red_shroom/red-spore-ai-v3.png';
+    const BODY_SIZE = { width: 708, height: 778 };
+    const SPORE_SIZE = { width: 597, height: 604 };
+    const EYE_POSITIONS = {
+      left: { x: 0.135, y: 0.535, radiusX: 0.062, radiusY: 0.062, rotation: -0.04 },
+      right: { x: 0.866, y: 0.535, radiusX: 0.062, radiusY: 0.062, rotation: 0.04 }
+    };
+    const DEFAULTS = {
+      eyes: {
+        shape: 'cut-ellipse',
+        eyeTiltAdd: 0.02,
+        eyeScaleX: 1.18,
+        eyeScaleY: 1.02,
+        pupilScale: 1.08,
+        pupilShiftX: 0,
+        pupilShiftY: -0.002,
+        cutSlope: 1.52,
+        cutOffset: -0.34
+      },
+      motion: {
+        idleBob: 2.8,
+        idleSquash: 0.02,
+        chargeSquash: 0.12,
+        releaseSquash: 0.16
+      },
+      spores: {
+        scale: 0.048,
+        originOffsetY: -46,
+        burstDistance: 184,
+        travelMs: 560,
+        lingerMs: 860,
+        trailLength: 12,
+        trailWidth: 16,
+        trailColor: 0xff4d54
+      },
+      preview: {
+        sporeProgress: 0.72
+      }
+    };
+    const EMOTIONS = {
+      default: { shape: 'ellipse', eyeTiltAdd: 0, eyeScaleX: 1, eyeScaleY: 1, pupilScale: 1, pupilShiftX: 0, pupilShiftY: 0, cutSlope: 1.5, cutOffset: -0.35 },
+      angry: { shape: 'cut-ellipse', eyeTiltAdd: 0.02, eyeScaleX: 1.18, eyeScaleY: 1.02, pupilScale: 1.08, pupilShiftX: 0, pupilShiftY: -0.002, cutSlope: 1.52, cutOffset: -0.34 },
+      alert: { shape: 'ellipse', eyeTiltAdd: 0, eyeScaleX: 0.72, eyeScaleY: 0.72, pupilScale: 0.64, pupilShiftX: 0, pupilShiftY: -0.006, cutSlope: 1.5, cutOffset: -0.35 },
+      aim: { shape: 'cut-ellipse', eyeTiltAdd: 0.015, eyeScaleX: 1.06, eyeScaleY: 0.94, pupilScale: 1.02, pupilShiftX: 0, pupilShiftY: -0.004, cutSlope: 1.65, cutOffset: -0.38 },
+      hit: { shape: 'ellipse', eyeTiltAdd: 0, eyeScaleX: 0.82, eyeScaleY: 0.54, pupilScale: 0.76, pupilShiftX: -0.004, pupilShiftY: -0.006, cutSlope: 1.5, cutOffset: -0.35 },
+      dizzy: { shape: 'spiral', eyeTiltAdd: 0.12, eyeScaleX: 1.05, eyeScaleY: 1.05, pupilScale: 1, pupilShiftX: 0, pupilShiftY: 0, cutSlope: 1.5, cutOffset: -0.35 }
+    };
+
+    const canvas = document.querySelector('#stage');
+    const ctx = canvas.getContext('2d');
+    const bodyImage = new Image();
+    const sporeImage = new Image();
+    const state = structuredClone(DEFAULTS);
+    let direction = { x: 1, y: 0 };
+    let previewMode = 'idle';
+    let emotionName = 'angry';
+    let startedAt = performance.now();
+
+    bodyImage.src = BODY_SRC;
+    sporeImage.src = SPORE_SRC;
+
+    const loadStatus = document.querySelector('#assetStatus');
+    Promise.all([
+      new Promise((resolve) => { bodyImage.onload = resolve; }),
+      new Promise((resolve) => { sporeImage.onload = resolve; })
+    ]).then(() => {
+      loadStatus.textContent = 'ready';
+      bindControls();
+      requestAnimationFrame(draw);
+    });
+
+    function bindControls() {
+      const emotionSelect = document.querySelector('#emotion');
+      for (const name of Object.keys(EMOTIONS)) {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        emotionSelect.append(option);
+      }
+      emotionSelect.value = emotionName;
+      emotionSelect.addEventListener('change', () => {
+        emotionName = emotionSelect.value;
+        Object.assign(state.eyes, EMOTIONS[emotionName]);
+        syncInputs();
+        updateOutput();
+      });
+
+      document.querySelector('#eyeShape').addEventListener('change', (event) => {
+        state.eyes.shape = event.target.value;
+        updateOutput();
+      });
+      document.querySelector('#previewMode').addEventListener('change', (event) => {
+        previewMode = event.target.value;
+        startedAt = performance.now();
+      });
+      document.querySelectorAll('[data-path]').forEach((input) => {
+        input.addEventListener('input', () => {
+          setPath(input.dataset.path, Number(input.value));
+          syncOutputForInput(input);
+          updateOutput();
+        });
+      });
+      document.querySelectorAll('#directionButtons button').forEach((button) => {
+        button.addEventListener('click', () => {
+          document.querySelectorAll('#directionButtons button').forEach((item) => item.classList.remove('is-active'));
+          button.classList.add('is-active');
+          const [x, y] = button.dataset.dir.split(',').map(Number);
+          const length = Math.hypot(x, y) || 1;
+          direction = { x: x / length, y: y / length };
+        });
+      });
+      document.querySelector('#copyAll').addEventListener('click', async () => {
+        const text = document.querySelector('#output').value;
+        await navigator.clipboard.writeText(text);
+        document.querySelector('#copyStatus').textContent = 'copied';
+        setTimeout(() => { document.querySelector('#copyStatus').textContent = ''; }, 900);
+      });
+      document.querySelector('#reset').addEventListener('click', () => {
+        Object.assign(state.eyes, structuredClone(DEFAULTS.eyes));
+        Object.assign(state.motion, structuredClone(DEFAULTS.motion));
+        Object.assign(state.spores, structuredClone(DEFAULTS.spores));
+        Object.assign(state.preview, structuredClone(DEFAULTS.preview));
+        emotionName = 'angry';
+        emotionSelect.value = emotionName;
+        syncInputs();
+        updateOutput();
+      });
+      syncInputs();
+      updateOutput();
+    }
+
+    function syncInputs() {
+      document.querySelector('#eyeShape').value = state.eyes.shape;
+      document.querySelectorAll('[data-path]').forEach((input) => {
+        input.value = getPath(input.dataset.path);
+        syncOutputForInput(input);
+      });
+    }
+
+    function syncOutputForInput(input) {
+      input.closest('.row').querySelector('output').textContent = Number(input.value).toFixed(input.step.includes('.') ? 3 : 0);
+    }
+
+    function getPath(path) {
+      return path.split('.').reduce((target, key) => target[key], state);
+    }
+
+    function setPath(path, value) {
+      const keys = path.split('.');
+      const last = keys.pop();
+      const target = keys.reduce((item, key) => item[key], state);
+      target[last] = value;
+    }
+
+    function draw(now) {
+      const elapsed = now - startedAt;
+      const mode = modeValues(elapsed);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawFloor();
+      drawSpores(mode);
+      drawBody(mode, now);
+      requestAnimationFrame(draw);
+    }
+
+    function modeValues(elapsed) {
+      if (previewMode === 'charge') return { charge: 0.85, release: 0, hit: 0, idle: elapsed };
+      if (previewMode === 'release') return { charge: 0, release: 0.85, hit: 0, idle: elapsed };
+      if (previewMode === 'hit') return { charge: 0, release: 0, hit: 0.9, idle: elapsed };
+      return { charge: 0, release: 0, hit: 0, idle: elapsed };
+    }
+
+    function drawFloor() {
+      ctx.fillStyle = '#162419';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = 'rgba(255,255,255,.055)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= canvas.width; x += 48) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= canvas.height; y += 48) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+    }
+
+    function drawBody(mode, now) {
+      const center = { x: canvas.width / 2, y: canvas.height / 2 + 72 };
+      const baseScale = 0.38;
+      const idleWave = Math.sin(now * 0.0038);
+      const squash = idleWave * state.motion.idleSquash + mode.charge * state.motion.chargeSquash - mode.release * state.motion.releaseSquash;
+      const scaleX = baseScale * (1 + squash + mode.hit * 0.08);
+      const scaleY = baseScale * (1 - squash - mode.hit * 0.05);
+      const bob = idleWave * state.motion.idleBob - mode.release * 8;
+
+      ctx.save();
+      ctx.translate(center.x, center.y);
+      ctx.fillStyle = 'rgba(0,0,0,.32)';
+      ctx.beginPath();
+      ctx.ellipse(0, 54, 58, 14, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.translate(0, bob);
+      ctx.scale(scaleX, scaleY);
+      ctx.drawImage(bodyImage, -BODY_SIZE.width / 2, -BODY_SIZE.height / 2);
+      drawEyes(now);
+      ctx.restore();
+    }
+
+    function drawEyes(now) {
+      for (const [name, eye] of Object.entries(EYE_POSITIONS)) {
+        const side = name === 'left' ? -1 : 1;
+        const tilt = eye.rotation + side * state.eyes.eyeTiltAdd;
+        const offsetX = direction.x * BODY_SIZE.width * 0.026 + state.eyes.pupilShiftX * BODY_SIZE.width;
+        const offsetY = direction.y * BODY_SIZE.height * 0.018 + state.eyes.pupilShiftY * BODY_SIZE.height;
+        const width = eye.radiusX * BODY_SIZE.width * 2 * state.eyes.pupilScale * state.eyes.eyeScaleX;
+        const height = eye.radiusY * BODY_SIZE.height * 2 * state.eyes.pupilScale * state.eyes.eyeScaleY;
+
+        ctx.save();
+        ctx.translate((eye.x - 0.5) * BODY_SIZE.width + offsetX, (eye.y - 0.5) * BODY_SIZE.height + offsetY);
+        ctx.rotate(tilt);
+        drawPupilShape(name, width, height, now);
+        ctx.restore();
+      }
+    }
+
+    function drawPupilShape(name, width, height, now) {
+      ctx.fillStyle = '#050505';
+      ctx.strokeStyle = '#050505';
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (state.eyes.shape === 'spiral') {
+        const radius = Math.min(width, height) * 0.48;
+        ctx.lineWidth = Math.max(4, radius * 0.16);
+        ctx.beginPath();
+        for (let i = 0; i < 62; i += 1) {
+          const progress = i / 61;
+          const angle = progress * Math.PI * 4.8 + now * 0.006;
+          const localRadius = radius * progress;
+          const x = Math.cos(angle) * localRadius;
+          const y = Math.sin(angle) * localRadius;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        return;
+      }
+
+      if (state.eyes.shape === 'x') {
+        const halfWidth = width * 0.42;
+        const halfHeight = height * 0.42;
+        ctx.lineWidth = Math.max(4, Math.min(width, height) * 0.16);
+        ctx.beginPath();
+        ctx.moveTo(-halfWidth, -halfHeight);
+        ctx.lineTo(halfWidth, halfHeight);
+        ctx.moveTo(halfWidth, -halfHeight);
+        ctx.lineTo(-halfWidth, halfHeight);
+        ctx.stroke();
+        return;
+      }
+
+      if (state.eyes.shape !== 'cut-ellipse') {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, width / 2, height / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        return;
+      }
+
+      const inner = name === 'left' ? 1 : -1;
+      const points = [];
+      for (let i = 0; i < 72; i += 1) {
+        const angle = Math.PI * 2 * i / 72;
+        points.push({ x: Math.cos(angle), y: Math.sin(angle) });
+      }
+      const clipped = clipEllipse(points, state.eyes.cutSlope, state.eyes.cutOffset);
+      ctx.beginPath();
+      clipped.forEach((point, index) => {
+        const x = point.x * width / 2 * inner;
+        const y = point.y * height / 2;
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function clipEllipse(points, slope, offset) {
+      const clipped = [];
+      const inside = (point) => point.y - slope * point.x - offset >= 0;
+      const intersect = (start, end) => {
+        const a = start.y - slope * start.x - offset;
+        const b = end.y - slope * end.x - offset;
+        const ratio = Math.abs(a - b) > 0.000001 ? a / (a - b) : 0;
+        return {
+          x: start.x + (end.x - start.x) * ratio,
+          y: start.y + (end.y - start.y) * ratio
+        };
+      };
+      for (let i = 0; i < points.length; i += 1) {
+        const current = points[i];
+        const next = points[(i + 1) % points.length];
+        const currentInside = inside(current);
+        const nextInside = inside(next);
+        if (currentInside && nextInside) clipped.push(next);
+        else if (currentInside && !nextInside) clipped.push(intersect(current, next));
+        else if (!currentInside && nextInside) clipped.push(intersect(current, next), next);
+      }
+      return clipped;
+    }
+
+    function drawSpores(mode) {
+      const center = { x: canvas.width / 2, y: canvas.height / 2 + 72 };
+      const origin = { x: center.x, y: center.y + state.spores.originOffsetY };
+      const progress = previewMode === 'release' ? 1 : state.preview.sporeProgress;
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const directions = [
+        { x: -1, y: -1 },
+        { x: 1, y: -1 },
+        { x: -1, y: 1 },
+        { x: 1, y: 1 }
+      ].map((item) => {
+        const length = Math.hypot(item.x, item.y);
+        return { x: item.x / length, y: item.y / length };
+      });
+
+      for (const dir of directions) {
+        const target = {
+          x: origin.x + dir.x * state.spores.burstDistance * eased,
+          y: origin.y + dir.y * state.spores.burstDistance * eased
+        };
+        drawTrail(origin, target, dir, progress, mode);
+        ctx.save();
+        ctx.translate(target.x, target.y);
+        ctx.rotate(Math.atan2(dir.y, dir.x));
+        const scale = state.spores.scale * 1.45;
+        ctx.scale(scale, scale);
+        ctx.drawImage(sporeImage, -SPORE_SIZE.width / 2, -SPORE_SIZE.height / 2);
+        ctx.restore();
+      }
+    }
+
+    function drawTrail(origin, target, dir, progress, mode) {
+      const length = Math.max(1, Math.floor(state.spores.trailLength));
+      const alphaBase = previewMode === 'idle' && mode.charge <= 0 ? 0.12 : 0.32;
+      for (let i = 0; i < length; i += 1) {
+        const local = i / Math.max(1, length - 1);
+        const tailProgress = Math.max(0, progress - (1 - local) * 0.28);
+        const eased = 1 - Math.pow(1 - tailProgress, 3);
+        const point = {
+          x: origin.x + dir.x * state.spores.burstDistance * eased,
+          y: origin.y + dir.y * state.spores.burstDistance * eased
+        };
+        const next = {
+          x: point.x + (target.x - point.x) * 0.34,
+          y: point.y + (target.y - point.y) * 0.34
+        };
+        ctx.strokeStyle = `rgba(255, 77, 84, ${alphaBase * local})`;
+        ctx.lineWidth = state.spores.trailWidth * local;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(point.x, point.y);
+        ctx.lineTo(next.x, next.y);
+        ctx.stroke();
+      }
+    }
+
+    function updateOutput() {
+      const exportObject = {
+        id: 'red-shroom',
+        base: {
+          imageAsset: 'assets/enemies/red_shroom/red-shroom-ai-v2-base.png',
+          imageSize: BODY_SIZE,
+          scale: 0.15,
+          y: -42
+        },
+        gaze: {
+          eyes: EYE_POSITIONS,
+          emotion: emotionName,
+          tuning: state.eyes
+        },
+        motion: state.motion,
+        spores: {
+          imageAsset: 'assets/enemies/red_shroom/red-spore-ai-v3.png',
+          imageSize: SPORE_SIZE,
+          ...state.spores
+        }
+      };
+      document.querySelector('#output').value = `const RED_SHROOM_TUNING = ${JSON.stringify(exportObject, null, 2)};`;
+    }
+  </script>
+</body>
+</html>

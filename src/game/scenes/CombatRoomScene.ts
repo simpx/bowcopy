@@ -9,8 +9,8 @@ import { DungeonMinimap } from '../../ui/DungeonMinimap';
 import { HeartsHud } from '../../ui/HeartsHud';
 import { TouchInputOverlay } from '../../ui/TouchInputOverlay';
 import { BowbertPlayerModel, type BowbertPlayerEvent } from '../../sim/player';
-import { DartGooberSystem } from '../../sim/enemies';
-import { ArrowProjectileSystem, EnemyDartProjectileSystem } from '../../sim/projectiles';
+import { DartGooberSystem, RedShroomSystem } from '../../sim/enemies';
+import { ArrowProjectileSystem, EnemyDartProjectileSystem, ShroomSporeProjectileSystem } from '../../sim/projectiles';
 import { CombatSfxDirector, preloadCombatSfx } from '../../audio/CombatSfxDirector';
 import {
   OPPOSITE_DOOR_SIDE,
@@ -28,16 +28,19 @@ import {
 } from '../../sim/rooms';
 import { CombatRoomRenderer, preloadCombatRoomAssets } from '../../render/rooms';
 import { BowbertRenderer, preloadBowbertPlayerAssets } from '../../render/player';
-import { DartGooberRenderer, preloadDartGooberAssets } from '../../render/enemies';
+import { DartGooberRenderer, RedShroomRenderer, preloadDartGooberAssets, preloadRedShroomAssets } from '../../render/enemies';
 import { CombatFeedbackRenderer } from '../../render/feedback';
 import {
   ArrowProjectileRenderer,
   EnemyDartProjectileRenderer,
+  ShroomSporeProjectileRenderer,
   preloadArrowProjectileAssets,
-  preloadEnemyDartProjectileAssets
+  preloadEnemyDartProjectileAssets,
+  preloadShroomSporeProjectileAssets
 } from '../../render/projectiles';
 
 type CameraShakeKind = 'arrow-fire' | 'hit' | 'damage' | 'dodge' | 'room-clear';
+type EncounterKind = 'dart-goober' | 'red-shroom';
 
 const CAMERA_VIEW = GAME_SIZE;
 const PLAYER_START = {
@@ -65,7 +68,9 @@ export class CombatRoomScene extends Phaser.Scene {
   private readonly playerHealth = new PlayerHealth(3);
   private readonly projectiles = new ArrowProjectileSystem();
   private readonly enemies = new DartGooberSystem();
+  private readonly redShrooms = new RedShroomSystem();
   private readonly enemyDarts = new EnemyDartProjectileSystem();
+  private readonly shroomSpores = new ShroomSporeProjectileSystem();
   private desktopInput?: DesktopInputAdapter;
   private dungeonMinimap?: DungeonMinimap;
   private heartsHud?: HeartsHud;
@@ -74,7 +79,9 @@ export class CombatRoomScene extends Phaser.Scene {
   private playerRenderer?: BowbertRenderer;
   private projectileRenderer?: ArrowProjectileRenderer;
   private enemyRenderer?: DartGooberRenderer;
+  private redShroomRenderer?: RedShroomRenderer;
   private enemyDartRenderer?: EnemyDartProjectileRenderer;
+  private shroomSporeRenderer?: ShroomSporeProjectileRenderer;
   private feedbackRenderer?: CombatFeedbackRenderer;
   private sfx?: CombatSfxDirector;
   private dungeonState: DungeonState = createInitialDungeonState();
@@ -89,7 +96,9 @@ export class CombatRoomScene extends Phaser.Scene {
     preloadBowbertPlayerAssets(this);
     preloadArrowProjectileAssets(this);
     preloadEnemyDartProjectileAssets(this);
+    preloadShroomSporeProjectileAssets(this);
     preloadDartGooberAssets(this);
+    preloadRedShroomAssets(this);
     preloadCombatSfx(this);
   }
 
@@ -108,7 +117,9 @@ export class CombatRoomScene extends Phaser.Scene {
     });
     this.projectiles.clear();
     this.enemies.clear();
+    this.redShrooms.clear();
     this.enemyDarts.clear();
+    this.shroomSpores.clear();
     this.playerHealth.reset();
 
     this.roomRenderer = new CombatRoomRenderer(this, this.currentRoomDefinition);
@@ -119,8 +130,12 @@ export class CombatRoomScene extends Phaser.Scene {
     this.projectileRenderer.create();
     this.enemyDartRenderer = new EnemyDartProjectileRenderer(this);
     this.enemyDartRenderer.create();
+    this.shroomSporeRenderer = new ShroomSporeProjectileRenderer(this);
+    this.shroomSporeRenderer.create();
     this.enemyRenderer = new DartGooberRenderer(this);
     this.enemyRenderer.create();
+    this.redShroomRenderer = new RedShroomRenderer(this);
+    this.redShroomRenderer.create();
     this.playerRenderer = new BowbertRenderer(this);
     this.playerRenderer.create();
     this.playerRenderer.update(0, 0, this.player.state);
@@ -165,21 +180,43 @@ export class CombatRoomScene extends Phaser.Scene {
     }
 
     this.handleEnemyEvents(enemyFrame.events);
+    const redShroomFrame = this.redShrooms.update(
+      delta,
+      this.currentRoomDefinition.bounds,
+      playerFrame.state.position,
+      this.projectiles.getActiveArrows()
+    );
+
+    for (const arrowId of redShroomFrame.consumedArrowIds) {
+      this.projectiles.removeArrow(arrowId);
+    }
+
+    this.handleRedShroomEvents(redShroomFrame.events);
 
     const enemyDartEvents = this.enemyDarts.update(
       delta,
       this.currentRoomDefinition.bounds,
       playerFrame.state.position
     );
+    const shroomSporeEvents = this.shroomSpores.update(
+      delta,
+      this.currentRoomDefinition.bounds,
+      playerFrame.state.position
+    );
 
     this.handleEnemyDartEvents(enemyDartEvents);
+    this.handleShroomSporeEvents(shroomSporeEvents);
 
     this.projectileRenderer?.playEvents(projectileEvents);
     this.enemyRenderer?.playEvents(enemyFrame.events);
+    this.redShroomRenderer?.playEvents(redShroomFrame.events);
     this.enemyDartRenderer?.playEvents(enemyDartEvents);
+    this.shroomSporeRenderer?.playEvents(shroomSporeEvents);
     this.projectileRenderer?.update(delta, this.projectiles.getActiveArrows());
     this.enemyDartRenderer?.update(delta, this.enemyDarts.getActiveDarts());
+    this.shroomSporeRenderer?.update(delta, this.shroomSpores.getActiveSpores());
     this.enemyRenderer?.update(time, delta, this.enemies.getActiveEnemies());
+    this.redShroomRenderer?.update(time, delta, this.redShrooms.getActiveEnemies());
     this.playerRenderer?.update(time, delta, playerFrame.state);
     this.feedbackRenderer?.update(delta);
   }
@@ -267,6 +304,44 @@ export class CombatRoomScene extends Phaser.Scene {
     }
   }
 
+  private handleRedShroomEvents(events: ReturnType<RedShroomSystem['update']>['events']) {
+    for (const event of events) {
+      if (event.type === 'red-shroom-spawned') {
+        this.feedbackRenderer?.playEnemySpawn(event.position);
+        continue;
+      }
+
+      if (event.type === 'red-shroom-spore-burst') {
+        this.shroomSpores.fireBurst(event);
+        continue;
+      }
+
+      if (event.type === 'red-shroom-hit') {
+        if (event.hp > 0) {
+          this.sfx?.playEnemyHit(event.position, event.damage);
+          this.feedbackRenderer?.playArrowEnemy(event.position, event.damage);
+          this.shakeCamera('hit');
+        }
+        continue;
+      }
+
+      if (event.type === 'red-shroom-killed') {
+        this.sfx?.playEnemyDeath(event.position);
+        this.feedbackRenderer?.playEnemyDeath(event.position);
+        this.shakeCamera('hit');
+        continue;
+      }
+
+      if (event.type === 'red-shroom-encounter-cleared') {
+        clearCurrentDungeonRoom(this.dungeonState);
+        this.shroomSpores.clear();
+        this.applyCurrentRoomState();
+        this.feedbackRenderer?.playRoomClear(this.currentRoomDefinition.bounds);
+        this.shakeCamera('room-clear');
+      }
+    }
+  }
+
   private handleEnemyDartEvents(
     events: ReturnType<EnemyDartProjectileSystem['update']>
   ) {
@@ -296,10 +371,34 @@ export class CombatRoomScene extends Phaser.Scene {
     }
   }
 
+  private handleShroomSporeEvents(
+    events: ReturnType<ShroomSporeProjectileSystem['update']>
+  ) {
+    for (const event of events) {
+      if (event.type !== 'shroom-spore-hit-player') {
+        continue;
+      }
+
+      if (this.player.state.dodge.invulnerableMs > 0) {
+        this.feedbackRenderer?.playDodge(this.player.state.position, this.player.state.dodge.direction);
+        this.shakeCamera('dodge');
+        continue;
+      }
+
+      this.player.markHit();
+      this.playerHealth.damage(event.damage);
+      this.sfx?.playPlayerDamage(event.position, event.damage);
+      this.heartsHud?.update(this.playerHealth.state);
+      this.heartsHud?.flashDamage();
+      this.feedbackRenderer?.playDamage(this.player.state.position, event.damage);
+      this.shakeCamera('damage');
+    }
+  }
+
   private updateEnemyEncounter() {
     const roomState = getCurrentDungeonRoom(this.dungeonState);
 
-    if (roomState.phase !== 'combat' || this.enemies.hasEncounterStarted()) {
+    if (roomState.phase !== 'combat' || this.hasCurrentEncounterStarted()) {
       return;
     }
 
@@ -309,10 +408,17 @@ export class CombatRoomScene extends Phaser.Scene {
   private startCurrentRoomEncounter() {
     const roomState = getCurrentDungeonRoom(this.dungeonState);
 
-    this.enemies.startEncounter(this.currentRoomDefinition.spawnPoints, {
-      enemyCount: roomState.remainingSpawnMarkers,
-      waveIndex: roomState.wave
-    });
+    if (this.getCurrentEncounterKind() === 'red-shroom') {
+      this.redShrooms.startEncounter(this.currentRoomDefinition.spawnPoints, {
+        enemyCount: Math.max(1, Math.ceil(roomState.remainingSpawnMarkers * 0.55)),
+        waveIndex: roomState.wave
+      });
+    } else {
+      this.enemies.startEncounter(this.currentRoomDefinition.spawnPoints, {
+        enemyCount: roomState.remainingSpawnMarkers,
+        waveIndex: roomState.wave
+      });
+    }
   }
 
   private startCombatInCurrentRoomIfNeeded() {
@@ -324,9 +430,21 @@ export class CombatRoomScene extends Phaser.Scene {
 
     startCurrentDungeonRoomCombat(this.dungeonState);
     this.enemies.clear();
+    this.redShrooms.clear();
     this.enemyDarts.clear();
+    this.shroomSpores.clear();
     this.projectiles.clear();
     this.applyCurrentRoomState();
+  }
+
+  private getCurrentEncounterKind(): EncounterKind {
+    return this.currentRoomDefinition.theme === 'mushroom' ? 'red-shroom' : 'dart-goober';
+  }
+
+  private hasCurrentEncounterStarted(): boolean {
+    return this.getCurrentEncounterKind() === 'red-shroom'
+      ? this.redShrooms.hasEncounterStarted()
+      : this.enemies.hasEncounterStarted();
   }
 
   private applyCurrentRoomState() {
@@ -404,8 +522,10 @@ export class CombatRoomScene extends Phaser.Scene {
 
   private clearRoomRuntime() {
     this.enemies.clear();
+    this.redShrooms.clear();
     this.projectiles.clear();
     this.enemyDarts.clear();
+    this.shroomSpores.clear();
   }
 
   private placePlayerAtEntry(entrySide: RoomDoorSide) {
@@ -505,14 +625,20 @@ export class CombatRoomScene extends Phaser.Scene {
     this.projectileRenderer = undefined;
     this.enemyRenderer?.destroy();
     this.enemyRenderer = undefined;
+    this.redShroomRenderer?.destroy();
+    this.redShroomRenderer = undefined;
     this.enemyDartRenderer?.destroy();
     this.enemyDartRenderer = undefined;
+    this.shroomSporeRenderer?.destroy();
+    this.shroomSporeRenderer = undefined;
     this.feedbackRenderer?.destroy();
     this.feedbackRenderer = undefined;
     this.sfx?.destroy();
     this.sfx = undefined;
     this.projectiles.clear();
     this.enemyDarts.clear();
+    this.shroomSpores.clear();
     this.enemies.clear();
+    this.redShrooms.clear();
   }
 }
