@@ -2,14 +2,6 @@ export type RoomPhase = 'open' | 'combat' | 'cleared';
 
 export type RoomDoorSide = 'north' | 'south' | 'east' | 'west';
 
-export type DecorationAssetId =
-  | 'crateBarrel'
-  | 'floorScuffRed'
-  | 'mushroomPurple'
-  | 'stoneBlockLarge'
-  | 'stonePatch'
-  | 'stonePebble';
-
 export interface RoomBounds {
   readonly x: number;
   readonly y: number;
@@ -38,16 +30,6 @@ export interface RoomSpawnPoint {
   readonly y: number;
 }
 
-export interface RoomDecoration {
-  readonly id: string;
-  readonly asset: DecorationAssetId;
-  readonly x: number;
-  readonly y: number;
-  readonly scale: number;
-  readonly rotation: number;
-  readonly flipX?: boolean;
-}
-
 export interface FloorMark {
   readonly id: string;
   readonly x: number;
@@ -64,12 +46,12 @@ export interface CombatRoomDefinition {
   readonly doors: readonly RoomDoor[];
   readonly trigger: RoomTrigger;
   readonly spawnPoints: readonly RoomSpawnPoint[];
-  readonly decorations: readonly RoomDecoration[];
   readonly floorMarks: readonly FloorMark[];
 }
 
 export interface CombatRoomState {
   readonly phase: RoomPhase;
+  readonly wave: number;
   readonly remainingSpawnMarkers: number;
 }
 
@@ -81,133 +63,63 @@ export interface RoomPosition {
 export const referenceCombatRoom: CombatRoomDefinition = {
   id: 'reference-combat-room',
   bounds: {
-    x: 24,
-    y: 20,
-    width: 912,
-    height: 500,
-    border: 9
+    x: 0,
+    y: 0,
+    width: 1280,
+    height: 720,
+    border: 36
   },
   doors: [
     {
       id: 'east-main',
       side: 'east',
-      center: 268,
-      span: 118,
-      depth: 24
+      center: 360,
+      span: 154,
+      depth: 34
     },
     {
       id: 'south-main',
       side: 'south',
-      center: 480,
-      span: 148,
-      depth: 20
+      center: 640,
+      span: 192,
+      depth: 32
     }
   ],
   trigger: {
-    x: 480,
-    y: 270,
-    radius: 72
+    x: 640,
+    y: 360,
+    radius: 92
   },
   spawnPoints: [
-    { id: 'north-west', x: 414, y: 224 },
-    { id: 'north-east', x: 526, y: 222 },
-    { id: 'east', x: 594, y: 282 },
-    { id: 'south-east', x: 528, y: 342 },
-    { id: 'south-west', x: 428, y: 336 }
-  ],
-  decorations: [
-    {
-      id: 'crate-left',
-      asset: 'crateBarrel',
-      x: 300,
-      y: 210,
-      scale: 0.31,
-      rotation: -0.03
-    },
-    {
-      id: 'block-upper',
-      asset: 'stoneBlockLarge',
-      x: 246,
-      y: 146,
-      scale: 0.18,
-      rotation: 0.04,
-      flipX: true
-    },
-    {
-      id: 'mushroom-west',
-      asset: 'mushroomPurple',
-      x: 92,
-      y: 478,
-      scale: 0.16,
-      rotation: -0.12
-    },
-    {
-      id: 'mushroom-center',
-      asset: 'mushroomPurple',
-      x: 542,
-      y: 292,
-      scale: 0.13,
-      rotation: 0.08,
-      flipX: true
-    },
-    {
-      id: 'stone-center-left',
-      asset: 'stonePatch',
-      x: 416,
-      y: 304,
-      scale: 0.24,
-      rotation: 0.02
-    },
-    {
-      id: 'stone-center-low',
-      asset: 'stonePebble',
-      x: 442,
-      y: 344,
-      scale: 0.2,
-      rotation: -0.08
-    },
-    {
-      id: 'scuff-north',
-      asset: 'floorScuffRed',
-      x: 724,
-      y: 106,
-      scale: 0.2,
-      rotation: 0.1
-    },
-    {
-      id: 'scuff-east',
-      asset: 'floorScuffRed',
-      x: 766,
-      y: 330,
-      scale: 0.18,
-      rotation: -0.13,
-      flipX: true
-    },
-    {
-      id: 'pebble-south',
-      asset: 'stonePebble',
-      x: 708,
-      y: 426,
-      scale: 0.17,
-      rotation: 0.18
-    }
+    { id: 'north-west', x: 390, y: 250 },
+    { id: 'north', x: 640, y: 230 },
+    { id: 'north-east', x: 890, y: 250 },
+    { id: 'east', x: 1010, y: 380 },
+    { id: 'south-east', x: 860, y: 475 },
+    { id: 'south', x: 640, y: 500 },
+    { id: 'south-west', x: 420, y: 475 },
+    { id: 'west', x: 270, y: 380 }
   ],
   floorMarks: [
-    { id: 'north-fleck-1', x: 154, y: 66, width: 8, height: 3, rotation: -0.2, alpha: 0.22 },
-    { id: 'north-fleck-2', x: 386, y: 82, width: 12, height: 3, rotation: 0.14, alpha: 0.18 },
-    { id: 'north-fleck-3', x: 642, y: 62, width: 7, height: 2, rotation: 0.2, alpha: 0.15 },
-    { id: 'west-fleck-1', x: 126, y: 274, width: 8, height: 3, rotation: 0.12, alpha: 0.16 },
-    { id: 'center-fleck-1', x: 482, y: 198, width: 16, height: 4, rotation: -0.1, alpha: 0.2 },
-    { id: 'center-fleck-2', x: 406, y: 282, width: 12, height: 3, rotation: 0.04, alpha: 0.22 },
-    { id: 'east-fleck-1', x: 812, y: 236, width: 10, height: 3, rotation: -0.18, alpha: 0.16 },
-    { id: 'south-fleck-1', x: 196, y: 448, width: 9, height: 3, rotation: -0.06, alpha: 0.18 },
-    { id: 'south-fleck-2', x: 626, y: 462, width: 12, height: 4, rotation: 0.1, alpha: 0.16 }
+    { id: 'north-fleck-1', x: 154, y: 96, width: 8, height: 3, rotation: -0.2, alpha: 0.1 },
+    { id: 'north-fleck-2', x: 520, y: 112, width: 12, height: 3, rotation: 0.14, alpha: 0.09 },
+    { id: 'north-fleck-3', x: 926, y: 86, width: 7, height: 2, rotation: 0.2, alpha: 0.08 },
+    { id: 'west-fleck-1', x: 154, y: 374, width: 8, height: 3, rotation: 0.12, alpha: 0.09 },
+    { id: 'center-fleck-1', x: 640, y: 292, width: 16, height: 4, rotation: -0.1, alpha: 0.1 },
+    { id: 'center-fleck-2', x: 514, y: 384, width: 12, height: 3, rotation: 0.04, alpha: 0.09 },
+    { id: 'east-fleck-1', x: 1084, y: 314, width: 10, height: 3, rotation: -0.18, alpha: 0.08 },
+    { id: 'south-fleck-1', x: 270, y: 624, width: 9, height: 3, rotation: -0.06, alpha: 0.09 },
+    { id: 'south-fleck-2', x: 854, y: 642, width: 12, height: 4, rotation: 0.1, alpha: 0.08 }
   ]
 } as const;
 
+export const getCombatWaveEnemyCount = (wave: number): number =>
+  Math.min(8, 2 + Math.max(1, wave));
+
 export const createInitialCombatRoomState = (): CombatRoomState => ({
-  phase: 'open',
-  remainingSpawnMarkers: 0
+  phase: 'combat',
+  wave: 1,
+  remainingSpawnMarkers: getCombatWaveEnemyCount(1)
 });
 
 export const isInsideRoomTrigger = (
@@ -231,7 +143,8 @@ export const startCombatFromTrigger = (
 
   return {
     phase: 'combat',
-    remainingSpawnMarkers: room.spawnPoints.length
+    wave: state.wave,
+    remainingSpawnMarkers: getCombatWaveEnemyCount(state.wave)
   };
 };
 
@@ -242,7 +155,18 @@ export const clearCombatRoom = (state: CombatRoomState): CombatRoomState => {
 
   return {
     phase: 'cleared',
+    wave: state.wave,
     remainingSpawnMarkers: 0
+  };
+};
+
+export const advanceCombatRoomWave = (state: CombatRoomState): CombatRoomState => {
+  const wave = state.wave + 1;
+
+  return {
+    phase: 'combat',
+    wave,
+    remainingSpawnMarkers: getCombatWaveEnemyCount(wave)
   };
 };
 

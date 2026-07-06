@@ -11,10 +11,9 @@ import { BowbertPlayerModel, type BowbertPlayerEvent } from '../../sim/player';
 import { DartGooberSystem } from '../../sim/enemies';
 import { ArrowProjectileSystem, EnemyDartProjectileSystem } from '../../sim/projectiles';
 import {
-  clearCombatRoom,
+  advanceCombatRoomWave,
   createInitialCombatRoomState,
   referenceCombatRoom,
-  startCombatFromTrigger,
   type CombatRoomState
 } from '../../sim/rooms';
 import { CombatRoomRenderer, preloadCombatRoomAssets } from '../../render/rooms';
@@ -30,11 +29,10 @@ import {
 
 type CameraShakeKind = 'arrow-fire' | 'hit' | 'damage' | 'dodge' | 'room-clear';
 
-const CAMERA_FRAME = {
-  x: 0,
-  y: 0,
-  width: GAME_SIZE.width,
-  height: GAME_SIZE.height
+const CAMERA_VIEW = GAME_SIZE;
+const PLAYER_START = {
+  x: referenceCombatRoom.bounds.x + referenceCombatRoom.bounds.width / 2,
+  y: referenceCombatRoom.bounds.y + referenceCombatRoom.bounds.height / 2 + 120
 } as const;
 
 const CAMERA_SHAKES: Record<CameraShakeKind, { readonly durationMs: number; readonly intensity: number }> = {
@@ -48,8 +46,8 @@ const CAMERA_SHAKES: Record<CameraShakeKind, { readonly durationMs: number; read
 export class CombatRoomScene extends Phaser.Scene {
   private readonly inputController = new InputController();
   private player = new BowbertPlayerModel({
-    x: referenceCombatRoom.trigger.x - 132,
-    y: referenceCombatRoom.trigger.y + 118
+    x: PLAYER_START.x,
+    y: PLAYER_START.y
   });
   private readonly playerHealth = new PlayerHealth(3);
   private readonly projectiles = new ArrowProjectileSystem();
@@ -84,8 +82,8 @@ export class CombatRoomScene extends Phaser.Scene {
 
     this.roomState = createInitialCombatRoomState();
     this.player = new BowbertPlayerModel({
-      x: referenceCombatRoom.trigger.x - 132,
-      y: referenceCombatRoom.trigger.y + 118
+      x: PLAYER_START.x,
+      y: PLAYER_START.y
     });
     this.projectiles.clear();
     this.enemies.clear();
@@ -127,7 +125,6 @@ export class CombatRoomScene extends Phaser.Scene {
 
     this.centerCameraOnPlayer();
     this.handlePlayerEvents(playerFrame.events);
-    this.updateRoomTrigger();
     this.updateEnemyEncounter();
 
     const projectileEvents = this.projectiles.update(delta, referenceCombatRoom.bounds);
@@ -225,9 +222,10 @@ export class CombatRoomScene extends Phaser.Scene {
       }
 
       if (event.type === 'dart-goober-encounter-cleared') {
-        this.applyRoomState(clearCombatRoom(this.roomState));
+        this.applyRoomState(advanceCombatRoomWave(this.roomState));
         this.feedbackRenderer?.playRoomClear(referenceCombatRoom.bounds);
         this.shakeCamera('room-clear');
+        this.startCurrentWave();
       }
     }
   }
@@ -255,28 +253,19 @@ export class CombatRoomScene extends Phaser.Scene {
     }
   }
 
-  private updateRoomTrigger() {
-    if (this.roomState.phase !== 'open') {
-      return;
-    }
-
-    const nextState = startCombatFromTrigger(
-      referenceCombatRoom,
-      this.roomState,
-      this.player.state.position
-    );
-
-    if (nextState !== this.roomState) {
-      this.applyRoomState(nextState);
-    }
-  }
-
   private updateEnemyEncounter() {
     if (this.roomState.phase !== 'combat' || this.enemies.hasEncounterStarted()) {
       return;
     }
 
-    this.enemies.startEncounter(referenceCombatRoom.spawnPoints);
+    this.startCurrentWave();
+  }
+
+  private startCurrentWave() {
+    this.enemies.startEncounter(referenceCombatRoom.spawnPoints, {
+      enemyCount: this.roomState.remainingSpawnMarkers,
+      waveIndex: this.roomState.wave
+    });
   }
 
   private applyRoomState(state: CombatRoomState) {
@@ -309,30 +298,36 @@ export class CombatRoomScene extends Phaser.Scene {
     const camera = this.cameras.main;
     const viewport = applyHiDpiCanvas(this);
     const zoom = Math.max(
-      viewport.cssWidth / CAMERA_FRAME.width,
-      viewport.cssHeight / CAMERA_FRAME.height
+      viewport.cssWidth / CAMERA_VIEW.width,
+      viewport.cssHeight / CAMERA_VIEW.height
     ) * viewport.pixelRatio;
 
     camera.setViewport(0, 0, viewport.renderWidth, viewport.renderHeight);
     camera.setZoom(zoom);
-    camera.setBounds(CAMERA_FRAME.x, CAMERA_FRAME.y, CAMERA_FRAME.width, CAMERA_FRAME.height);
+    camera.setBounds(
+      referenceCombatRoom.bounds.x,
+      referenceCombatRoom.bounds.y,
+      referenceCombatRoom.bounds.width,
+      referenceCombatRoom.bounds.height
+    );
   }
 
   private centerCameraOnPlayer() {
     const camera = this.cameras.main;
+    const { bounds } = referenceCombatRoom;
     const visibleWidth = camera.width / camera.zoom;
     const visibleHeight = camera.height / camera.zoom;
-    const minCenterX = CAMERA_FRAME.x + visibleWidth / 2;
-    const maxCenterX = CAMERA_FRAME.x + CAMERA_FRAME.width - visibleWidth / 2;
-    const minCenterY = CAMERA_FRAME.y + visibleHeight / 2;
-    const maxCenterY = CAMERA_FRAME.y + CAMERA_FRAME.height - visibleHeight / 2;
+    const minCenterX = bounds.x + visibleWidth / 2;
+    const maxCenterX = bounds.x + bounds.width - visibleWidth / 2;
+    const minCenterY = bounds.y + visibleHeight / 2;
+    const maxCenterY = bounds.y + bounds.height - visibleHeight / 2;
     const centerX =
       minCenterX > maxCenterX
-        ? CAMERA_FRAME.x + CAMERA_FRAME.width / 2
+        ? bounds.x + bounds.width / 2
         : Phaser.Math.Clamp(this.player.state.position.x, minCenterX, maxCenterX);
     const centerY =
       minCenterY > maxCenterY
-        ? CAMERA_FRAME.y + CAMERA_FRAME.height / 2
+        ? bounds.y + bounds.height / 2
         : Phaser.Math.Clamp(this.player.state.position.y, minCenterY, maxCenterY);
 
     camera.centerOn(centerX, centerY);

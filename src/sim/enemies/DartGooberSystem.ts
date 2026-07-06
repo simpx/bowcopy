@@ -65,7 +65,12 @@ export interface DartGooberFrame {
   readonly consumedArrowIds: number[];
 }
 
-const ENCOUNTER_SIZE = 3;
+export interface DartGooberEncounterOptions {
+  readonly enemyCount?: number;
+  readonly waveIndex?: number;
+}
+
+const DEFAULT_ENCOUNTER_SIZE = 3;
 const FIRST_SPAWN_DELAY_MS = 260;
 const SPAWN_CADENCE_MS = 720;
 const SPAWN_DURATION_MS = 430;
@@ -174,12 +179,19 @@ const getSegmentDistanceSquared = (
   return deltaX * deltaX + deltaY * deltaY;
 };
 
-const pickEncounterSpawns = (spawnPoints: readonly RoomSpawnPoint[]): RoomSpawnPoint[] => {
-  if (spawnPoints.length <= ENCOUNTER_SIZE) {
+const pickEncounterSpawns = (
+  spawnPoints: readonly RoomSpawnPoint[],
+  enemyCount: number
+): RoomSpawnPoint[] => {
+  const targetCount = Math.max(1, Math.floor(enemyCount));
+
+  if (spawnPoints.length <= targetCount) {
     return Array.from(spawnPoints);
   }
 
-  const preferredIndexes = [0, Math.floor(spawnPoints.length / 2), spawnPoints.length - 1];
+  const preferredIndexes = Array.from({ length: targetCount }, (_, index) =>
+    Math.floor((index + 0.5) * spawnPoints.length / targetCount)
+  );
   const selected: RoomSpawnPoint[] = [];
 
   for (const index of preferredIndexes) {
@@ -191,7 +203,7 @@ const pickEncounterSpawns = (spawnPoints: readonly RoomSpawnPoint[]): RoomSpawnP
   }
 
   for (const spawn of spawnPoints) {
-    if (selected.length >= ENCOUNTER_SIZE) {
+    if (selected.length >= targetCount) {
       break;
     }
 
@@ -200,7 +212,7 @@ const pickEncounterSpawns = (spawnPoints: readonly RoomSpawnPoint[]): RoomSpawnP
     }
   }
 
-  return selected.slice(0, ENCOUNTER_SIZE);
+  return selected.slice(0, targetCount);
 };
 
 export class DartGooberSystem {
@@ -211,11 +223,14 @@ export class DartGooberSystem {
   private encounterStarted = false;
   private encounterCleared = false;
 
-  startEncounter(spawnPoints: readonly RoomSpawnPoint[]) {
+  startEncounter(
+    spawnPoints: readonly RoomSpawnPoint[],
+    options: DartGooberEncounterOptions = {}
+  ) {
     this.clear();
     this.encounterStarted = true;
-    this.pendingSpawns = pickEncounterSpawns(spawnPoints);
-    this.nextSpawnMs = FIRST_SPAWN_DELAY_MS;
+    this.pendingSpawns = pickEncounterSpawns(spawnPoints, options.enemyCount ?? DEFAULT_ENCOUNTER_SIZE);
+    this.nextSpawnMs = Math.max(120, FIRST_SPAWN_DELAY_MS - (options.waveIndex ?? 1) * 18);
   }
 
   update(
