@@ -29,6 +29,9 @@ assets/
     stone/
     mushroom/
     wizard/
+  audio/
+    sfx/
+      game/
   ui/
     hearts/
     sigils/
@@ -45,6 +48,8 @@ assets/
 - Prefer layered parts when animation can be procedural.
 - Use stable, descriptive filenames.
 - Add metadata when a sprite needs pivot, scale, hitbox, or animation timing.
+- Keep third-party audio attribution with any copied audio pack.
+- Do not add walking sounds until a purpose-built footstep set is selected.
 
 ## Character Layer Model
 
@@ -61,6 +66,17 @@ Current layered character assets:
 
 - `characters/bowbert/bowbert-base-ai-v2-trimmed.png`: fixed body image with baked eyes; bow is a runtime attachment.
 - `characters/dart-goober/dart-goober-base-ai-v1-trimmed.png`: fixed body image with embedded eye sockets; black gaze shapes are runtime generated.
+
+## Audio
+
+The current gameplay SFX pack is copied from the local Uproot prototype:
+
+- `audio/sfx/game/shoot_arrow.ogg`: player arrow release.
+- `audio/sfx/game/hit_wood_board.wav`: arrow hitting wood/fence-like boundaries.
+- `audio/sfx/game/hit_actor.wav`: soft actor hit feedback for goober/player damage.
+- `audio/sfx/game/hit_sand_or_rock.ogg`: light boundary impact for enemy darts.
+
+Keep `audio/sfx/game/manifest.json` and `audio/THIRD_PARTY_LICENSES.md` with the files. The Uproot pack intentionally has no approved walk sound yet, so Bowbert has no footstep audio for now.
 
 ## First Asset Batch
 

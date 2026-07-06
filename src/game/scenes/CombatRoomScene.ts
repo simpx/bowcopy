@@ -10,6 +10,7 @@ import { TouchInputOverlay } from '../../ui/TouchInputOverlay';
 import { BowbertPlayerModel, type BowbertPlayerEvent } from '../../sim/player';
 import { DartGooberSystem } from '../../sim/enemies';
 import { ArrowProjectileSystem, EnemyDartProjectileSystem } from '../../sim/projectiles';
+import { CombatSfxDirector, preloadCombatSfx } from '../../audio/CombatSfxDirector';
 import {
   advanceCombatRoomWave,
   createInitialCombatRoomState,
@@ -62,6 +63,7 @@ export class CombatRoomScene extends Phaser.Scene {
   private enemyRenderer?: DartGooberRenderer;
   private enemyDartRenderer?: EnemyDartProjectileRenderer;
   private feedbackRenderer?: CombatFeedbackRenderer;
+  private sfx?: CombatSfxDirector;
   private roomState: CombatRoomState = createInitialCombatRoomState();
 
   constructor() {
@@ -74,6 +76,7 @@ export class CombatRoomScene extends Phaser.Scene {
     preloadArrowProjectileAssets(this);
     preloadEnemyDartProjectileAssets(this);
     preloadDartGooberAssets(this);
+    preloadCombatSfx(this);
   }
 
   create() {
@@ -105,6 +108,7 @@ export class CombatRoomScene extends Phaser.Scene {
     this.playerRenderer.update(0, 0, this.player.state);
     this.feedbackRenderer = new CombatFeedbackRenderer(this);
     this.feedbackRenderer.create();
+    this.sfx = new CombatSfxDirector(this);
 
     this.desktopInput = new DesktopInputAdapter(this, this.inputController, () => this.player.state.position);
     this.createHeartsHud();
@@ -180,6 +184,7 @@ export class CombatRoomScene extends Phaser.Scene {
     for (const event of events) {
       if (event.type === 'arrow-fired') {
         this.projectiles.fireArrow(event);
+        this.sfx?.playArrowFire(event.origin);
         this.shakeCamera('arrow-fire');
         continue;
       }
@@ -210,12 +215,16 @@ export class CombatRoomScene extends Phaser.Scene {
       }
 
       if (event.type === 'dart-goober-hit') {
-        this.feedbackRenderer?.playArrowEnemy(event.position, event.damage);
-        this.shakeCamera('hit');
+        if (event.hp > 0) {
+          this.sfx?.playEnemyHit(event.position, event.damage);
+          this.feedbackRenderer?.playArrowEnemy(event.position, event.damage);
+          this.shakeCamera('hit');
+        }
         continue;
       }
 
       if (event.type === 'dart-goober-killed') {
+        this.sfx?.playEnemyDeath(event.position);
         this.feedbackRenderer?.playEnemyDeath(event.position);
         this.shakeCamera('hit');
         continue;
@@ -234,6 +243,11 @@ export class CombatRoomScene extends Phaser.Scene {
     events: ReturnType<EnemyDartProjectileSystem['update']>
   ) {
     for (const event of events) {
+      if (event.type === 'enemy-dart-hit-boundary') {
+        this.sfx?.playDartWall(event.position);
+        continue;
+      }
+
       if (event.type !== 'enemy-dart-hit-player') {
         continue;
       }
@@ -246,6 +260,7 @@ export class CombatRoomScene extends Phaser.Scene {
 
       this.player.markHit();
       this.playerHealth.damage(event.damage);
+      this.sfx?.playPlayerDamage(event.position, event.damage);
       this.heartsHud?.update(this.playerHealth.state);
       this.heartsHud?.flashDamage();
       this.feedbackRenderer?.playDamage(this.player.state.position, event.damage);
@@ -351,6 +366,8 @@ export class CombatRoomScene extends Phaser.Scene {
     this.enemyDartRenderer = undefined;
     this.feedbackRenderer?.destroy();
     this.feedbackRenderer = undefined;
+    this.sfx?.destroy();
+    this.sfx = undefined;
     this.projectiles.clear();
     this.enemyDarts.clear();
     this.enemies.clear();

@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "updated": "2026-06-28",
+  "name": "Uproot game SFX pack v1",
+  "policy": [
+    "Use only purpose-built sounds for the mapped event.",
+    "Do not use rejected audition sounds.",
+    "Do not synthesize, layer, or substitute unrelated foley for a missing event.",
+    "Leave missing purpose-built events empty."
+  ],
+  "processRecord": "docs/audio-process-2026-06-28.md",
+  "selectionRecord": "docs/audio-selection-2026-06-28.md",
+  "auditionManifest": "assets/audio/sfx/curated-v1.json",
+  "licenseFile": "assets/audio/THIRD_PARTY_LICENSES.md",
+  "events": {
+    "shoot_arrow": {
+      "file": "assets/audio/sfx/game/shoot_arrow.ogg",
+      "status": "selected",
+      "usage": "Normal bow shot with arrow loaded.",
+      "playback": "Play once on arrow release. Keep pitch variation subtle.",
+      "sourceId": "oga-bow-arrow-shot",
+      "source": "Bow & Arrow Shot",
+      "author": "dorkster",
+      "license": "CC-BY-SA 3.0"
+    },
+    "empty_bow_release": {
+      "file": "assets/audio/sfx/game/empty_bow_release.wav",
+      "status": "selected",
+      "usage": "No-arrow empty bow release.",
+      "playback": "Play when the player releases the bow without an arrow.",
+      "sourceId": "oga-arrow-hit-twang",
+      "source": "Arrow hit twang",
+      "author": "qubodup",
+      "license": "CC-BY-SA 3.0 / GPL 2.0 / GPL 3.0",
+      "clipFrom": "assets/audio/sfx/candidates/oga-arrow-hit-twang/arrow-hit-twang-preview.ogg"
+    },
+    "hit_wood_board": {
+      "file": "assets/audio/sfx/game/hit_wood_board.wav",
+      "status": "selected",
+      "usage": "Arrow hitting wood or board-like cover.",
+      "playback": "Play on arrow impact against wooden cover or board material.",
+      "sourceId": "freesound-arrow-impact",
+      "source": "Arrow strike",
+      "author": "plantmonkey",
+      "license": "CC0",
+      "clipFrom": "assets/audio/sfx/candidates/freesound-arrow-impact/arrow-strike-hq-preview.mp3"
+    },
+    "hit_sand_or_rock": {
+      "file": "assets/audio/sfx/game/hit_sand_or_rock.ogg",
+      "status": "selected",
+      "usage": "Sand hit or stone contact.",
+      "playback": "Play for small sand, dirt-adjacent, or stone contact impacts.",
+      "sourceId": "oga-breaking-hit",
+      "source": "75 CC0 breaking/falling/hit sfx",
+      "author": "rubberduck",
+      "license": "CC0"
+    },
+    "hit_rock_break_full": {
+      "file": "assets/audio/sfx/game/hit_rock_break_full.ogg",
+      "status": "selected",
+      "usage": "Whole rock breaking apart.",
+      "playback": "Play for full rock destruction.",
+      "sourceId": "oga-breaking-hit",
+      "source": "75 CC0 breaking/falling/hit sfx",
+      "author": "rubberduck",
+      "license": "CC0"
+    },
+    "hit_rock_chip": {
+      "file": "assets/audio/sfx/game/hit_rock_chip.ogg",
+      "status": "selected",
+      "usage": "Small shell or chip falling from rock.",
+      "playback": "Play for smaller rock chip feedback.",
+      "sourceId": "oga-breaking-hit",
+      "source": "75 CC0 breaking/falling/hit sfx",
+      "author": "rubberduck",
+      "license": "CC0"
+    },
+    "hit_actor": {
+      "file": "assets/audio/sfx/game/hit_actor.wav",
+      "status": "selected",
+      "usage": "Carrot or soft vegetable actor hit.",
+      "playback": "Play sparingly on non-wood actor hit. Keep it crisp and modest.",
+      "sourceId": "oga-cc0-sounds-library-break-crunch",
+      "source": "CC0 Sounds Library - break crunch impact 01",
+      "author": "ETTiNGRiNDER",
+      "license": "CC0",
+      "clipFrom": "assets/audio/sfx/candidates/carrot-hit-review/break-crunch/impactcrunch01.mp3.flac"
+    },
+    "hit_hard_dirt": {
+      "file": "assets/audio/sfx/game/hit_hard_dirt.wav",
+      "status": "selected",
+      "usage": "Slightly hard dirt hit.",
+      "playback": "Play for firm dirt or packed ground impacts.",
+      "sourceId": "freesound-arrow-target",
+      "source": "arrow_.hits_target.wav",
+      "author": "cyoung510",
+      "license": "CC0",
+      "clipFrom": "assets/audio/sfx/candidates/freesound-arrow-target/arrow-hits-target-hq-preview.mp3"
+    },
+    "hit_harder_dirt": {
+      "file": "assets/audio/sfx/game/hit_harder_dirt.mp3",
+      "status": "selected",
+      "usage": "Harder dirt hit.",
+      "playback": "Play for harder packed dirt impacts.",
+      "sourceId": "freesound-arrow-impact",
+      "source": "Arrow Impact 1",
+      "author": "Ali_6868",
+      "license": "CC0"
+    },
+    "pickup": {
+      "file": "assets/audio/sfx/game/pickup.ogg",
+      "status": "selected",
+      "usage": "Arrow pickup or small collectible pickup.",
+      "playback": "Play once on pickup. Keep it light and short.",
+      "sourceId": "oga-pickup-plastic",
+      "source": "Pickup/plastic Sound",
+      "author": "Vinrax",
+      "license": "CC-BY 3.0"
+    },
+    "equipment_toggle": {
+      "file": "assets/audio/sfx/game/equipment_toggle.ogg",
+      "status": "selected",
+      "usage": "Open or close equipment panel.",
+      "playback": "Play once on equipment or quiver panel toggle.",
+      "sourceId": "oga-kenney-50-rpg",
+      "source": "50 RPG sound effects",
+      "author": "Kenney",
+      "license": "CC0"
+    },
+    "item_select": {
+      "file": "assets/audio/sfx/game/item_select.ogg",
+      "status": "selected",
+      "usage": "Selecting an item.",
+      "playback": "Play once on item selection.",
+      "sourceId": "oga-kenney-50-rpg",
+      "source": "50 RPG sound effects",
+      "author": "Kenney",
+      "license": "CC0"
+    }
+  },
+  "backups": {
+    "empty_bow_release_heavy": {
+      "forEvent": "empty_bow_release",
+      "file": "assets/audio/sfx/game/backups/empty_bow_release_heavy.wav",
+      "status": "backup",
+      "usage": "Heavier no-arrow empty bow release if the primary feels too light.",
+      "sourceId": "oga-arrow-hit-twang",
+      "source": "Arrow hit twang",
+      "author": "qubodup",
+      "license": "CC-BY-SA 3.0 / GPL 2.0 / GPL 3.0",
+      "clipFrom": "assets/audio/sfx/candidates/oga-arrow-hit-twang/arrow-hit-twang-preview.ogg"
+    }
+  },
+  "emptyEvents": {
+    "walk": "All current footstep candidates were rejected.",
+    "arrow_flyby": "The auditioned arrow whoosh was rejected as noisy.",
+    "dodge_or_rustle": "No retained dodge or rustle sample after audition."
+  }
+}
