@@ -5,6 +5,7 @@ import { applyHiDpiCanvas } from '../renderScale';
 import { DesktopInputAdapter } from '../../input/DesktopInputAdapter';
 import { InputController } from '../../input/InputController';
 import { PlayerHealth } from '../PlayerHealth';
+import { DungeonMinimap } from '../../ui/DungeonMinimap';
 import { HeartsHud } from '../../ui/HeartsHud';
 import { TouchInputOverlay } from '../../ui/TouchInputOverlay';
 import { BowbertPlayerModel, type BowbertPlayerEvent } from '../../sim/player';
@@ -66,6 +67,7 @@ export class CombatRoomScene extends Phaser.Scene {
   private readonly enemies = new DartGooberSystem();
   private readonly enemyDarts = new EnemyDartProjectileSystem();
   private desktopInput?: DesktopInputAdapter;
+  private dungeonMinimap?: DungeonMinimap;
   private heartsHud?: HeartsHud;
   private touchOverlay?: TouchInputOverlay;
   private roomRenderer?: CombatRoomRenderer;
@@ -128,6 +130,7 @@ export class CombatRoomScene extends Phaser.Scene {
 
     this.desktopInput = new DesktopInputAdapter(this, this.inputController, () => this.player.state.position);
     this.createHeartsHud();
+    this.createDungeonMinimap();
     this.createTouchInput();
     this.configureCamera();
     this.centerCameraOnRoom();
@@ -194,6 +197,14 @@ export class CombatRoomScene extends Phaser.Scene {
 
     if (parent) {
       this.heartsHud = new HeartsHud(parent, this.playerHealth.state);
+    }
+  }
+
+  private createDungeonMinimap() {
+    const parent = this.game.canvas.parentElement;
+
+    if (parent) {
+      this.dungeonMinimap = new DungeonMinimap(parent, this.dungeonState);
     }
   }
 
@@ -320,6 +331,7 @@ export class CombatRoomScene extends Phaser.Scene {
 
   private applyCurrentRoomState() {
     this.roomRenderer?.setState(getCurrentDungeonRoom(this.dungeonState));
+    this.dungeonMinimap?.update(this.dungeonState);
   }
 
   private tryMoveThroughOpenDoor(move: { readonly x: number; readonly y: number }) {
@@ -481,6 +493,8 @@ export class CombatRoomScene extends Phaser.Scene {
     this.desktopInput = undefined;
     this.heartsHud?.dispose();
     this.heartsHud = undefined;
+    this.dungeonMinimap?.dispose();
+    this.dungeonMinimap = undefined;
     this.touchOverlay?.dispose();
     this.touchOverlay = undefined;
     this.roomRenderer?.destroy();

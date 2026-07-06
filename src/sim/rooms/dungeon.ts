@@ -1,4 +1,5 @@
 import {
+  ROOM_THEME_NAMES,
   referenceCombatRoom,
   type CombatRoomDefinition,
   type FloorMark,
@@ -18,6 +19,8 @@ export interface DungeonRoomState {
   readonly gridY: number;
   readonly kind: DungeonRoomKind;
   readonly theme: DungeonRoomTheme;
+  readonly typeName: string;
+  readonly decorSeed: number;
   readonly depth: number;
   readonly enemyBudget: number;
   phase: RoomPhase;
@@ -31,22 +34,34 @@ export interface DungeonState {
   currentRoomId: string;
 }
 
-const START_GRID = { x: 2, y: 4 } as const;
+type GridPoint = {
+  readonly x: number;
+  readonly y: number;
+};
 
-const DUNGEON_BLUEPRINT = [
+type DungeonBlueprintSelection = {
+  readonly rows: readonly string[];
+  readonly start: GridPoint;
+};
+
+const DUNGEON_ROUTE_DSL = [
   '..B..',
-  '..N..',
-  '.NNN.',
-  '..N..',
-  '.NS..',
+  '..R..',
+  '.GMM.',
+  '..G..',
+  '.MS..',
   '.W...'
 ] as const;
 
-const ROOM_KIND_BY_SYMBOL: Partial<Record<string, DungeonRoomKind>> = {
-  S: 'start',
-  N: 'normal',
-  W: 'wizard',
-  B: 'boss'
+const ROOM_SPEC_BY_SYMBOL: Partial<
+  Record<string, { readonly kind: DungeonRoomKind; readonly theme: DungeonRoomTheme }>
+> = {
+  S: { kind: 'start', theme: 'start' },
+  G: { kind: 'normal', theme: 'wood' },
+  M: { kind: 'normal', theme: 'mushroom' },
+  R: { kind: 'normal', theme: 'stone' },
+  W: { kind: 'wizard', theme: 'wizard' },
+  B: { kind: 'boss', theme: 'boss' }
 };
 
 const DOOR_TEMPLATE: Record<RoomDoorSide, Omit<RoomDoor, 'id' | 'side'>> = {
@@ -89,19 +104,21 @@ export const OPPOSITE_DOOR_SIDE: Record<RoomDoorSide, RoomDoorSide> = {
 const ROOM_SIDES: readonly RoomDoorSide[] = ['north', 'east', 'south', 'west'] as const;
 
 export function createInitialDungeonState(): DungeonState {
+  const blueprint = createDungeonBlueprint();
   const rooms = new Map<string, DungeonRoomState>();
 
-  for (let y = 0; y < DUNGEON_BLUEPRINT.length; y += 1) {
-    const row = DUNGEON_BLUEPRINT[y];
+  for (let y = 0; y < blueprint.rows.length; y += 1) {
+    const row = blueprint.rows[y];
 
     for (let x = 0; x < row.length; x += 1) {
-      const kind = ROOM_KIND_BY_SYMBOL[row[x]];
+      const roomSpec = ROOM_SPEC_BY_SYMBOL[row[x]];
 
-      if (!kind) continue;
+      if (!roomSpec) continue;
 
       const id = dungeonRoomId(x, y);
-      const depth = Math.abs(x - START_GRID.x) + Math.abs(y - START_GRID.y);
-      const enemyBudget = enemyBudgetForRoom(kind, depth);
+      const { kind, theme } = roomSpec;
+      const depth = Math.abs(x - blueprint.start.x) + Math.abs(y - blueprint.start.y);
+      const enemyBudget = enemyBudgetForRoom(kind, depth, theme);
       const phase: RoomPhase = kind === 'start' || kind === 'wizard' ? 'cleared' : 'open';
 
       rooms.set(id, {
@@ -109,7 +126,9 @@ export function createInitialDungeonState(): DungeonState {
         gridX: x,
         gridY: y,
         kind,
-        theme: themeForRoom(kind, x, y),
+        theme,
+        typeName: ROOM_THEME_NAMES[theme],
+        decorSeed: seededGridValue(x, y, row.charCodeAt(x) + 97),
         depth,
         enemyBudget,
         phase,
@@ -122,7 +141,7 @@ export function createInitialDungeonState(): DungeonState {
 
   return {
     rooms,
-    currentRoomId: dungeonRoomId(START_GRID.x, START_GRID.y)
+    currentRoomId: dungeonRoomId(blueprint.start.x, blueprint.start.y)
   };
 }
 
@@ -193,6 +212,8 @@ export function createCombatRoomDefinitionForDungeonRoom(
     ...referenceCombatRoom,
     id: room.id,
     theme: room.theme,
+    typeName: room.typeName,
+    decorSeed: room.decorSeed,
     doors: createDoorsForDungeonRoom(state, room),
     floorMarks: createFloorMarksForDungeonRoom(room),
     spawnPoints: createSpawnPointsForDungeonRoom(room)
@@ -208,11 +229,17 @@ export function isCombatDungeonRoom(room: DungeonRoomState): boolean {
 }
 
 function createDoorsForDungeonRoom(state: DungeonState, room: DungeonRoomState): readonly RoomDoor[] {
-  return getDungeonRoomExits(state, room).map((side) => ({
-    id: `${room.id}-${side}`,
-    side,
-    ...DOOR_TEMPLATE[side]
-  }));
+  return getDungeonRoomExits(state, room).map((side) => {
+    const target = getNeighborDungeonRoom(state, room, side);
+
+    return {
+      id: `${room.id}-${side}`,
+      side,
+      ...DOOR_TEMPLATE[side],
+      targetTheme: target?.theme,
+      targetTypeName: target?.typeName
+    };
+  });
 }
 
 function createFloorMarksForDungeonRoom(room: DungeonRoomState): readonly FloorMark[] {
@@ -239,27 +266,65 @@ function createSpawnPointsForDungeonRoom(room: DungeonRoomState): readonly RoomS
   return referenceCombatRoom.spawnPoints.slice(0, count);
 }
 
-function enemyBudgetForRoom(kind: DungeonRoomKind, depth: number): number {
+function createDungeonBlueprint(): DungeonBlueprintSelection {
+  const rows = normalizeBlueprintRows(DUNGEON_ROUTE_DSL);
+
+  return {
+    rows,
+    start: findStartGrid(rows)
+  };
+}
+
+function normalizeBlueprintRows(rows: readonly string[]): readonly string[] {
+  const width = Math.max(...rows.map((row) => row.length));
+
+  return rows.map((row) => row.padEnd(width, '.'));
+}
+
+function findStartGrid(rows: readonly string[]): GridPoint {
+  let start: GridPoint | undefined;
+
+  for (let y = 0; y < rows.length; y += 1) {
+    const x = rows[y].indexOf('S');
+
+    if (x < 0) continue;
+
+    if (start) {
+      throw new Error('Dungeon blueprint must contain exactly one start room.');
+    }
+
+    start = { x, y };
+  }
+
+  if (!start) {
+    throw new Error('Dungeon blueprint is missing a start room.');
+  }
+
+  return start;
+}
+
+function enemyBudgetForRoom(kind: DungeonRoomKind, depth: number, theme: DungeonRoomTheme): number {
   if (kind === 'start' || kind === 'wizard') return 0;
   if (kind === 'boss') return 7;
 
-  return Math.min(6, 2 + depth);
+  const baseBudget = Math.min(6, 2 + depth);
+
+  if (theme === 'wood') return Math.min(7, baseBudget + 1);
+  if (theme === 'mushroom') return Math.max(2, baseBudget - 1);
+
+  return baseBudget;
 }
 
-function themeForRoom(kind: DungeonRoomKind, x: number, y: number): DungeonRoomTheme {
-  if (kind === 'wizard') return 'wizard';
-  if (kind === 'boss') return 'stone';
+function seededGridValue(x: number, y: number, salt: number): number {
+  const value = Math.sin(x * 127.1 + y * 311.7 + salt * 19.19) * 43758.5453;
 
-  const themeIndex = Math.abs(x * 3 + y * 5) % 3;
-
-  if (themeIndex === 1) return 'stone';
-  if (themeIndex === 2) return 'mushroom';
-
-  return 'forest';
+  return value - Math.floor(value);
 }
 
 function seededRoomValue(room: DungeonRoomState, salt: number): number {
-  const value = Math.sin(room.gridX * 127.1 + room.gridY * 311.7 + salt * 19.19) * 43758.5453;
+  const value =
+    Math.sin(room.decorSeed * 991.7 + room.gridX * 127.1 + room.gridY * 311.7 + salt * 19.19) *
+    43758.5453;
 
   return value - Math.floor(value);
 }

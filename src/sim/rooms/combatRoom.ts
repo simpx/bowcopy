@@ -1,7 +1,16 @@
 export type RoomPhase = 'open' | 'combat' | 'cleared';
 
 export type RoomDoorSide = 'north' | 'south' | 'east' | 'west';
-export type RoomTheme = 'forest' | 'stone' | 'mushroom' | 'wizard';
+export type RoomTheme = 'start' | 'wood' | 'stone' | 'mushroom' | 'wizard' | 'boss';
+
+export const ROOM_THEME_NAMES: Record<RoomTheme, string> = {
+  start: 'Start',
+  wood: 'Wood',
+  stone: 'Stone',
+  mushroom: 'Mushroom',
+  wizard: 'Wizard',
+  boss: 'Boss'
+};
 
 export interface RoomBounds {
   readonly x: number;
@@ -17,6 +26,8 @@ export interface RoomDoor {
   readonly center: number;
   readonly span: number;
   readonly depth: number;
+  readonly targetTheme?: RoomTheme;
+  readonly targetTypeName?: string;
 }
 
 export interface RoomTrigger {
@@ -44,6 +55,8 @@ export interface FloorMark {
 export interface CombatRoomDefinition {
   readonly id: string;
   readonly theme?: RoomTheme;
+  readonly typeName?: string;
+  readonly decorSeed?: number;
   readonly bounds: RoomBounds;
   readonly doors: readonly RoomDoor[];
   readonly trigger: RoomTrigger;
@@ -64,7 +77,9 @@ export interface RoomPosition {
 
 export const referenceCombatRoom: CombatRoomDefinition = {
   id: 'reference-combat-room',
-  theme: 'forest',
+  theme: 'wood',
+  typeName: ROOM_THEME_NAMES.wood,
+  decorSeed: 0,
   bounds: {
     x: 22,
     y: 30,

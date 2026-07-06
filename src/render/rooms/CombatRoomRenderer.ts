@@ -57,26 +57,45 @@ const FLOOR_PROPS: readonly FloorProp[] = [
 ] as const;
 
 const THEME_FLOOR_COLORS: Record<RoomTheme, number> = {
-  forest: FLOOR_COLOR,
-  stone: 0x415f4e,
+  start: 0x406c4e,
+  wood: FLOOR_COLOR,
+  stone: 0x405c4e,
   mushroom: 0x3f654f,
-  wizard: 0x3d604f
+  wizard: 0x3d604f,
+  boss: 0x495348
 };
 
 const THEME_EXTRA_PROPS: Record<RoomTheme, readonly FloorProp[]> = {
-  forest: [],
+  start: [
+    { kind: 'stone', x: 498, y: 186, scale: 0.48, rotation: 0.08 },
+    { kind: 'stump', x: 890, y: 556, scale: 0.48, rotation: -0.04 }
+  ],
+  wood: [
+    { kind: 'stump', x: 330, y: 202, scale: 0.52, rotation: 0.12 },
+    { kind: 'stump', x: 944, y: 448, scale: 0.66, rotation: -0.04 },
+    { kind: 'stone', x: 768, y: 572, scale: 0.4, rotation: 0.1 }
+  ],
   stone: [
     { kind: 'stone', x: 330, y: 202, scale: 0.48, rotation: 0.12 },
-    { kind: 'stone', x: 944, y: 448, scale: 0.62, rotation: -0.04 }
+    { kind: 'stone', x: 944, y: 448, scale: 0.62, rotation: -0.04 },
+    { kind: 'stone', x: 768, y: 572, scale: 0.54, rotation: 0.05 }
   ],
   mushroom: [
     { kind: 'mushroom', x: 318, y: 210, scale: 0.48, rotation: 0.1 },
     { kind: 'mushroom', x: 910, y: 170, scale: 0.44, rotation: -0.08 },
-    { kind: 'mushroom', x: 758, y: 566, scale: 0.52, rotation: 0.04 }
+    { kind: 'mushroom', x: 758, y: 566, scale: 0.52, rotation: 0.04 },
+    { kind: 'mushroom', x: 1044, y: 438, scale: 0.42, rotation: -0.12 },
+    { kind: 'mushroom', x: 486, y: 532, scale: 0.5, rotation: 0.06 }
   ],
   wizard: [
     { kind: 'stump', x: 324, y: 218, scale: 0.6, rotation: 0.1 },
-    { kind: 'mushroom', x: 900, y: 504, scale: 0.62, rotation: -0.12 }
+    { kind: 'mushroom', x: 900, y: 504, scale: 0.62, rotation: -0.12 },
+    { kind: 'stone', x: 632, y: 180, scale: 0.5, rotation: 0.02 }
+  ],
+  boss: [
+    { kind: 'stone', x: 330, y: 202, scale: 0.7, rotation: 0.12 },
+    { kind: 'stone', x: 944, y: 448, scale: 0.76, rotation: -0.04 },
+    { kind: 'stump', x: 742, y: 562, scale: 0.68, rotation: 0.08 }
   ]
 };
 
@@ -196,7 +215,8 @@ export class CombatRoomRenderer {
   }
 
   private getFloorSeed(x: number, y: number): number {
-    const value = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+    const decorOffset = (this.room.decorSeed ?? 0) * 1031.17;
+    const value = Math.sin(x * 12.9898 + y * 78.233 + decorOffset) * 43758.5453;
 
     return value - Math.floor(value);
   }
@@ -299,7 +319,22 @@ export class CombatRoomRenderer {
   private getFloorProps(): readonly FloorProp[] {
     const theme = this.getRoomTheme();
 
-    return [...FLOOR_PROPS, ...THEME_EXTRA_PROPS[theme]];
+    return [...FLOOR_PROPS, ...THEME_EXTRA_PROPS[theme]].map((prop, index) =>
+      this.jitterFloorProp(prop, index)
+    );
+  }
+
+  private jitterFloorProp(prop: FloorProp, index: number): FloorProp {
+    const seedX = this.getFloorSeed(prop.x + index * 19, prop.y - index * 11);
+    const seedY = this.getFloorSeed(prop.y + index * 23, prop.x - index * 7);
+
+    return {
+      ...prop,
+      x: prop.x + (seedX - 0.5) * 34,
+      y: prop.y + (seedY - 0.5) * 24,
+      rotation: prop.rotation + (seedX - 0.5) * 0.16,
+      scale: prop.scale * (0.92 + seedY * 0.18)
+    };
   }
 
   private drawStump(graphics: Phaser.GameObjects.Graphics, prop: FloorProp) {
@@ -378,6 +413,114 @@ export class CombatRoomRenderer {
     for (const side of ['north', 'south', 'east', 'west'] as const) {
       this.drawWallSide(graphics, side);
     }
+
+    for (const door of this.room.doors) {
+      this.drawDoorDecorations(graphics, door);
+    }
+  }
+
+  private drawDoorDecorations(graphics: Phaser.GameObjects.Graphics, door: RoomDoor) {
+    if (!door.targetTheme) {
+      return;
+    }
+
+    const base = this.getDoorDecorationBase(door);
+    const inward = this.getDoorInwardDirection(door);
+    const lateral = this.getDoorLateralDirection(door);
+    const place = (offset: number, advance: number, scale: number, rotation = 0): FloorProp => ({
+      kind: 'stone',
+      x: base.x + lateral.x * offset + inward.x * advance,
+      y: base.y + lateral.y * offset + inward.y * advance,
+      scale,
+      rotation
+    });
+
+    if (door.targetTheme === 'mushroom') {
+      for (const prop of [
+        place(-54, 18, 0.46, -0.1),
+        place(-20, 38, 0.54, 0.08),
+        place(24, 22, 0.44, 0.04),
+        place(58, 46, 0.5, -0.05)
+      ]) {
+        this.drawMushrooms(graphics, { ...prop, kind: 'mushroom' });
+      }
+
+      return;
+    }
+
+    if (door.targetTheme === 'wood') {
+      this.drawStump(graphics, { ...place(-42, 28, 0.48, 0.1), kind: 'stump' });
+      this.drawStump(graphics, { ...place(42, 36, 0.42, -0.08), kind: 'stump' });
+      this.drawStoneCluster(graphics, { ...place(0, 56, 0.36, 0.03), kind: 'stone' });
+      return;
+    }
+
+    if (door.targetTheme === 'wizard') {
+      this.drawWizardSpark(graphics, place(-34, 26, 0.78, -0.05));
+      this.drawWizardSpark(graphics, place(34, 38, 0.64, 0.08));
+      this.drawMushrooms(graphics, { ...place(0, 54, 0.4, -0.08), kind: 'mushroom' });
+      return;
+    }
+
+    if (door.targetTheme === 'boss') {
+      this.drawStoneCluster(graphics, { ...place(-44, 26, 0.64, 0.08), kind: 'stone' });
+      this.drawStoneCluster(graphics, { ...place(2, 48, 0.76, -0.02), kind: 'stone' });
+      this.drawStump(graphics, { ...place(48, 34, 0.52, -0.08), kind: 'stump' });
+      return;
+    }
+
+    this.drawStoneCluster(graphics, { ...place(-32, 24, 0.46, 0.06), kind: 'stone' });
+    this.drawStoneCluster(graphics, { ...place(32, 40, 0.5, -0.04), kind: 'stone' });
+  }
+
+  private drawWizardSpark(graphics: Phaser.GameObjects.Graphics, prop: FloorProp) {
+    const { x, y, scale, rotation } = prop;
+    const radius = 9 * scale;
+    const tilt = rotation * 10;
+
+    graphics.lineStyle(Math.max(1, Math.round(2 * scale)), 0xb889f2, 0.58);
+    graphics.lineBetween(x - radius, y + tilt, x + radius, y - tilt);
+    graphics.lineBetween(x, y - radius, x, y + radius);
+    graphics.fillStyle(0xeedcff, 0.44);
+    graphics.fillCircle(x, y, 2.4 * scale);
+  }
+
+  private getDoorDecorationBase(door: RoomDoor): { readonly x: number; readonly y: number } {
+    const { bounds } = this.room;
+
+    if (door.side === 'north') {
+      return { x: door.center, y: bounds.y + bounds.border + 26 };
+    }
+
+    if (door.side === 'south') {
+      return { x: door.center, y: bounds.y + bounds.height - bounds.border - 26 };
+    }
+
+    if (door.side === 'west') {
+      return { x: bounds.x + bounds.border + 26, y: door.center };
+    }
+
+    return { x: bounds.x + bounds.width - bounds.border - 26, y: door.center };
+  }
+
+  private getDoorInwardDirection(
+    door: RoomDoor
+  ): { readonly x: -1 | 0 | 1; readonly y: -1 | 0 | 1 } {
+    if (door.side === 'north') return { x: 0, y: 1 };
+    if (door.side === 'south') return { x: 0, y: -1 };
+    if (door.side === 'west') return { x: 1, y: 0 };
+
+    return { x: -1, y: 0 };
+  }
+
+  private getDoorLateralDirection(
+    door: RoomDoor
+  ): { readonly x: -1 | 0 | 1; readonly y: -1 | 0 | 1 } {
+    if (door.side === 'north' || door.side === 'south') {
+      return { x: 1, y: 0 };
+    }
+
+    return { x: 0, y: 1 };
   }
 
   private drawCornerCaps(graphics: Phaser.GameObjects.Graphics) {
@@ -680,7 +823,7 @@ export class CombatRoomRenderer {
   }
 
   private getRoomTheme(): RoomTheme {
-    return this.room.theme ?? 'forest';
+    return this.room.theme ?? 'wood';
   }
 
   private getThemeFloorColor(): number {
