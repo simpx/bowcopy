@@ -47,6 +47,20 @@ OpenGameArt notes that this sound is a mixture of these qubodup submissions:
 - License: Creative Commons Attribution 3.0
 - License URL: https://creativecommons.org/licenses/by/3.0/
 
+### Grass Foot Step Sounds (Yo Frankie!)
+
+- Files:
+  - `refs/audio-sfx-candidates/external/sfx_step_grass_l.flac`
+  - `refs/audio-sfx-candidates/external/sfx_step_grass_r.flac`
+- Final game files:
+  - `assets/audio/sfx/game/walk_soft_1.ogg`
+  - `assets/audio/sfx/game/walk_soft_2.ogg`
+- Source: https://opengameart.org/content/grass-foot-step-sounds-yo-frankie
+- Author: Blender Foundation / Lamoot
+- License: Creative Commons Attribution 3.0
+- License URL: https://creativecommons.org/licenses/by/3.0/
+- Note: Runtime OGG files are trimmed, filtered, and lowered in volume for quiet grass movement.
+
 ## Creative Commons CC0
 
 ### Freesound arrow whoosh
@@ -89,6 +103,7 @@ OpenGameArt notes that this sound is a mixture of these qubodup submissions:
   - `assets/audio/sfx/game/hit_wood_board.wav`
   - `assets/audio/sfx/game/hit_hard_dirt.wav`
   - `assets/audio/sfx/game/hit_harder_dirt.mp3`
+  - `assets/audio/sfx/game/spore_break.wav`
 - Sources:
   - https://freesound.org/people/plantmonkey/sounds/410751/
   - https://freesound.org/people/Ali_6868/sounds/384914/
@@ -110,13 +125,47 @@ OpenGameArt notes that this sound is a mixture of these qubodup submissions:
 
 ### CC0 Sounds Library - break crunch impact
 
-- File: `assets/audio/sfx/candidates/carrot-hit-review/break-crunch/impactcrunch01.mp3.flac`
-- Final game file: `assets/audio/sfx/game/hit_actor.wav`
+- Files:
+  - `assets/audio/sfx/candidates/carrot-hit-review/break-crunch/impactcrunch01.mp3.flac`
+  - `refs/audio-sfx-candidates/uproot/mushroom_hit_break_crunch_01.flac`
+  - `refs/audio-sfx-candidates/uproot/mushroom_hit_break_crunch_04.flac`
+- Final game files:
+  - `assets/audio/sfx/game/hit_actor.wav`
 - Source: https://opengameart.org/content/cc0-sounds-library
 - Author: ETTiNGRiNDER
 - License: Creative Commons CC0
 - License URL: https://creativecommons.org/publicdomain/zero/1.0/
-- Note: `hit_actor.wav` is a trimmed mono PCM WAV export of `impactcrunch01.mp3.flac`.
+- Note: `hit_actor.wav` is retained as an older trimmed mono PCM export. New Bowbert player damage and shroom hit cues use softer sources below.
+
+### 40 CC0 water / splash / slime SFX
+
+- File: `refs/audio-sfx-candidates/external/extracted/water-slime/slime_12.ogg`
+- Final game file: `assets/audio/sfx/game/shroom_hit.wav`
+- Source: https://opengameart.org/content/40-cc0-water-splash-slime-sfx
+- Author: rubberduck
+- License: Creative Commons CC0
+- License URL: https://creativecommons.org/publicdomain/zero/1.0/
+- Note: `shroom_hit.wav` is a trimmed, filtered mono PCM WAV export.
+
+### 80 CC0 RPG SFX
+
+- File: `refs/audio-sfx-candidates/external/extracted/rpg80/creature_slime_03.ogg`
+- Final game file: `assets/audio/sfx/game/shroom_death.wav`
+- Source: https://opengameart.org/content/80-cc0-rpg-sfx
+- Author: rubberduck
+- License: Creative Commons CC0
+- License URL: https://creativecommons.org/publicdomain/zero/1.0/
+- Note: `shroom_death.wav` is a trimmed, filtered mono PCM WAV export.
+
+### Pop sounds
+
+- File: `refs/audio-sfx-candidates/external/pop2.wav`
+- Final game file: `assets/audio/sfx/game/player_damage_soft.wav`
+- Source: https://opengameart.org/content/pop-sounds-0
+- Author: EZduzziteh
+- License: Creative Commons CC0
+- License URL: https://creativecommons.org/publicdomain/zero/1.0/
+- Note: `player_damage_soft.wav` is a very short filtered mono PCM WAV export for Bowbert damage.
 
 ### 75 CC0 breaking / falling / hit sfx
 
@@ -149,13 +198,14 @@ OpenGameArt notes that this sound is a mixture of these qubodup submissions:
 - Final game files:
   - `assets/audio/sfx/game/equipment_toggle.ogg`
   - `assets/audio/sfx/game/item_select.ogg`
+  - `assets/audio/sfx/game/dodge_roll.ogg`
 - Source: https://opengameart.org/content/50-rpg-sound-effects
 - Author: Kenney
 - License: Creative Commons CC0
 - License URL: https://creativecommons.org/publicdomain/zero/1.0/
 - Attribution note from bundled `license.txt`: credit to Kenney or www.kenney.nl is appreciated but not mandatory.
 
-### Full charge ready audition candidates
+### Full charge ready / room clear candidates
 
 - Manifest: `assets/audio/sfx/candidates/full-charge-ready/manifest.json`
 - Files:
@@ -164,6 +214,9 @@ OpenGameArt notes that this sound is a mixture of these qubodup submissions:
   - `assets/audio/sfx/candidates/full-charge-ready/oga-metal-wood/keys_01.ogg`
   - `assets/audio/sfx/candidates/full-charge-ready/oga-metal-wood/metal_spring_01.ogg`
   - `assets/audio/sfx/candidates/full-charge-ready/oga-completion/completetask_0.mp3`
+  - `refs/audio-sfx-candidates/uproot/reward_complete_task.mp3`
+- Final game file:
+  - `assets/audio/sfx/game/room_clear.mp3`
 - Sources:
   - Metal Impact Sounds: https://opengameart.org/content/metal-impact-sounds
   - 100 CC0 metal and wood SFX: https://opengameart.org/content/100-cc0-metal-and-wood-sfx
@@ -173,4 +226,4 @@ OpenGameArt notes that this sound is a mixture of these qubodup submissions:
 - License URLs:
   - https://creativecommons.org/publicdomain/zero/1.0/
   - https://opengameart.org/content/oga-by-30-faq
-- Note: These are audition candidates for the bow full-charge ready cue and are not promoted to the final game SFX pack yet.
+- Note: `room_clear.mp3` uses the Completion Sound candidate at low volume. The other files remain audition candidates for future reward and charge cues.

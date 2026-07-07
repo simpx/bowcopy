@@ -12,6 +12,14 @@ export const COMBAT_SFX_KEYS = [
   'hit_actor',
   'hit_hard_dirt',
   'hit_harder_dirt',
+  'shroom_hit',
+  'shroom_death',
+  'spore_break',
+  'dodge_roll',
+  'walk_soft_1',
+  'walk_soft_2',
+  'player_damage_soft',
+  'room_clear',
   'pickup',
   'equipment_toggle',
   'item_select'
@@ -37,6 +45,13 @@ type CueProfile = {
 type CueOptions = {
   readonly force?: number;
   readonly pos?: SimVector;
+};
+
+type BoundsLike = {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
 };
 
 const COMBAT_SFX_ASSETS: readonly CombatSfxAsset[] = [
@@ -75,6 +90,38 @@ const COMBAT_SFX_ASSETS: readonly CombatSfxAsset[] = [
   {
     key: 'hit_harder_dirt',
     url: new URL('../../assets/audio/sfx/game/hit_harder_dirt.mp3', import.meta.url).href
+  },
+  {
+    key: 'shroom_hit',
+    url: new URL('../../assets/audio/sfx/game/shroom_hit.wav', import.meta.url).href
+  },
+  {
+    key: 'shroom_death',
+    url: new URL('../../assets/audio/sfx/game/shroom_death.wav', import.meta.url).href
+  },
+  {
+    key: 'spore_break',
+    url: new URL('../../assets/audio/sfx/game/spore_break.wav', import.meta.url).href
+  },
+  {
+    key: 'dodge_roll',
+    url: new URL('../../assets/audio/sfx/game/dodge_roll.ogg', import.meta.url).href
+  },
+  {
+    key: 'walk_soft_1',
+    url: new URL('../../assets/audio/sfx/game/walk_soft_1.ogg', import.meta.url).href
+  },
+  {
+    key: 'walk_soft_2',
+    url: new URL('../../assets/audio/sfx/game/walk_soft_2.ogg', import.meta.url).href
+  },
+  {
+    key: 'player_damage_soft',
+    url: new URL('../../assets/audio/sfx/game/player_damage_soft.wav', import.meta.url).href
+  },
+  {
+    key: 'room_clear',
+    url: new URL('../../assets/audio/sfx/game/room_clear.mp3', import.meta.url).href
   },
   {
     key: 'pickup',
@@ -153,6 +200,65 @@ const CUE_PROFILES: Partial<Record<CombatSfxKey, Partial<CueProfile>>> = {
     seekJitter: 0.008,
     cooldownMs: 70
   },
+  shroom_hit: {
+    volume: 0.12,
+    volumeJitter: 0.018,
+    detuneJitter: 24,
+    rateJitter: 0.018,
+    seekJitter: 0.01,
+    cooldownMs: 90
+  },
+  shroom_death: {
+    volume: 0.17,
+    volumeJitter: 0.02,
+    detuneJitter: 24,
+    rateJitter: 0.018,
+    seekJitter: 0.006,
+    cooldownMs: 140
+  },
+  spore_break: {
+    volume: 0.15,
+    volumeJitter: 0.025,
+    detuneJitter: 58,
+    rateJitter: 0.035,
+    seekJitter: 0.006,
+    cooldownMs: 48
+  },
+  dodge_roll: {
+    volume: 0.13,
+    volumeJitter: 0.018,
+    detuneJitter: 26,
+    rateJitter: 0.018,
+    cooldownMs: 180
+  },
+  walk_soft_1: {
+    volume: 0.024,
+    volumeJitter: 0.006,
+    detuneJitter: 16,
+    rateJitter: 0.012,
+    cooldownMs: 150
+  },
+  walk_soft_2: {
+    volume: 0.022,
+    volumeJitter: 0.006,
+    detuneJitter: 16,
+    rateJitter: 0.012,
+    cooldownMs: 150
+  },
+  player_damage_soft: {
+    volume: 0.13,
+    volumeJitter: 0.018,
+    detuneJitter: 18,
+    rateJitter: 0.012,
+    cooldownMs: 95
+  },
+  room_clear: {
+    volume: 0.16,
+    volumeJitter: 0.015,
+    detuneJitter: 18,
+    rateJitter: 0.012,
+    cooldownMs: 360
+  },
   hit_rock_chip: {
     volume: 0.22,
     volumeJitter: 0.035,
@@ -200,11 +306,15 @@ export function preloadCombatSfx(scene: Phaser.Scene): void {
 
 export class CombatSfxDirector {
   private readonly nextPlayableAt = new Map<CombatSfxKey, number>();
+  private nextWalkAt = 0;
+  private walkStepIndex = 0;
 
   constructor(private readonly scene: Phaser.Scene) {}
 
   destroy(): void {
     this.nextPlayableAt.clear();
+    this.nextWalkAt = 0;
+    this.walkStepIndex = 0;
   }
 
   playArrowFire(pos: SimVector): void {
@@ -223,8 +333,46 @@ export class CombatSfxDirector {
     this.play('hit_wood_board', { force: 0.96, pos });
   }
 
+  playShroomHit(pos: SimVector, damage: number): void {
+    this.play('shroom_hit', { force: Phaser.Math.Clamp(0.42 + damage * 0.22, 0.42, 0.88), pos });
+  }
+
+  playShroomDeath(pos: SimVector): void {
+    this.play('shroom_death', { force: 0.92, pos });
+  }
+
   playPlayerDamage(pos: SimVector, damage: number): void {
-    this.play('hit_actor', { force: Phaser.Math.Clamp(0.58 + damage * 0.22, 0.58, 1), pos });
+    this.play('player_damage_soft', { force: Phaser.Math.Clamp(0.45 + damage * 0.2, 0.45, 0.78), pos });
+  }
+
+  playDodge(pos: SimVector): void {
+    this.play('dodge_roll', { force: 0.7, pos });
+  }
+
+  playWalk(pos: SimVector, moveAmount: number, isDodging: boolean): void {
+    const intensity = Phaser.Math.Clamp(moveAmount, 0, 1);
+
+    if (isDodging || intensity < 0.34) return;
+
+    const now = this.scene.time.now;
+    if (now < this.nextWalkAt) return;
+
+    this.nextWalkAt = now + Phaser.Math.Linear(340, 230, intensity);
+    this.walkStepIndex = (this.walkStepIndex + 1) % 2;
+    this.play(this.walkStepIndex === 0 ? 'walk_soft_1' : 'walk_soft_2', {
+      force: Phaser.Math.Clamp(intensity * 0.32, 0.12, 0.36),
+      pos
+    });
+  }
+
+  playRoomClear(bounds: BoundsLike): void {
+    this.play('room_clear', {
+      force: 0.64,
+      pos: {
+        x: bounds.x + bounds.width / 2,
+        y: bounds.y + bounds.height / 2
+      }
+    });
   }
 
   playDartWall(pos: SimVector): void {
@@ -232,7 +380,7 @@ export class CombatSfxDirector {
   }
 
   playSporeBreak(pos: SimVector): void {
-    this.play('hit_sand_or_rock', { force: 0.42, pos });
+    this.play('spore_break', { force: 0.46, pos });
   }
 
   private play(key: CombatSfxKey, options: CueOptions = {}): void {

@@ -209,6 +209,11 @@ export class CombatRoomScene extends Phaser.Scene {
 
     this.handleEnemyDartEvents(enemyDartEvents);
     this.handleShroomSporeEvents(shroomSporeEvents);
+    this.sfx?.playWalk(
+      playerFrame.state.position,
+      playerFrame.state.moveAmount,
+      playerFrame.state.dodge.activeMs > 0 || playerFrame.state.dodge.invulnerableMs > 0
+    );
 
     this.projectileRenderer?.playEvents(projectileEvents);
     this.enemyRenderer?.playEvents(enemyFrame.events);
@@ -257,6 +262,7 @@ export class CombatRoomScene extends Phaser.Scene {
         continue;
       }
 
+      this.sfx?.playDodge(this.player.state.position);
       this.feedbackRenderer?.playDodge(this.player.state.position, event.direction);
       this.shakeCamera('dodge');
     }
@@ -301,6 +307,7 @@ export class CombatRoomScene extends Phaser.Scene {
       if (event.type === 'dart-goober-encounter-cleared') {
         clearCurrentDungeonRoom(this.dungeonState);
         this.applyCurrentRoomState();
+        this.sfx?.playRoomClear(this.currentRoomDefinition.bounds);
         this.feedbackRenderer?.playRoomClear(this.currentRoomDefinition.bounds);
         this.shakeCamera('room-clear');
       }
@@ -321,7 +328,7 @@ export class CombatRoomScene extends Phaser.Scene {
 
       if (event.type === 'red-shroom-hit') {
         if (event.hp > 0) {
-          this.sfx?.playEnemyHit(event.position, event.damage);
+          this.sfx?.playShroomHit(event.position, event.damage);
           this.feedbackRenderer?.playArrowEnemy(event.position, event.damage);
           this.shakeCamera('hit');
         }
@@ -329,7 +336,7 @@ export class CombatRoomScene extends Phaser.Scene {
       }
 
       if (event.type === 'red-shroom-killed') {
-        this.sfx?.playEnemyDeath(event.position);
+        this.sfx?.playShroomDeath(event.position);
         this.feedbackRenderer?.playEnemyDeath(event.position);
         this.shakeCamera('hit');
         continue;
@@ -339,6 +346,7 @@ export class CombatRoomScene extends Phaser.Scene {
         clearCurrentDungeonRoom(this.dungeonState);
         this.shroomSpores.clear();
         this.applyCurrentRoomState();
+        this.sfx?.playRoomClear(this.currentRoomDefinition.bounds);
         this.feedbackRenderer?.playRoomClear(this.currentRoomDefinition.bounds);
         this.shakeCamera('room-clear');
       }

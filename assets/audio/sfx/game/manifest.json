@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-06-28",
+  "updated": "2026-07-07",
   "name": "Uproot game SFX pack v1",
   "policy": [
     "Use only purpose-built sounds for the mapped event.",
@@ -107,6 +107,94 @@
       "author": "Ali_6868",
       "license": "CC0"
     },
+    "shroom_hit": {
+      "file": "assets/audio/sfx/game/shroom_hit.wav",
+      "status": "selected",
+      "usage": "Arrow hitting a red or purple shroom body.",
+      "playback": "Play on shroom hit. Keep soft and low so it reads as an organic pop, not a hard impact.",
+      "sourceId": "oga-40-water-splash-slime",
+      "source": "40 CC0 water / splash / slime SFX - slime_12",
+      "author": "rubberduck",
+      "license": "CC0",
+      "clipFrom": "refs/audio-sfx-candidates/external/extracted/water-slime/slime_12.ogg"
+    },
+    "shroom_death": {
+      "file": "assets/audio/sfx/game/shroom_death.wav",
+      "status": "selected",
+      "usage": "Shroom destroyed by an arrow.",
+      "playback": "Play once on shroom death. Slightly fuller than shroom_hit, still soft.",
+      "sourceId": "oga-80-cc0-rpg-sfx",
+      "source": "80 CC0 RPG SFX - creature_slime_03",
+      "author": "rubberduck",
+      "license": "CC0",
+      "clipFrom": "refs/audio-sfx-candidates/external/extracted/rpg80/creature_slime_03.ogg"
+    },
+    "spore_break": {
+      "file": "assets/audio/sfx/game/spore_break.wav",
+      "status": "selected",
+      "usage": "Spore broken by a dodge collision.",
+      "playback": "Play as a short pop when dodge invulnerability destroys a spore.",
+      "sourceId": "freesound-arrow-target",
+      "source": "arrow_.hits_target.wav",
+      "author": "cyoung510",
+      "license": "CC0",
+      "clipFrom": "refs/audio-sfx-candidates/uproot/spore_break_hard_dirt.wav"
+    },
+    "dodge_roll": {
+      "file": "assets/audio/sfx/game/dodge_roll.ogg",
+      "status": "selected",
+      "usage": "Bowbert dodge or roll start.",
+      "playback": "Play once when a dodge starts. Keep quiet so it reads as body motion, not UI.",
+      "sourceId": "oga-kenney-50-rpg",
+      "source": "50 RPG sound effects",
+      "author": "Kenney",
+      "license": "CC0",
+      "clipFrom": "refs/audio-sfx-candidates/uproot/dodge_cloth_2.ogg"
+    },
+    "walk_soft_1": {
+      "file": "assets/audio/sfx/game/walk_soft_1.ogg",
+      "status": "selected",
+      "usage": "Quiet grass movement step A.",
+      "playback": "Play with movement-state throttling only. Keep very low volume and low priority.",
+      "sourceId": "oga-yo-frankie-grass-steps",
+      "source": "Grass Foot Step Sounds (Yo Frankie!) - left step",
+      "author": "Blender Foundation / Lamoot",
+      "license": "CC-BY 3.0",
+      "clipFrom": "refs/audio-sfx-candidates/external/sfx_step_grass_l.flac"
+    },
+    "walk_soft_2": {
+      "file": "assets/audio/sfx/game/walk_soft_2.ogg",
+      "status": "selected",
+      "usage": "Quiet grass movement step B.",
+      "playback": "Alternate with walk_soft_1 while moving. Keep very low volume and low priority.",
+      "sourceId": "oga-yo-frankie-grass-steps",
+      "source": "Grass Foot Step Sounds (Yo Frankie!) - right step",
+      "author": "Blender Foundation / Lamoot",
+      "license": "CC-BY 3.0",
+      "clipFrom": "refs/audio-sfx-candidates/external/sfx_step_grass_r.flac"
+    },
+    "player_damage_soft": {
+      "file": "assets/audio/sfx/game/player_damage_soft.wav",
+      "status": "selected",
+      "usage": "Bowbert taking dart or spore damage.",
+      "playback": "Play on player damage. Very short and soft; avoid gun-like hard transients.",
+      "sourceId": "oga-pop-sounds-ezduzziteh",
+      "source": "Pop sounds - pop2",
+      "author": "EZduzziteh",
+      "license": "CC0",
+      "clipFrom": "refs/audio-sfx-candidates/external/pop2.wav"
+    },
+    "room_clear": {
+      "file": "assets/audio/sfx/game/room_clear.mp3",
+      "status": "selected",
+      "usage": "Combat room cleared and doors open.",
+      "playback": "Play once when the current room enters the cleared/open state.",
+      "sourceId": "oga-completion-sound",
+      "source": "Completion Sound",
+      "author": "Brandon Morris",
+      "license": "CC0 or OGA-BY 3.0",
+      "clipFrom": "refs/audio-sfx-candidates/uproot/reward_complete_task.mp3"
+    },
     "pickup": {
       "file": "assets/audio/sfx/game/pickup.ogg",
       "status": "selected",
@@ -152,8 +240,6 @@
     }
   },
   "emptyEvents": {
-    "walk": "All current footstep candidates were rejected.",
-    "arrow_flyby": "The auditioned arrow whoosh was rejected as noisy.",
-    "dodge_or_rustle": "No retained dodge or rustle sample after audition."
+    "arrow_flyby": "The auditioned arrow whoosh was rejected as noisy."
   }
 }

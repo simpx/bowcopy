@@ -10,8 +10,18 @@ if (!mount) {
 }
 
 const game = createGame();
+const preventGameBrowserGesture = (event: Event) => {
+  event.preventDefault();
+};
+
+mount.addEventListener('selectstart', preventGameBrowserGesture);
+mount.addEventListener('dragstart', preventGameBrowserGesture);
+mount.addEventListener('contextmenu', preventGameBrowserGesture);
 
 const destroyGame = () => {
+  mount.removeEventListener('selectstart', preventGameBrowserGesture);
+  mount.removeEventListener('dragstart', preventGameBrowserGesture);
+  mount.removeEventListener('contextmenu', preventGameBrowserGesture);
   game.destroy(true);
   window.removeEventListener('beforeunload', destroyGame);
 };

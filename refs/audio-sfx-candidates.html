@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bowbert SFX Candidates</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1510;
+      --panel: #18231a;
+      --panel-2: #202d22;
+      --line: #3a503d;
+      --text: #eef4e9;
+      --muted: #aab9a8;
+      --accent: #f4c968;
+      --good: #9fe080;
+      --warn: #ffca7a;
+      --bad: #ff8d80;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body { padding: 18px; }
+
+    header,
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .meta {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: end;
+    }
+
+    a {
+      color: #ffe08d;
+      text-decoration: none;
+    }
+
+    a:hover { text-decoration: underline; }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: #121b13;
+      color: #ffe08d;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    section {
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      overflow: hidden;
+    }
+
+    h2 {
+      margin: 0;
+      padding: 11px 13px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.035);
+      color: #ffe7a7;
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+      gap: 10px;
+      padding: 12px;
+    }
+
+    article {
+      display: grid;
+      gap: 8px;
+      padding: 11px;
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 8px;
+      background: var(--panel-2);
+    }
+
+    .row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    .tag {
+      white-space: nowrap;
+      color: #0d140e;
+      border-radius: 999px;
+      padding: 3px 7px;
+      background: var(--accent);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .tag.good { background: var(--good); }
+    .tag.warn { background: var(--warn); }
+    .tag.bad { background: var(--bad); }
+
+    audio {
+      width: 100%;
+      height: 34px;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    code {
+      color: #e8f1df;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      word-break: break-all;
+    }
+
+    @media (max-width: 760px) {
+      body { padding: 12px; }
+      header { align-items: start; flex-direction: column; }
+      .links { justify-content: start; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Bowbert SFX Candidates</h1>
+      <div class="meta">Uproot audio pool shortlist. These files are copied into refs for audition only.</div>
+    </div>
+    <nav class="links">
+      <a class="pill" href="./audio-sfx-candidates.md">notes</a>
+      <a class="pill" href="../assets/audio/THIRD_PARTY_LICENSES.md">licenses</a>
+    </nav>
+  </header>
+
+  <main id="app"></main>
+
+  <script>
+    const groups = [
+      {
+        title: 'Runtime Replacements',
+        items: [
+          ['walk_soft_1.ogg', 'grass step', 'good', 'Current runtime left grass step, lowered and filtered for light movement.', '../assets/audio/sfx/game/walk_soft_1.ogg'],
+          ['walk_soft_2.ogg', 'grass step', 'good', 'Current runtime right grass step, lowered and filtered for light movement.', '../assets/audio/sfx/game/walk_soft_2.ogg'],
+          ['shroom_hit.wav', 'soft slime', 'good', 'Current runtime shroom hit. Replaces the gun-like hard crunch.', '../assets/audio/sfx/game/shroom_hit.wav'],
+          ['shroom_death.wav', 'soft slime', 'good', 'Current runtime shroom death. Fuller than hit, but not a hard impact.', '../assets/audio/sfx/game/shroom_death.wav'],
+          ['player_damage_soft.wav', 'soft pop', 'good', 'Current runtime player damage cue. Very short, non-gun-like.', '../assets/audio/sfx/game/player_damage_soft.wav']
+        ]
+      },
+      {
+        title: 'External Grass / Soft Hit Candidates',
+        items: [
+          ['sfx_step_grass_l.flac', 'grass source', 'good', 'Yo Frankie grass left step source, CC-BY 3.0.', './audio-sfx-candidates/external/sfx_step_grass_l.flac'],
+          ['sfx_step_grass_r.flac', 'grass source', 'good', 'Yo Frankie grass right step source, CC-BY 3.0.', './audio-sfx-candidates/external/sfx_step_grass_r.flac'],
+          ['slime_12.ogg', 'shroom hit source', 'good', 'Short rubberduck slime source used for shroom_hit.', './audio-sfx-candidates/external/extracted/water-slime/slime_12.ogg'],
+          ['creature_slime_03.ogg', 'death source', 'good', 'rubberduck RPG slime source used for shroom_death.', './audio-sfx-candidates/external/extracted/rpg80/creature_slime_03.ogg'],
+          ['pop2.wav', 'player hit source', 'good', 'EZduzziteh pop source used for player_damage_soft.', './audio-sfx-candidates/external/pop2.wav']
+        ]
+      },
+      {
+        title: 'Mushroom Hit',
+        items: [
+          ['mushroom_hit_break_crunch_01.flac', 'first pick', 'good', 'Dry organic crunch. Best starting point for arrow hitting mushroom.'],
+          ['mushroom_hit_current_actor.wav', 'safe fallback', 'good', 'Already trimmed and game-ready. Use if raw crunch is too long.'],
+          ['mushroom_hit_break_crunch_04.flac', 'alt/death', 'good', 'Good alternate or death hit.'],
+          ['mushroom_hit_wet_squish_07.flac', 'death layer', 'warn', 'Use quietly for death/body only; too wet for every hit.'],
+          ['mushroom_hit_wet_squish_08.flac', 'death layer', 'warn', 'Slightly longer wet candidate.'],
+          ['mushroom_hit_cucumber_crunch_1.ogg', 'food-like', 'bad', 'Reads like biting/eating. Keep only as material.'],
+          ['mushroom_hit_cucumber_crunch_4.ogg', 'food-like', 'bad', 'Shorter but still edible/chewy.']
+        ]
+      },
+      {
+        title: 'Dodge / Roll',
+        items: [
+          ['dodge_cloth_2.ogg', 'first local', 'good', 'Short cloth/rustle cue. Best local starting point for roll.'],
+          ['dodge_drop_leather.ogg', 'alt', 'good', 'Tactile body movement, less airy than cloth.'],
+          ['dodge_cloth_1.ogg', 'longer', 'warn', 'Longer rustle; may feel sluggish.'],
+          ['dodge_footstep_00.ogg', 'landing tick', 'warn', 'Maybe use as landing tick, not the full dodge.'],
+          ['dodge_footstep_03.ogg', 'landing tick', 'warn', 'Another small tick candidate.']
+        ]
+      },
+      {
+        title: 'Spore / Projectile',
+        items: [
+          ['spore_break_current_sand_or_rock.ogg', 'current', 'good', 'Very short, readable spore break cue.'],
+          ['spore_break_hard_dirt.wav', 'fuller', 'good', 'Fuller pop if current cue feels too tiny.'],
+          ['spore_break_harder_dirt.mp3', 'heavy', 'warn', 'Probably too hard for spores, but useful for impacts.'],
+          ['arrow_shoot_current.ogg', 'current', 'good', 'Existing arrow shot baseline.'],
+          ['arrow_empty_release_current.wav', 'current', 'good', 'Existing empty bow release baseline.']
+        ]
+      },
+      {
+        title: 'Reward / UI',
+        items: [
+          ['reward_pickup.ogg', 'pickup', 'good', 'Approved Uproot pickup/reward tick.'],
+          ['reward_complete_task.mp3', 'room clear', 'good', 'Clear completion cue; lower volume for room clear.'],
+          ['reward_bing_1.wav', 'sharp', 'warn', 'Magical/metallic but likely too sharp.'],
+          ['ui_keys_01.ogg', 'ui', 'warn', 'UI or inventory, not combat.'],
+          ['goober_hit_current_wood_board.wav', 'goober', 'good', 'Keep for wooden mask/goober hits, not mushroom.']
+        ]
+      }
+    ];
+
+    const app = document.querySelector('#app');
+
+    for (const group of groups) {
+      const section = document.createElement('section');
+      const title = document.createElement('h2');
+      const grid = document.createElement('div');
+
+      title.textContent = group.title;
+      grid.className = 'grid';
+
+      for (const [file, label, tone, note, customPath] of group.items) {
+        const path = customPath ?? `./audio-sfx-candidates/uproot/${file}`;
+        const article = document.createElement('article');
+        article.innerHTML = `
+          <div class="row">
+            <h3>${file}</h3>
+            <span class="tag ${tone}">${label}</span>
+          </div>
+          <audio controls preload="metadata" src="${path}"></audio>
+          <div class="note">${note}</div>
+          <code>${path.replace('./', 'refs/')}</code>
+        `;
+        grid.append(article);
+      }
+
+      section.append(title, grid);
+      app.append(section);
+    }
+  </script>
+</body>
+</html>
