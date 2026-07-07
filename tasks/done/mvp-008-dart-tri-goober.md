@@ -1,8 +1,8 @@
 ---
 id: mvp-008-dart-tri-goober
 title: Dart Tri Goober variant
-status: active
-owner: worker-mvp-008
+status: completed
+owner: manager
 branch: task/mvp-008-dart-tri-goober
 worktree: /home/simpx/bowbert-workers/mvp-008-dart-tri-goober
 allowed:

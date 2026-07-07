@@ -1,0 +1,148 @@
+{
+  "id": "kaboomlet",
+  "kind": "enemy",
+  "projectContext": "bowbert",
+  "status": "reference-locked",
+  "sourceReferences": [
+    "source/reference-01.png"
+  ],
+  "base": {
+    "image": null,
+    "plannedImage": "base.png",
+    "sourceImage": null,
+    "imageSize": null,
+    "scale": 0.1,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.5
+    },
+    "offset": {
+      "x": 0,
+      "y": -18
+    },
+    "hitbox": {
+      "radius": 35
+    },
+    "shadow": {
+      "width": 66,
+      "height": 15,
+      "y": 22
+    }
+  },
+  "attachments": {
+    "fuse": {
+      "source": "runtime-shape",
+      "role": "runtime fuse spark and armed flash"
+    }
+  },
+  "gaze": {
+    "mode": "embedded-eye-pupils",
+    "archetype": "angry-embedded",
+    "eyes": {
+      "left": {
+        "x": 0.37,
+        "y": 0.49,
+        "radiusX": 0.04,
+        "radiusY": 0.035,
+        "rotation": -0.18
+      },
+      "right": {
+        "x": 0.64,
+        "y": 0.49,
+        "radiusX": 0.04,
+        "radiusY": 0.035,
+        "rotation": 0.18
+      }
+    },
+    "pupilOffsetScale": {
+      "x": 0.014,
+      "y": 0.01
+    },
+    "emotions": {
+      "default": {
+        "shape": "cut-ellipse",
+        "eyeTiltAdd": 0,
+        "eyeScaleX": 1.05,
+        "eyeScaleY": 1,
+        "pupilScale": 1,
+        "pupilShiftX": 0,
+        "pupilShiftY": 0,
+        "cutSlope": 1.4,
+        "cutOffset": -0.34,
+        "upperLid": 0,
+        "lowerLid": 0
+      },
+      "armed": {
+        "shape": "cut-ellipse",
+        "eyeTiltAdd": 0.04,
+        "eyeScaleX": 1.25,
+        "eyeScaleY": 1.12,
+        "pupilScale": 1.12,
+        "pupilShiftX": 0,
+        "pupilShiftY": -0.004,
+        "cutSlope": 1.72,
+        "cutOffset": -0.42,
+        "upperLid": 0,
+        "lowerLid": 0
+      },
+      "hit": {
+        "shape": "x",
+        "eyeTiltAdd": 0,
+        "eyeScaleX": 1,
+        "eyeScaleY": 1,
+        "pupilScale": 1,
+        "pupilShiftX": 0,
+        "pupilShiftY": 0,
+        "upperLid": 0,
+        "lowerLid": 0
+      }
+    }
+  },
+  "motion": {
+    "idleBob": 1.9,
+    "idleSquash": 0.018,
+    "chaseWobble": 0.06,
+    "armedPulse": 0.13,
+    "explosionAnticipation": 0.22,
+    "hitScaleX": 0.08,
+    "hitScaleY": 0.05
+  },
+  "behavior": {
+    "phaseLoop": [
+      "spawning",
+      "chasing",
+      "armed",
+      "exploding"
+    ],
+    "armDistance": 78,
+    "armedCountdownMs": 760,
+    "explosionRadius": 92,
+    "damage": 1
+  },
+  "prototype": {
+    "system": "KaboomletSystem",
+    "renderer": "KaboomletRenderer",
+    "notes": "Chases until close, flashes during armed countdown, emits local explosion event."
+  },
+  "projectiles": {},
+  "vfx": {
+    "explosion": {
+      "mode": "runtime-rings-and-sparks",
+      "colors": [
+        "#ffcf57",
+        "#ff6a45",
+        "#111111"
+      ]
+    }
+  },
+  "audio": {
+    "hit": null,
+    "death": null,
+    "explosion": null
+  },
+  "openItems": [
+    "Generate and accept clean base.png from source/reference-01.png.",
+    "Tune explosion radius and player damage when wired into combat scene.",
+    "Select fuse/explosion sounds after gameplay timing is stable."
+  ]
+}

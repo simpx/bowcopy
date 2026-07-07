@@ -1,8 +1,8 @@
 ---
 id: mvp-010-kaboomlet-enemy
 title: Kaboomlet bomb enemy
-status: active
-owner: worker-mvp-010
+status: completed
+owner: manager
 branch: task/mvp-010-kaboomlet-enemy
 worktree: /home/simpx/bowbert-workers/mvp-010-kaboomlet-enemy
 allowed:

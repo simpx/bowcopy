@@ -1,8 +1,8 @@
 ---
 id: mvp-009-slime-enemy
 title: Jumping Slime enemy
-status: active
-owner: worker-mvp-009
+status: completed
+owner: manager
 branch: task/mvp-009-slime-enemy
 worktree: /home/simpx/bowbert-workers/mvp-009-slime-enemy
 allowed:

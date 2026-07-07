@@ -1,8 +1,8 @@
 ---
 id: mvp-011-spooper-gooper
 title: Spooper Gooper ghost enemy
-status: active
-owner: worker-mvp-011
+status: completed
+owner: manager
 branch: task/mvp-011-spooper-gooper
 worktree: /home/simpx/bowbert-workers/mvp-011-spooper-gooper
 allowed:

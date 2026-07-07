@@ -1,0 +1,152 @@
+{
+  "id": "spooper-gooper",
+  "kind": "enemy",
+  "projectContext": "bowbert",
+  "status": "reference-locked",
+  "sourceReferences": [
+    "source/reference-01.png"
+  ],
+  "base": {
+    "image": null,
+    "plannedImage": "base.png",
+    "sourceImage": null,
+    "imageSize": null,
+    "scale": 0.098,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.5
+    },
+    "offset": {
+      "x": 0,
+      "y": -20
+    },
+    "hitbox": {
+      "radius": 36
+    },
+    "shadow": {
+      "width": 58,
+      "height": 12,
+      "y": 22
+    }
+  },
+  "attachments": {
+    "eyes": {
+      "source": "runtime-shape",
+      "role": "runtime pupils and vanish squash over ghost body"
+    }
+  },
+  "gaze": {
+    "mode": "embedded-eye-pupils",
+    "archetype": "angry-embedded",
+    "eyes": {
+      "left": {
+        "x": 0.38,
+        "y": 0.46,
+        "radiusX": 0.045,
+        "radiusY": 0.038,
+        "rotation": -0.2
+      },
+      "right": {
+        "x": 0.625,
+        "y": 0.46,
+        "radiusX": 0.045,
+        "radiusY": 0.038,
+        "rotation": 0.2
+      }
+    },
+    "pupilOffsetScale": {
+      "x": 0.018,
+      "y": 0.012
+    },
+    "emotions": {
+      "default": {
+        "shape": "ellipse",
+        "eyeTiltAdd": 0,
+        "eyeScaleX": 1,
+        "eyeScaleY": 1,
+        "pupilScale": 1,
+        "pupilShiftX": 0,
+        "pupilShiftY": 0,
+        "upperLid": 0,
+        "lowerLid": 0
+      },
+      "attack": {
+        "shape": "cut-ellipse",
+        "eyeTiltAdd": 0.04,
+        "eyeScaleX": 1.18,
+        "eyeScaleY": 1.08,
+        "pupilScale": 1.08,
+        "pupilShiftX": 0,
+        "pupilShiftY": -0.006,
+        "cutSlope": 1.6,
+        "cutOffset": -0.38,
+        "upperLid": 0,
+        "lowerLid": 0
+      },
+      "hit": {
+        "shape": "ellipse",
+        "eyeTiltAdd": 0.02,
+        "eyeScaleX": 0.78,
+        "eyeScaleY": 0.52,
+        "pupilScale": 0.72,
+        "pupilShiftX": -0.006,
+        "pupilShiftY": -0.006,
+        "upperLid": 0.3,
+        "lowerLid": 0.16
+      }
+    }
+  },
+  "motion": {
+    "hoverBob": 5,
+    "hoverDrift": 14,
+    "appearMs": 360,
+    "visibleMs": 1100,
+    "attackAnticipationMs": 460,
+    "disappearMs": 330,
+    "repositionMs": 520,
+    "hitScaleX": 0.08,
+    "hitScaleY": 0.05
+  },
+  "behavior": {
+    "phaseLoop": [
+      "hidden",
+      "appearing",
+      "hovering",
+      "attacking",
+      "disappearing",
+      "repositioning"
+    ],
+    "vulnerablePhases": [
+      "appearing",
+      "hovering",
+      "attacking"
+    ],
+    "contactDamage": 0.5
+  },
+  "prototype": {
+    "system": "SpooperGooperSystem",
+    "renderer": "SpooperGooperRenderer",
+    "notes": "Ghost is only vulnerable while visible; renderer owns opacity and hover."
+  },
+  "projectiles": {},
+  "vfx": {
+    "vanish": {
+      "mode": "runtime-puffs",
+      "colors": [
+        "#cfe7ff",
+        "#ffffff",
+        "#7c8ba8"
+      ]
+    }
+  },
+  "audio": {
+    "hit": null,
+    "death": null,
+    "appear": null
+  },
+  "openItems": [
+    "Generate and accept clean base.png from source/reference-01.png.",
+    "Tune opacity and appear/disappear timing against real gameplay.",
+    "Decide whether ghost attack is contact-only or projectile-based."
+  ]
+}

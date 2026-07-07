@@ -1,0 +1,153 @@
+{
+  "id": "dart-tri-goober",
+  "kind": "enemy",
+  "projectContext": "bowbert",
+  "status": "reference-locked",
+  "sourceReferences": [
+    "source/reference-01.png"
+  ],
+  "base": {
+    "image": null,
+    "plannedImage": "base.png",
+    "sourceImage": null,
+    "imageSize": null,
+    "scale": 0.096,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.5
+    },
+    "offset": {
+      "x": 0,
+      "y": -18
+    },
+    "hitbox": {
+      "radius": 34
+    },
+    "shadow": {
+      "width": 62,
+      "height": 15,
+      "y": 22
+    }
+  },
+  "attachments": {
+    "eyes": {
+      "source": "runtime-shape",
+      "role": "runtime cut-ellipse pupils over embedded triangular goober sockets"
+    }
+  },
+  "gaze": {
+    "mode": "embedded-eye-pupils",
+    "archetype": "angry-embedded",
+    "eyes": {
+      "left": {
+        "x": 0.205,
+        "y": 0.566,
+        "radiusX": 0.055,
+        "radiusY": 0.044,
+        "rotation": -0.56
+      },
+      "right": {
+        "x": 0.795,
+        "y": 0.566,
+        "radiusX": 0.055,
+        "radiusY": 0.044,
+        "rotation": 0.56
+      }
+    },
+    "pupilOffsetScale": {
+      "x": 0.018,
+      "y": 0.012
+    },
+    "emotions": {
+      "default": {
+        "shape": "cut-ellipse",
+        "eyeTiltAdd": 0,
+        "eyeScaleX": 1.28,
+        "eyeScaleY": 1.32,
+        "pupilScale": 1.08,
+        "pupilShiftX": 0,
+        "pupilShiftY": 0.01,
+        "cutSlope": 1.6,
+        "cutOffset": -0.42,
+        "upperLid": 0,
+        "lowerLid": 0
+      },
+      "angry": {
+        "shape": "cut-ellipse",
+        "eyeTiltAdd": -0.02,
+        "eyeScaleX": 1.42,
+        "eyeScaleY": 1.38,
+        "pupilScale": 1.16,
+        "pupilShiftX": 0,
+        "pupilShiftY": 0.012,
+        "cutSlope": 1.76,
+        "cutOffset": -0.46,
+        "upperLid": 0,
+        "lowerLid": 0
+      },
+      "aim": {
+        "shape": "cut-ellipse",
+        "eyeTiltAdd": 0.012,
+        "eyeScaleX": 1.18,
+        "eyeScaleY": 1.18,
+        "pupilScale": 1.02,
+        "pupilShiftX": 0,
+        "pupilShiftY": 0.006,
+        "cutSlope": 1.85,
+        "cutOffset": -0.38,
+        "upperLid": 0,
+        "lowerLid": 0
+      },
+      "hit": {
+        "shape": "ellipse",
+        "eyeTiltAdd": 0.025,
+        "eyeScaleX": 0.78,
+        "eyeScaleY": 0.52,
+        "pupilScale": 0.68,
+        "pupilShiftX": -0.008,
+        "pupilShiftY": -0.006,
+        "upperLid": 0.36,
+        "lowerLid": 0.18
+      }
+    }
+  },
+  "motion": {
+    "idleBob": 2.1,
+    "walkBob": 2.3,
+    "walkSquash": 0.07,
+    "idleSquash": 0.018,
+    "hitScaleX": 0.08,
+    "hitScaleY": 0.04,
+    "walkTilt": 0.055,
+    "velocityTilt": 0.085
+  },
+  "attack": {
+    "anticipation": 0.12,
+    "chargeShift": 5,
+    "muzzleX": 27,
+    "muzzleY": -20,
+    "muzzleAimY": 16,
+    "muzzleRadius": 9,
+    "muzzleScaleBase": 0.45,
+    "muzzleScaleCharge": 0.98,
+    "muzzleAlphaBase": 0.1,
+    "muzzleAlphaCharge": 0.45
+  },
+  "prototype": {
+    "renderer": "DartTriGooberRenderer",
+    "systemPrecedent": "DartGooberSystem",
+    "notes": "Use Dart Goober ranged behavior with triangular base art and the same runtime cut-ellipse pupil language."
+  },
+  "projectiles": {},
+  "vfx": {},
+  "audio": {
+    "hit": null,
+    "death": null,
+    "attack": null
+  },
+  "openItems": [
+    "Generate and accept clean base.png from source/reference-01.png.",
+    "Tune exact embedded eye positions after base.png is accepted.",
+    "Wire DartGooberSystem variant into room selection only after art approval."
+  ]
+}

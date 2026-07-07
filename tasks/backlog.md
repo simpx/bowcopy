@@ -9,14 +9,16 @@
 - [x] `mvp-005-player-bow-combat`: implement Bowbert, bow visuals, arrows, player damage/dodge basics. Merged from `task/mvp-005-player-bow-combat`.
 - [x] `mvp-006-dart-goober-ai`: implement Dart Goober spawn, AI, darts, hit/death. Merged from `task/mvp-006-dart-goober-ai`.
 - [x] `mvp-007-feedback-hud-smoke`: implement required feedback, hearts HUD, smoke checks. Merged from `task/mvp-007-feedback-hud-smoke`.
-- [ ] `mvp-008-dart-tri-goober`: create and prototype the Dart Tri Goober variant.
-- [ ] `mvp-009-slime-enemy`: create and prototype the jumping Slime enemy.
-- [ ] `mvp-010-kaboomlet-enemy`: create and prototype the Kaboomlet bomb enemy.
-- [ ] `mvp-011-spooper-gooper`: create and prototype the Spooper Gooper ghost enemy.
+- [x] `mvp-008-dart-tri-goober`: create and prototype the Dart Tri Goober variant. Completed on `master`.
+- [x] `mvp-009-slime-enemy`: create and prototype the jumping Slime enemy. Completed on `master`.
+- [x] `mvp-010-kaboomlet-enemy`: create and prototype the Kaboomlet bomb enemy. Completed on `master`.
+- [x] `mvp-011-spooper-gooper`: create and prototype the Spooper Gooper ghost enemy. Completed on `master`.
 
 ## Later
 
 - Add multiple room templates and generated room graph.
+- Integrate approved new enemy prototypes into encounter/room selection.
+- Generate and accept final `base.png` art for Dart Tri Goober, Slime, Kaboomlet, and Spooper Gooper.
 - Add wizard room and sigils.
 - Replace `assets/prototype-video-crops/` with original recreated assets before release.
 
