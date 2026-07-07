@@ -1,14 +1,12 @@
 ---
-status: asset-generated
+status: runtime-integrated
 kind: enemy
 projectContext: bowbert
 lockedReference: source/reference-01.png
 sourceReferences:
   - source/reference-01.png
 openItems:
-  - Review generated `base.png` with baked slanted white eye sockets and runtime expression preview in `tuning.html`.
-  - Tune exact eye positions, scale, and hitbox after visual approval.
-  - Integrate as a room variant after the visual is approved.
+  - Tune combat balance in stone/boss rooms after playtest.
 ---
 
 # Dart Tri Goober
@@ -18,7 +16,7 @@ Role:
 
 Behavior:
 - Ranged Dart Goober variant: short move bursts, face the player, charge a muzzle glow, then fire a dart.
-- MVP implementation should reuse Dart Goober timing and only swap art, rig, and renderer.
+- Runtime implementation reuses Dart Goober timing and swaps art, rig, and renderer in stone/boss rooms.
 
 Visual target:
 - Match the locked reference silhouette, posture, outline weight, color blocking, focal features, and scale relationship.
@@ -46,11 +44,15 @@ Inputs:
 
 Mode: image-to-image, high reference fidelity.
 
-Positive prompt:
+Layer contract:
+- Fixed Goober mask/body base with baked slanted white eye sockets.
+- Runtime owns black cut-ellipse gaze, muzzle charge, darts, and attack feedback.
+
+Generation prompt:
 > Transparent-background Bowbert project enemy body sprite matching the locked goober reference. Preserve the squat mask/body silhouette, thick black outline, simple color blocks, slanted blank white eye sockets, cyan markings, leaf crown, and doodle proportions. Create a clean reusable base layer for runtime embedded-eye expressions.
 
-Negative prompt:
-> No black gaze fill inside the white eye sockets, no eyelids, no spirals, no new props, no extra limbs, no different pose, no camera angle change, no rendered floor, no baked motion trail, no text, no UI, no realistic material drift.
+Boundary notes:
+> Single centered character sprite, transparent background, clean edges, Bowbert doodle style, enough crop padding for feet, leaf crown, and runtime eye overlays.
 
 Acceptance checks:
 - Silhouette and palette match the locked goober reference.
@@ -66,11 +68,15 @@ Inputs:
 
 Mode: image-to-image when a projectile reference exists.
 
-Positive prompt:
+Layer contract:
+- Reusable dart projectile core when a dedicated dart asset is needed.
+- Runtime owns trajectory, trail, impact, and muzzle charge.
+
+Generation prompt:
 > Transparent-background Bowbert project dart projectile core, simple doodle shape, thick outline, readable at mobile scale.
 
-Negative prompt:
-> No monster body, no trail baked into projectile, no UI, no text, no rendered background.
+Boundary notes:
+> Single projectile core, transparent background, clean crop, enough padding for runtime trail and impact layering.
 
 Acceptance checks:
 - Projectile is separate from body and attack charge.

@@ -149,8 +149,10 @@ export interface BowbertCharacterRig {
   readonly motion: BowbertMotionRig;
 }
 
+export type DartGooberCharacterId = 'dart-goober' | 'dart-tri-goober';
+
 export interface DartGooberCharacterRig {
-  readonly id: 'dart-goober';
+  readonly id: DartGooberCharacterId;
   readonly base: FixedImageRigLayer;
   readonly attachments: {
     readonly eyes: { readonly source: CharacterAttachmentSource; readonly role: string };

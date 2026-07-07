@@ -28,7 +28,14 @@ import {
 } from '../../sim/rooms';
 import { CombatRoomRenderer, preloadCombatRoomAssets } from '../../render/rooms';
 import { BowbertRenderer, preloadBowbertPlayerAssets } from '../../render/player';
-import { DartGooberRenderer, RedShroomRenderer, preloadDartGooberAssets, preloadRedShroomAssets } from '../../render/enemies';
+import {
+  DartGooberRenderer,
+  DartTriGooberRenderer,
+  RedShroomRenderer,
+  preloadDartGooberAssets,
+  preloadDartTriGooberAssets,
+  preloadRedShroomAssets
+} from '../../render/enemies';
 import { CombatFeedbackRenderer } from '../../render/feedback';
 import {
   ArrowProjectileRenderer,
@@ -40,7 +47,7 @@ import {
 } from '../../render/projectiles';
 
 type CameraShakeKind = 'arrow-fire' | 'hit' | 'damage' | 'dodge' | 'room-clear';
-type EncounterKind = 'dart-goober' | 'red-shroom';
+type EncounterKind = 'dart-goober' | 'dart-tri-goober' | 'red-shroom';
 
 const CAMERA_VIEW = GAME_SIZE;
 const PLAYER_START = {
@@ -79,6 +86,7 @@ export class CombatRoomScene extends Phaser.Scene {
   private playerRenderer?: BowbertRenderer;
   private projectileRenderer?: ArrowProjectileRenderer;
   private enemyRenderer?: DartGooberRenderer;
+  private dartTriGooberRenderer?: DartTriGooberRenderer;
   private redShroomRenderer?: RedShroomRenderer;
   private enemyDartRenderer?: EnemyDartProjectileRenderer;
   private shroomSporeRenderer?: ShroomSporeProjectileRenderer;
@@ -98,6 +106,7 @@ export class CombatRoomScene extends Phaser.Scene {
     preloadEnemyDartProjectileAssets(this);
     preloadShroomSporeProjectileAssets(this);
     preloadDartGooberAssets(this);
+    preloadDartTriGooberAssets(this);
     preloadRedShroomAssets(this);
     preloadCombatSfx(this);
   }
@@ -134,6 +143,8 @@ export class CombatRoomScene extends Phaser.Scene {
     this.shroomSporeRenderer.create();
     this.enemyRenderer = new DartGooberRenderer(this);
     this.enemyRenderer.create();
+    this.dartTriGooberRenderer = new DartTriGooberRenderer(this);
+    this.dartTriGooberRenderer.create();
     this.redShroomRenderer = new RedShroomRenderer(this);
     this.redShroomRenderer.create();
     this.playerRenderer = new BowbertRenderer(this);
@@ -215,15 +226,24 @@ export class CombatRoomScene extends Phaser.Scene {
       playerFrame.state.dodge.activeMs > 0 || playerFrame.state.dodge.invulnerableMs > 0
     );
 
+    const encounterKind = this.getCurrentEncounterKind();
+    const activeDartGoobers = encounterKind === 'dart-goober' ? this.enemies.getActiveEnemies() : [];
+    const activeDartTriGoobers = encounterKind === 'dart-tri-goober' ? this.enemies.getActiveEnemies() : [];
+
     this.projectileRenderer?.playEvents(projectileEvents);
-    this.enemyRenderer?.playEvents(enemyFrame.events);
+    if (encounterKind === 'dart-tri-goober') {
+      this.dartTriGooberRenderer?.playEvents(enemyFrame.events);
+    } else {
+      this.enemyRenderer?.playEvents(enemyFrame.events);
+    }
     this.redShroomRenderer?.playEvents(redShroomFrame.events);
     this.enemyDartRenderer?.playEvents(enemyDartEvents);
     this.shroomSporeRenderer?.playEvents(shroomSporeEvents);
     this.projectileRenderer?.update(delta, this.projectiles.getActiveArrows());
     this.enemyDartRenderer?.update(delta, this.enemyDarts.getActiveDarts());
     this.shroomSporeRenderer?.update(delta, this.shroomSpores.getActiveSpores());
-    this.enemyRenderer?.update(time, delta, this.enemies.getActiveEnemies());
+    this.enemyRenderer?.update(time, delta, activeDartGoobers);
+    this.dartTriGooberRenderer?.update(time, delta, activeDartTriGoobers);
     this.redShroomRenderer?.update(time, delta, this.redShrooms.getActiveEnemies());
     this.playerRenderer?.update(time, delta, playerFrame.state);
     this.feedbackRenderer?.update(delta);
@@ -457,7 +477,15 @@ export class CombatRoomScene extends Phaser.Scene {
   }
 
   private getCurrentEncounterKind(): EncounterKind {
-    return this.currentRoomDefinition.theme === 'mushroom' ? 'red-shroom' : 'dart-goober';
+    if (this.currentRoomDefinition.theme === 'mushroom') {
+      return 'red-shroom';
+    }
+
+    if (this.currentRoomDefinition.theme === 'stone' || this.currentRoomDefinition.theme === 'boss') {
+      return 'dart-tri-goober';
+    }
+
+    return 'dart-goober';
   }
 
   private getCurrentShroomVariant(): ShroomVariant {
@@ -648,6 +676,8 @@ export class CombatRoomScene extends Phaser.Scene {
     this.projectileRenderer = undefined;
     this.enemyRenderer?.destroy();
     this.enemyRenderer = undefined;
+    this.dartTriGooberRenderer?.destroy();
+    this.dartTriGooberRenderer = undefined;
     this.redShroomRenderer?.destroy();
     this.redShroomRenderer = undefined;
     this.enemyDartRenderer?.destroy();

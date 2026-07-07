@@ -2,7 +2,7 @@
   "id": "dart-tri-goober",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "asset-generated",
+  "status": "runtime-integrated",
   "sourceReferences": [
     "source/reference-01.png"
   ],
@@ -141,7 +141,7 @@
   "prototype": {
     "renderer": "DartTriGooberRenderer",
     "systemPrecedent": "DartGooberSystem",
-    "notes": "Use Dart Goober ranged behavior with triangular base art and the same runtime cut-ellipse gaze language."
+    "notes": "Uses Dart Goober ranged behavior with accepted base.png art and the same runtime cut-ellipse gaze language in stone/boss rooms."
   },
   "projectiles": {},
   "vfx": {},
@@ -151,8 +151,6 @@
     "attack": null
   },
   "openItems": [
-    "Review generated base-with-eye-whites and runtime expression preview in tuning.html.",
-    "Tune exact eye positions, scale, and hitbox after visual approval.",
-    "Wire DartGooberSystem variant into room selection only after art approval."
+    "Tune combat balance in stone/boss rooms after playtest."
   ]
 }

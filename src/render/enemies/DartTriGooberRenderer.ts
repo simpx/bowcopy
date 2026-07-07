@@ -1,14 +1,27 @@
 import Phaser from 'phaser';
 
-import { DART_TRI_GOOBER_RIG } from '../../characters/dartTriGooberRig';
+import {
+  DART_TRI_GOOBER_CHARACTER,
+  type DartTriGooberEyeEmotion,
+  type EmbeddedEyeTuning,
+  type EyeEmotionTuning,
+  type EyeName
+} from '../characters/layeredCharacterConfig';
 import type { DartGooberEnemy, DartGooberEvent } from '../../sim/enemies';
 import type { SimVector } from '../../sim/player';
+
+interface DartTriGooberEyeVisual {
+  readonly container: Phaser.GameObjects.Container;
+  readonly pupil: Phaser.GameObjects.Graphics;
+  readonly tuning: EmbeddedEyeTuning;
+}
 
 interface DartTriGooberVisual {
   readonly container: Phaser.GameObjects.Container;
   readonly shadow: Phaser.GameObjects.Ellipse;
-  readonly body: Phaser.GameObjects.Graphics;
-  readonly eyes: Phaser.GameObjects.Graphics;
+  readonly artLayer: Phaser.GameObjects.Container;
+  readonly body: Phaser.GameObjects.Image;
+  readonly eyes: Record<EyeName, DartTriGooberEyeVisual>;
   readonly muzzleGlow: Phaser.GameObjects.Arc;
 }
 
@@ -21,11 +34,15 @@ interface DartTriGooberParticle {
   durationMs: number;
 }
 
+const BODY_SCALE = DART_TRI_GOOBER_CHARACTER.base.scale;
 const HIT_FLASH_MS = 170;
 const PARTICLE_DEPTH = 78;
-const SPAWN_COLORS = [0xf1c07a, 0x99c66e, 0xffe6a1] as const;
+const EYE_NAMES: readonly EyeName[] = ['left', 'right'];
+const SPAWN_COLORS = [0x67e54a, 0x28d7ff, 0xffe6a1] as const;
 const HIT_COLORS = [0xfff1b5, 0xffcf57] as const;
-const DEATH_COLORS = [0xe96945, 0x99c66e, 0xffcf57] as const;
+const FIRE_COLORS = [0xffcf57, 0x28d7ff] as const;
+const DEATH_COLORS = [0xe96945, 0x67e54a, 0x28d7ff] as const;
+const EYE_PUPIL_COLOR = 0x050505;
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
@@ -41,10 +58,17 @@ const normalize = (vector: SimVector): SimVector => {
     return { x: 1, y: 0 };
   }
 
-  return { x: vector.x / length, y: vector.y / length };
+  return {
+    x: vector.x / length,
+    y: vector.y / length
+  };
 };
 
-export const preloadDartTriGooberAssets = () => undefined;
+export const preloadDartTriGooberAssets = (scene: Phaser.Scene) => {
+  if (!scene.textures.exists(DART_TRI_GOOBER_CHARACTER.base.textureKey)) {
+    scene.load.image(DART_TRI_GOOBER_CHARACTER.base.textureKey, DART_TRI_GOOBER_CHARACTER.base.imageUrl);
+  }
+};
 
 export class DartTriGooberRenderer {
   private readonly visuals = new Map<number, DartTriGooberVisual>();
@@ -76,15 +100,22 @@ export class DartTriGooberRenderer {
 
       if (event.type === 'dart-goober-killed') {
         this.emitBurst(event.position, 24, DEATH_COLORS, 58, 142, 5.4, 360);
+        continue;
+      }
+
+      if (event.type === 'enemy-dart-fired') {
+        this.emitBurst(event.origin, 5, FIRE_COLORS, 28, 72, 2.6, 150);
       }
     }
   }
 
   destroy() {
     this.particleGraphics?.destroy();
+
     for (const visual of this.visuals.values()) {
       visual.container.destroy();
     }
+
     this.visuals.clear();
     this.particles.length = 0;
   }
@@ -94,7 +125,9 @@ export class DartTriGooberRenderer {
 
     for (const enemy of enemies) {
       activeIds.add(enemy.id);
+
       const visual = this.visuals.get(enemy.id) ?? this.createVisual(enemy.id);
+
       this.updateVisual(timeMs, enemy, visual);
     }
 
@@ -107,20 +140,36 @@ export class DartTriGooberRenderer {
   }
 
   private createVisual(id: number): DartTriGooberVisual {
+    const { base, gaze } = DART_TRI_GOOBER_CHARACTER;
     const shadow = this.scene.add.ellipse(
       0,
-      DART_TRI_GOOBER_RIG.base.shadow.y,
-      DART_TRI_GOOBER_RIG.base.shadow.width,
-      DART_TRI_GOOBER_RIG.base.shadow.height,
+      base.shadow.y,
+      base.shadow.width,
+      base.shadow.height,
       0x07120d,
       0.32
     );
-    const body = this.scene.add.graphics();
-    const eyes = this.scene.add.graphics();
-    const muzzleGlow = this.scene.add.circle(0, -20, DART_TRI_GOOBER_RIG.attack.muzzleRadius, 0xffd36a, 0);
-    const art = this.scene.add.container(0, DART_TRI_GOOBER_RIG.base.y, [body, eyes]);
-    const container = this.scene.add.container(0, 0, [shadow, art, muzzleGlow]);
-    const visual = { container, shadow, body, eyes, muzzleGlow };
+    const body = this.scene.add
+      .image(0, 0, base.textureKey)
+      .setOrigin(0.5);
+    const eyes = Object.fromEntries(
+      EYE_NAMES.map((name) => [name, this.createEye(gaze.eyes[name])])
+    ) as Record<EyeName, DartTriGooberEyeVisual>;
+    const artLayer = this.scene.add.container(
+      0,
+      base.y,
+      [body, ...EYE_NAMES.map((name) => eyes[name].container)]
+    );
+    const muzzleGlow = this.scene.add.circle(0, -20, DART_TRI_GOOBER_CHARACTER.attack.muzzleRadius, 0xffd36a, 0);
+    const container = this.scene.add.container(0, 0, [shadow, artLayer, muzzleGlow]);
+    const visual = {
+      container,
+      shadow,
+      artLayer,
+      body,
+      eyes,
+      muzzleGlow
+    };
 
     this.visuals.set(id, visual);
 
@@ -132,86 +181,229 @@ export class DartTriGooberRenderer {
     const walkWave = Math.sin(enemy.walkPhase) * enemy.moveAmount;
     const hitFlash = clamp01(enemy.hitFlashMs / HIT_FLASH_MS);
     const charge = enemy.phase === 'shooting' ? enemy.shootCharge : 0;
-    const spawnEase = 1 - (1 - clamp01(enemy.spawnProgress)) ** 3;
-    const squash = Math.abs(walkWave) * DART_TRI_GOOBER_RIG.motion.walkSquash + idleWave * DART_TRI_GOOBER_RIG.motion.idleSquash;
-    const anticipation = charge * DART_TRI_GOOBER_RIG.attack.anticipation;
-    const scaleX = DART_TRI_GOOBER_RIG.base.scale * (1 + squash - anticipation + hitFlash * DART_TRI_GOOBER_RIG.motion.hitScaleX);
-    const scaleY = DART_TRI_GOOBER_RIG.base.scale * (1 - squash + anticipation - hitFlash * DART_TRI_GOOBER_RIG.motion.hitScaleY);
+    const spawnEase = this.getSpawnEase(enemy.spawnProgress);
+    const spawnBounce = enemy.spawnProgress < 1 ? Math.sin(enemy.spawnProgress * Math.PI) * 0.18 : 0;
     const facing = normalize(enemy.facing);
+    const eyeEmotion = this.getEyeEmotion(enemy, charge, hitFlash);
+    const squash =
+      Math.abs(walkWave) * DART_TRI_GOOBER_CHARACTER.motion.walkSquash +
+      idleWave * DART_TRI_GOOBER_CHARACTER.motion.idleSquash;
+    const anticipation = charge * DART_TRI_GOOBER_CHARACTER.attack.anticipation;
+    const scaleX = BODY_SCALE * (1 + squash - anticipation + hitFlash * DART_TRI_GOOBER_CHARACTER.motion.hitScaleX);
+    const scaleY = BODY_SCALE * (1 - squash + anticipation - hitFlash * DART_TRI_GOOBER_CHARACTER.motion.hitScaleY);
 
     visual.container.setPosition(enemy.position.x, enemy.position.y);
     visual.container.setDepth(69 + enemy.position.y / 1000);
-    visual.container.setRotation(Phaser.Math.Clamp(enemy.velocity.x / 180, -1, 1) * DART_TRI_GOOBER_RIG.motion.velocityTilt + walkWave * DART_TRI_GOOBER_RIG.motion.walkTilt);
-    visual.container.setScale(Math.max(0.05, spawnEase + Math.sin(enemy.spawnProgress * Math.PI) * 0.18));
+    visual.container.setRotation(
+      Phaser.Math.Clamp(enemy.velocity.x / 180, -1, 1) * DART_TRI_GOOBER_CHARACTER.motion.velocityTilt +
+        walkWave * DART_TRI_GOOBER_CHARACTER.motion.walkTilt
+    );
+    visual.container.setScale(Math.max(0.05, spawnEase + spawnBounce));
     visual.container.setAlpha(0.18 + spawnEase * 0.82);
 
     visual.shadow.setScale(0.8 + spawnEase * 0.2 + Math.abs(walkWave) * 0.08, 1);
     visual.shadow.setAlpha(0.14 + spawnEase * 0.2);
 
-    visual.body.setScale(scaleX / DART_TRI_GOOBER_RIG.base.scale, scaleY / DART_TRI_GOOBER_RIG.base.scale);
-    visual.eyes.setScale(scaleX / DART_TRI_GOOBER_RIG.base.scale, scaleY / DART_TRI_GOOBER_RIG.base.scale);
-    this.drawBody(visual.body, hitFlash, charge);
-    this.drawEyes(visual.eyes, facing, charge, hitFlash);
+    visual.artLayer.setPosition(
+      -facing.x * charge * DART_TRI_GOOBER_CHARACTER.attack.chargeShift,
+      DART_TRI_GOOBER_CHARACTER.base.y +
+        idleWave * DART_TRI_GOOBER_CHARACTER.motion.idleBob -
+        Math.abs(walkWave) * DART_TRI_GOOBER_CHARACTER.motion.walkBob
+    );
+    visual.artLayer.setScale(scaleX, scaleY);
+    visual.body.setTint(hitFlash > 0 ? 0xfff1d0 : charge > 0.2 ? 0xffdda0 : 0xffffff);
+    this.updateEyes(visual.eyes, facing, eyeEmotion);
 
     visual.muzzleGlow.setPosition(
-      facing.x * DART_TRI_GOOBER_RIG.attack.muzzleX,
-      DART_TRI_GOOBER_RIG.attack.muzzleY + facing.y * DART_TRI_GOOBER_RIG.attack.muzzleAimY
+      facing.x * DART_TRI_GOOBER_CHARACTER.attack.muzzleX,
+      DART_TRI_GOOBER_CHARACTER.attack.muzzleY + facing.y * DART_TRI_GOOBER_CHARACTER.attack.muzzleAimY
     );
-    visual.muzzleGlow.setScale(DART_TRI_GOOBER_RIG.attack.muzzleScaleBase + charge * DART_TRI_GOOBER_RIG.attack.muzzleScaleCharge);
-    visual.muzzleGlow.setAlpha(enemy.phase === 'shooting'
-      ? DART_TRI_GOOBER_RIG.attack.muzzleAlphaBase + charge * DART_TRI_GOOBER_RIG.attack.muzzleAlphaCharge
-      : 0);
+    visual.muzzleGlow.setScale(
+      DART_TRI_GOOBER_CHARACTER.attack.muzzleScaleBase +
+        charge * DART_TRI_GOOBER_CHARACTER.attack.muzzleScaleCharge
+    );
+    visual.muzzleGlow.setAlpha(
+      enemy.phase === 'shooting'
+        ? DART_TRI_GOOBER_CHARACTER.attack.muzzleAlphaBase +
+            charge * DART_TRI_GOOBER_CHARACTER.attack.muzzleAlphaCharge
+        : 0
+    );
   }
 
-  private drawBody(graphics: Phaser.GameObjects.Graphics, hitFlash: number, charge: number) {
-    graphics.clear();
-    graphics.lineStyle(8, 0x070707, 1);
-    graphics.fillStyle(hitFlash > 0 ? 0xfff1d0 : 0xd68b51, 1);
-    graphics.beginPath();
-    graphics.moveTo(0, -46 - charge * 2);
-    graphics.lineTo(49, 34);
-    graphics.lineTo(-49, 34);
-    graphics.closePath();
-    graphics.fillPath();
-    graphics.strokePath();
+  private getSpawnEase(progress: number): number {
+    const clamped = clamp01(progress);
 
-    graphics.lineStyle(6, 0x070707, 1);
-    graphics.fillStyle(0x7a4b2e, 1);
-    graphics.fillEllipse(0, 18, 62, 22);
-    graphics.strokeEllipse(0, 18, 62, 22);
+    return 1 - (1 - clamped) ** 3;
   }
 
-  private drawEyes(
-    graphics: Phaser.GameObjects.Graphics,
-    facing: SimVector,
+  private getEyeEmotion(
+    enemy: DartGooberEnemy,
     charge: number,
     hitFlash: number
+  ): DartTriGooberEyeEmotion {
+    if (hitFlash > 0.05) {
+      return 'hit';
+    }
+
+    if (charge > 0.45) {
+      return 'aim';
+    }
+
+    return enemy.phase === 'shooting' ? 'angry' : 'default';
+  }
+
+  private createEye(tuning: EmbeddedEyeTuning): DartTriGooberEyeVisual {
+    const { width, height } = DART_TRI_GOOBER_CHARACTER.base.imageSize;
+    const container = this.scene.add.container(
+      (tuning.x - 0.5) * width,
+      (tuning.y - 0.5) * height
+    );
+    const pupil = this.scene.add.graphics();
+
+    container.add(pupil);
+
+    return {
+      container,
+      pupil,
+      tuning
+    };
+  }
+
+  private updateEyes(
+    eyes: Record<EyeName, DartTriGooberEyeVisual>,
+    facing: SimVector,
+    eyeEmotion: DartTriGooberEyeEmotion
+  ) {
+    const emotion = DART_TRI_GOOBER_CHARACTER.gaze.emotions[eyeEmotion];
+    const { width, height } = DART_TRI_GOOBER_CHARACTER.base.imageSize;
+    const offsetX =
+      Phaser.Math.Clamp(facing.x, -1, 1) * width * DART_TRI_GOOBER_CHARACTER.gaze.pupilOffsetScale.x +
+      emotion.pupilShiftX * width;
+    const offsetY =
+      Phaser.Math.Clamp(facing.y, -1, 1) * height * DART_TRI_GOOBER_CHARACTER.gaze.pupilOffsetScale.y +
+      emotion.pupilShiftY * height;
+
+    for (const name of EYE_NAMES) {
+      this.updateEye(eyes[name], name, emotion, offsetX, offsetY);
+    }
+  }
+
+  private updateEye(
+    eye: DartTriGooberEyeVisual,
+    name: EyeName,
+    emotion: EyeEmotionTuning,
+    offsetX: number,
+    offsetY: number
+  ) {
+    const { width, height } = DART_TRI_GOOBER_CHARACTER.base.imageSize;
+    const side = name === 'left' ? -1 : 1;
+    const tiltDirection = emotion.eyeTiltMode === 'same' ? 1 : side;
+    const lidCompression = 1 - (emotion.upperLid + emotion.lowerLid) * 0.24;
+    const pupilWidth = eye.tuning.radiusX * width * 2 * emotion.pupilScale * emotion.eyeScaleX;
+    const pupilHeight =
+      eye.tuning.radiusY *
+      height *
+      2 *
+      emotion.pupilScale *
+      emotion.eyeScaleY *
+      Phaser.Math.Clamp(lidCompression, 0.45, 1);
+
+    eye.container.setRotation(eye.tuning.rotation + tiltDirection * emotion.eyeTiltAdd);
+    eye.pupil.setPosition(offsetX, offsetY);
+    this.drawEyePupil(eye.pupil, name, emotion, pupilWidth, pupilHeight);
+  }
+
+  private drawEyePupil(
+    graphics: Phaser.GameObjects.Graphics,
+    name: EyeName,
+    emotion: EyeEmotionTuning,
+    width: number,
+    height: number
   ) {
     graphics.clear();
+    graphics.fillStyle(EYE_PUPIL_COLOR, 1);
 
-    for (const name of ['left', 'right'] as const) {
-      const eye = DART_TRI_GOOBER_RIG.gaze.eyes[name];
-      const side = name === 'left' ? -1 : 1;
-      const pupilX = eye.x + Phaser.Math.Clamp(facing.x, -1, 1) * DART_TRI_GOOBER_RIG.gaze.pupilOffsetScale.x;
-      const pupilY = eye.y + Phaser.Math.Clamp(facing.y, -1, 1) * DART_TRI_GOOBER_RIG.gaze.pupilOffsetScale.y;
-      const pupilScale = hitFlash > 0 ? 0.7 : 1 + charge * 0.12;
-
-      graphics.save();
-      graphics.translateCanvas(eye.x, eye.y);
-      graphics.rotateCanvas(eye.rotation);
-      graphics.lineStyle(5, 0x050505, 1);
-      graphics.fillStyle(0xffffff, 1);
-      graphics.fillEllipse(0, 0, eye.radiusX * 3.2, eye.radiusY * 3.1);
-      graphics.strokeEllipse(0, 0, eye.radiusX * 3.2, eye.radiusY * 3.1);
-      graphics.restore();
-
-      graphics.save();
-      graphics.translateCanvas(pupilX, pupilY);
-      graphics.rotateCanvas(side * (0.35 + charge * 0.18));
-      graphics.fillStyle(0x050505, 1);
-      graphics.fillEllipse(0, 0, eye.radiusX * 1.75 * pupilScale, eye.radiusY * 1.45 * pupilScale);
-      graphics.restore();
+    if (emotion.shape !== 'cut-ellipse') {
+      graphics.fillEllipse(0, 0, width, height);
+      return;
     }
+
+    this.drawCutEllipsePupil(
+      graphics,
+      name,
+      width,
+      height,
+      emotion.cutSlope ?? 1.6,
+      emotion.cutOffset ?? -0.42
+    );
+  }
+
+  private drawCutEllipsePupil(
+    graphics: Phaser.GameObjects.Graphics,
+    name: EyeName,
+    width: number,
+    height: number,
+    cutSlope: number,
+    cutOffset: number
+  ) {
+    const inner = name === 'left' ? 1 : -1;
+    const rx = width / 2;
+    const ry = height / 2;
+    const ellipsePoints: Phaser.Types.Math.Vector2Like[] = [];
+
+    for (let index = 0; index < 72; index += 1) {
+      const angle = (Math.PI * 2 * index) / 72;
+      ellipsePoints.push({ x: Math.cos(angle), y: Math.sin(angle) });
+    }
+
+    const points = this.clipNormalizedEllipse(ellipsePoints, cutSlope, cutOffset).map(
+      (point) => new Phaser.Math.Vector2(point.x * rx * inner, point.y * ry)
+    );
+
+    graphics.fillPoints(points, true, true);
+  }
+
+  private clipNormalizedEllipse(
+    points: Phaser.Types.Math.Vector2Like[],
+    cutSlope: number,
+    cutOffset: number
+  ): Phaser.Types.Math.Vector2Like[] {
+    const clipped: Phaser.Types.Math.Vector2Like[] = [];
+    const isInside = (point: Phaser.Types.Math.Vector2Like) =>
+      point.y - cutSlope * point.x - cutOffset >= 0;
+    const getIntersection = (
+      start: Phaser.Types.Math.Vector2Like,
+      end: Phaser.Types.Math.Vector2Like
+    ): Phaser.Types.Math.Vector2Like => {
+      const startDistance = start.y - cutSlope * start.x - cutOffset;
+      const endDistance = end.y - cutSlope * end.x - cutOffset;
+      const ratio =
+        Math.abs(startDistance - endDistance) > 0.000001
+          ? startDistance / (startDistance - endDistance)
+          : 0;
+
+      return {
+        x: start.x + (end.x - start.x) * ratio,
+        y: start.y + (end.y - start.y) * ratio
+      };
+    };
+
+    for (let index = 0; index < points.length; index += 1) {
+      const current = points[index];
+      const next = points[(index + 1) % points.length];
+      const currentInside = isInside(current);
+      const nextInside = isInside(next);
+
+      if (currentInside && nextInside) {
+        clipped.push(next);
+      } else if (currentInside && !nextInside) {
+        clipped.push(getIntersection(current, next));
+      } else if (!currentInside && nextInside) {
+        clipped.push(getIntersection(current, next), next);
+      }
+    }
+
+    return clipped;
   }
 
   private emitBurst(
@@ -226,9 +418,16 @@ export class DartTriGooberRenderer {
     for (let index = 0; index < count; index += 1) {
       const angle = randomRange(0, Math.PI * 2);
       const speed = randomRange(minSpeed, maxSpeed);
+
       this.particles.push({
-        position: { x: position.x + randomRange(-5, 5), y: position.y - 10 + randomRange(-5, 5) },
-        velocity: { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed - randomRange(8, 28) },
+        position: {
+          x: position.x + randomRange(-5, 5),
+          y: position.y - 10 + randomRange(-5, 5)
+        },
+        velocity: {
+          x: Math.cos(angle) * speed,
+          y: Math.sin(angle) * speed - randomRange(8, 28)
+        },
         color: randomColor(colors),
         radius: randomRange(radius * 0.55, radius),
         ageMs: 0,
@@ -245,10 +444,12 @@ export class DartTriGooberRenderer {
     }
 
     const deltaSeconds = deltaMs / 1000;
+
     graphics.clear();
 
     for (let index = this.particles.length - 1; index >= 0; index -= 1) {
       const particle = this.particles[index];
+
       particle.ageMs += deltaMs;
 
       if (particle.ageMs >= particle.durationMs) {

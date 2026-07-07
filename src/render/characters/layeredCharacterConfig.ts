@@ -1,8 +1,10 @@
 import { BOWBERT_RIG } from '../../characters/bowbertRig';
 import { DART_GOOBER_RIG } from '../../characters/dartGooberRig';
+import { DART_TRI_GOOBER_RIG } from '../../characters/dartTriGooberRig';
 import { PURPLE_SHROOM_RIG } from '../../characters/purpleShroomRig';
 import { RED_SHROOM_RIG } from '../../characters/redShroomRig';
 import dartGooberBaseUrl from '../../../assets/characters/dart-goober/dart-goober-base-ai-v1-trimmed.png';
+import dartTriGooberBaseUrl from '../../../assets/characters/dart-tri-goober/base.png';
 import bowbertBaseUrl from '../../../assets/characters/bowbert/bowbert-base-ai-v2-eye-whites.png';
 import purpleShroomBaseUrl from '../../../assets/enemies/purple_shroom/purple-shroom-ai-v1-base.png';
 import purpleShroomSporeUrl from '../../../assets/enemies/purple_shroom/purple-spore-ai-v1.png';
@@ -36,6 +38,14 @@ export const DART_GOOBER_CHARACTER = {
   }
 } as const;
 
+export const DART_TRI_GOOBER_CHARACTER = {
+  ...DART_TRI_GOOBER_RIG,
+  base: {
+    ...DART_TRI_GOOBER_RIG.base,
+    imageUrl: dartTriGooberBaseUrl
+  }
+} as const;
+
 export const RED_SHROOM_CHARACTER = {
   ...RED_SHROOM_RIG,
   base: {
@@ -62,5 +72,6 @@ export const PURPLE_SHROOM_CHARACTER = {
 
 export type BowbertEyeEmotion = keyof typeof BOWBERT_CHARACTER.gaze.emotions;
 export type DartGooberEyeEmotion = keyof typeof DART_GOOBER_CHARACTER.gaze.emotions;
+export type DartTriGooberEyeEmotion = keyof typeof DART_TRI_GOOBER_CHARACTER.gaze.emotions;
 export type RedShroomEyeEmotion = keyof typeof RED_SHROOM_CHARACTER.gaze.emotions;
 export type PurpleShroomEyeEmotion = keyof typeof PURPLE_SHROOM_CHARACTER.gaze.emotions;
