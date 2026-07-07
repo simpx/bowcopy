@@ -2,16 +2,19 @@
   "id": "slime",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "reference-locked",
+  "status": "asset-generated",
   "sourceReferences": [
     "source/reference-01.png",
     "source/reference-02.png"
   ],
   "base": {
-    "image": null,
+    "image": "base.png",
     "plannedImage": "base.png",
-    "sourceImage": null,
-    "imageSize": null,
+    "sourceImage": "base-source.png",
+    "imageSize": {
+      "width": 1254,
+      "height": 1254
+    },
     "scale": 0.105,
     "anchor": {
       "x": 0.5,
@@ -131,7 +134,8 @@
     "jump": null
   },
   "openItems": [
-    "Generate and accept clean base.png from locked slime references.",
+    "Review generated base.png against comparison.png.",
+    "Tune exact eye positions, scale, and hitbox after visual approval.",
     "Tune eye sockets only after final base exists.",
     "Decide whether splitting belongs in MVP after jump loop is playable."
   ]

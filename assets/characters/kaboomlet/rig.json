@@ -2,15 +2,18 @@
   "id": "kaboomlet",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "reference-locked",
+  "status": "asset-generated",
   "sourceReferences": [
     "source/reference-01.png"
   ],
   "base": {
-    "image": null,
+    "image": "base.png",
     "plannedImage": "base.png",
-    "sourceImage": null,
-    "imageSize": null,
+    "sourceImage": "base-source.png",
+    "imageSize": {
+      "width": 1254,
+      "height": 1254
+    },
     "scale": 0.1,
     "anchor": {
       "x": 0.5,
@@ -141,7 +144,8 @@
     "explosion": null
   },
   "openItems": [
-    "Generate and accept clean base.png from source/reference-01.png.",
+    "Review generated base.png against comparison.png.",
+    "Tune exact eye positions, scale, and hitbox after visual approval.",
     "Tune explosion radius and player damage when wired into combat scene.",
     "Select fuse/explosion sounds after gameplay timing is stable."
   ]

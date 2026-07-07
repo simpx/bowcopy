@@ -1,13 +1,13 @@
 ---
-status: reference-locked
+status: asset-generated
 kind: enemy
 projectContext: bowbert
 lockedReference: source/reference-01.png
 sourceReferences:
   - source/reference-01.png
 openItems:
-  - Generate or accept `base.png`.
-  - Fill confirmed runtime values in `rig.json`.
+  - Review generated `base.png` against `comparison.png`.
+  - Tune exact eye positions, scale, and hitbox after visual approval.
   - Select fuse/explosion sounds after gameplay timing is stable.
 ---
 
@@ -28,7 +28,7 @@ Source:
 - `source/reference-01.png`
 
 Decomposition:
-- base.png: fixed enemy body.
+- base.png: generated fixed enemy body.
 - attachments/: only independently positioned art such as eyes, weapon, shell, hat, or props.
 - projectiles/: reusable projectile cores, no baked trails.
 - vfx/: runtime trail/particle notes if separate assets are needed.

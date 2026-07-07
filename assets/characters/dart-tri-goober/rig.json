@@ -2,15 +2,18 @@
   "id": "dart-tri-goober",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "reference-locked",
+  "status": "asset-generated",
   "sourceReferences": [
     "source/reference-01.png"
   ],
   "base": {
-    "image": null,
+    "image": "base.png",
     "plannedImage": "base.png",
-    "sourceImage": null,
-    "imageSize": null,
+    "sourceImage": "base-source.png",
+    "imageSize": {
+      "width": 1254,
+      "height": 1254
+    },
     "scale": 0.096,
     "anchor": {
       "x": 0.5,
@@ -27,12 +30,14 @@
       "width": 62,
       "height": 15,
       "y": 22
-    }
+    },
+    "notes": "base.png is generated with baked slanted white eye sockets and no baked black fill. The slanted white socket silhouette is part of the Dart Tri Goober design; black cut-ellipse gaze reuses DartGooberRenderer.drawCutEllipsePupil. exports/base-with-baked-pupils.png preserves the rejected baked-gaze candidate; exports/base-pupil-erased-v1.png preserves the manual cleanup pass; exports/base-round-eye-whites-v3.png preserves the rejected round-eye-white pass."
   },
-  "attachments": {
-    "eyes": {
+  "attachments": {},
+  "runtimeLayers": {
+    "gaze": {
       "source": "runtime-shape",
-      "role": "runtime cut-ellipse pupils over embedded triangular goober sockets"
+      "role": "black Dart Goober cut-ellipse expressions over baked slanted white eye sockets"
     }
   },
   "gaze": {
@@ -40,18 +45,18 @@
     "archetype": "angry-embedded",
     "eyes": {
       "left": {
-        "x": 0.205,
-        "y": 0.566,
-        "radiusX": 0.055,
-        "radiusY": 0.044,
-        "rotation": -0.56
+        "x": 0.286,
+        "y": 0.533,
+        "radiusX": 0.067,
+        "radiusY": 0.054,
+        "rotation": -0.58
       },
       "right": {
-        "x": 0.795,
-        "y": 0.566,
-        "radiusX": 0.055,
-        "radiusY": 0.044,
-        "rotation": 0.56
+        "x": 0.752,
+        "y": 0.516,
+        "radiusX": 0.064,
+        "radiusY": 0.052,
+        "rotation": 0.58
       }
     },
     "pupilOffsetScale": {
@@ -62,34 +67,34 @@
       "default": {
         "shape": "cut-ellipse",
         "eyeTiltAdd": 0,
-        "eyeScaleX": 1.28,
-        "eyeScaleY": 1.32,
-        "pupilScale": 1.08,
-        "pupilShiftX": 0,
-        "pupilShiftY": 0.01,
-        "cutSlope": 1.6,
-        "cutOffset": -0.42,
+        "eyeScaleX": 1.02,
+        "eyeScaleY": 1.255,
+        "pupilScale": 1.12,
+        "pupilShiftX": 0.002,
+        "pupilShiftY": -0.006,
+        "cutSlope": 2.6,
+        "cutOffset": -0.675,
         "upperLid": 0,
         "lowerLid": 0
       },
       "angry": {
         "shape": "cut-ellipse",
-        "eyeTiltAdd": -0.02,
-        "eyeScaleX": 1.42,
-        "eyeScaleY": 1.38,
+        "eyeTiltAdd": -0.015,
+        "eyeScaleX": 1.4,
+        "eyeScaleY": 1.42,
         "pupilScale": 1.16,
         "pupilShiftX": 0,
         "pupilShiftY": 0.012,
-        "cutSlope": 1.76,
+        "cutSlope": 1.72,
         "cutOffset": -0.46,
         "upperLid": 0,
         "lowerLid": 0
       },
       "aim": {
         "shape": "cut-ellipse",
-        "eyeTiltAdd": 0.012,
+        "eyeTiltAdd": 0.01,
         "eyeScaleX": 1.18,
-        "eyeScaleY": 1.18,
+        "eyeScaleY": 1.2,
         "pupilScale": 1.02,
         "pupilShiftX": 0,
         "pupilShiftY": 0.006,
@@ -136,7 +141,7 @@
   "prototype": {
     "renderer": "DartTriGooberRenderer",
     "systemPrecedent": "DartGooberSystem",
-    "notes": "Use Dart Goober ranged behavior with triangular base art and the same runtime cut-ellipse pupil language."
+    "notes": "Use Dart Goober ranged behavior with triangular base art and the same runtime cut-ellipse gaze language."
   },
   "projectiles": {},
   "vfx": {},
@@ -146,8 +151,8 @@
     "attack": null
   },
   "openItems": [
-    "Generate and accept clean base.png from source/reference-01.png.",
-    "Tune exact embedded eye positions after base.png is accepted.",
+    "Review generated base-with-eye-whites and runtime expression preview in tuning.html.",
+    "Tune exact eye positions, scale, and hitbox after visual approval.",
     "Wire DartGooberSystem variant into room selection only after art approval."
   ]
 }

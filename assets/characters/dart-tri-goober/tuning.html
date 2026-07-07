@@ -1,43 +1,492 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Dart Tri Goober Tuning</title>
   <style>
-    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #10140f; color: #eef3e8; }
-    body { margin: 0; padding: 16px; }
-    main { max-width: 1100px; margin: 0 auto; display: grid; gap: 16px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
-    section { border: 1px solid #3a4a36; border-radius: 8px; padding: 12px; background: #172016; }
-    h1, h2 { margin: 0 0 10px; }
-    img { max-width: 100%; background: #0b100a; border: 1px solid #30402f; }
-    pre { white-space: pre-wrap; background: #0b100a; padding: 10px; border-radius: 6px; overflow: auto; }
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, sans-serif;
+      background: #0d140f;
+      color: #edf4e9;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 14px; background: #0d140f; }
+    main { max-width: 1240px; margin: 0 auto; display: grid; gap: 14px; }
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 22px; }
+    h2 { font-size: 16px; color: #f0dc79; }
+    h3 { font-size: 14px; color: #f0dc79; }
+    button, input, select, textarea {
+      font: inherit;
+      color: #edf4e9;
+      background: #0e180f;
+      border: 1px solid #3c5439;
+      border-radius: 6px;
+    }
+    button { min-height: 34px; padding: 6px 10px; cursor: pointer; }
+    button:hover { border-color: #f0dc79; }
+    input[type="number"] { width: 78px; padding: 5px 7px; }
+    input[type="range"] { width: 100%; accent-color: #f0dc79; }
+    select { min-height: 34px; padding: 5px 8px; }
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      resize: vertical;
+      padding: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    section {
+      border: 1px solid #344932;
+      border-radius: 8px;
+      background: #162218;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+    img, canvas {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      border: 1px solid #31452e;
+      background:
+        linear-gradient(45deg, #102016 25%, transparent 25%),
+        linear-gradient(-45deg, #102016 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #102016 75%),
+        linear-gradient(-45deg, transparent 75%, #102016 75%),
+        #1a2a1e;
+      background-size: 32px 32px;
+      background-position: 0 0, 0 16px, 16px -16px, -16px 0;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .tuning {
+      display: grid;
+      grid-template-columns: minmax(340px, 0.85fr) minmax(0, 1.15fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .base-image { max-height: 62vh; object-fit: contain; }
+    .note { color: #cdd8c5; font-size: 13px; line-height: 1.45; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .control-group {
+      border: 1px solid #2e442d;
+      border-radius: 8px;
+      padding: 10px;
+      display: grid;
+      gap: 9px;
+      background: #111c12;
+    }
+    .controls { display: grid; gap: 10px; }
+    .control {
+      display: grid;
+      grid-template-columns: 88px minmax(120px, 1fr) 82px;
+      gap: 8px;
+      align-items: center;
+    }
+    .control span { color: #dbe6d6; font-size: 13px; }
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+    }
+    .preview { display: grid; gap: 6px; }
+    .selected-preview {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(220px, 0.62fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .copy-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .copy-state { color: #f0dc79; font-size: 13px; min-height: 18px; }
+
+    @media (max-width: 860px) {
+      body { padding: 10px; }
+      .hero, .tuning, .selected-preview { grid-template-columns: 1fr; }
+      .base-image { max-height: none; }
+      .control { grid-template-columns: 74px minmax(100px, 1fr) 74px; }
+    }
   </style>
 </head>
 <body>
   <main>
-    <h1>Dart Tri Goober Tuning</h1>
-    <div class="grid">
-      <section>
+    <h1>Dart Tri Goober</h1>
+
+    <section class="hero">
+      <div>
+        <h2>Base Only</h2>
+        <p class="note">当前 <code>base.png</code>：保留原版斜切白眼眶，不包含黑色眼神填充。</p>
+        <img class="base-image" src="base.png" alt="current base only with slanted white eye sockets and no black gaze fill">
+      </div>
+      <div>
         <h2>Reference</h2>
-        <img src="source/reference-01.png" alt="locked reference">
-      </section>
-      <section>
-        <h2>Base Plan</h2>
-        <p><code>base.png</code> is intentionally pending. Use the locked reference and prompt packet in <code>brief.md</code> to generate the clean base before final tuning.</p>
-      </section>
-    </div>
-    <section>
-      <h2>Rig</h2>
-      <pre id="rig">Loading rig.json...</pre>
+        <p class="note">原版参考：黑色眼神由 runtime 叠加时再复原。</p>
+        <img src="source/reference-01.png" alt="locked Dart Tri Goober reference">
+      </div>
+    </section>
+
+    <section class="tuning">
+      <div class="controls">
+        <div class="toolbar">
+          <label>
+            表情
+            <select id="emotionSelect"></select>
+          </label>
+          <label>
+            预览方向
+            <select id="aimSelect">
+              <option value="center">center</option>
+              <option value="right">right</option>
+              <option value="left">left</option>
+              <option value="up">up</option>
+              <option value="down">down</option>
+            </select>
+          </label>
+          <button id="resetButton" type="button">重置</button>
+        </div>
+
+        <div class="control-group">
+          <h2>Left Eye</h2>
+          <div id="leftControls"></div>
+        </div>
+
+        <div class="control-group">
+          <h2>Right Eye</h2>
+          <div id="rightControls"></div>
+        </div>
+
+        <div class="control-group">
+          <h2>Current Emotion</h2>
+          <div id="emotionControls"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="selected-preview">
+          <div>
+            <h2>Selected Preview</h2>
+            <canvas id="selectedCanvas"></canvas>
+          </div>
+          <div>
+            <h2>Runtime Grid</h2>
+            <div class="preview-grid" id="expressionGrid"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="copy-row">
+            <button id="copyGazeButton" type="button">复制 gaze</button>
+            <button id="copyRigButton" type="button">复制完整 rig</button>
+            <span class="copy-state" id="copyState"></span>
+          </div>
+          <textarea id="output" spellcheck="false"></textarea>
+        </div>
+      </div>
     </section>
   </main>
+
   <script>
-    fetch('./rig.json')
-      .then((response) => response.ok ? response.json() : Promise.reject(new Error(response.statusText)))
-      .then((rig) => { document.querySelector('#rig').textContent = JSON.stringify(rig, null, 2); })
-      .catch((error) => { document.querySelector('#rig').textContent = String(error); });
+    const EYE_NAMES = ['left', 'right'];
+    const PREVIEWS = [
+      { label: 'base only', emotion: null, aim: { x: 0, y: 0 } },
+      { label: 'default', emotion: 'default', aim: { x: 0, y: 0 } },
+      { label: 'angry', emotion: 'angry', aim: { x: 0, y: 0 } },
+      { label: 'aim', emotion: 'aim', aim: { x: 1, y: -0.08 } },
+      { label: 'hit', emotion: 'hit', aim: { x: -0.5, y: -0.2 } }
+    ];
+    const AIM_PRESETS = {
+      center: { x: 0, y: 0 },
+      right: { x: 1, y: -0.08 },
+      left: { x: -1, y: -0.08 },
+      up: { x: 0, y: -1 },
+      down: { x: 0, y: 1 }
+    };
+
+    const EYE_FIELDS = [
+      { key: 'x', label: 'x', min: 0.15, max: 0.88, step: 0.001 },
+      { key: 'y', label: 'y', min: 0.38, max: 0.68, step: 0.001 },
+      { key: 'radiusX', label: 'width', min: 0.02, max: 0.12, step: 0.001 },
+      { key: 'radiusY', label: 'height', min: 0.02, max: 0.1, step: 0.001 },
+      { key: 'rotation', label: 'angle', min: -1.2, max: 1.2, step: 0.005 }
+    ];
+    const EMOTION_FIELDS = [
+      { key: 'eyeScaleX', label: 'scale x', min: 0.3, max: 2.2, step: 0.005 },
+      { key: 'eyeScaleY', label: 'scale y', min: 0.3, max: 2.2, step: 0.005 },
+      { key: 'pupilScale', label: 'scale', min: 0.2, max: 1.8, step: 0.005 },
+      { key: 'pupilShiftX', label: 'shift x', min: -0.06, max: 0.06, step: 0.001 },
+      { key: 'pupilShiftY', label: 'shift y', min: -0.06, max: 0.06, step: 0.001 },
+      { key: 'eyeTiltAdd', label: 'angle+', min: -0.25, max: 0.25, step: 0.001 },
+      { key: 'cutSlope', label: 'cut slope', min: 0.2, max: 3.2, step: 0.005 },
+      { key: 'cutOffset', label: 'cut offset', min: -1.1, max: 0.3, step: 0.005 }
+    ];
+
+    let originalRig;
+    let rig;
+    let baseImage;
+
+    const loadImage = (src) => new Promise((resolve, fail) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = fail;
+      image.src = src;
+    });
+    const clone = (value) => JSON.parse(JSON.stringify(value));
+    const round = (value) => Math.round(Number(value) * 10000) / 10000;
+
+    const clipNormalizedEllipse = (points, cutSlope, cutOffset) => {
+      const clipped = [];
+      const inside = (point) => point.y - cutSlope * point.x - cutOffset >= 0;
+      const intersect = (start, end) => {
+        const startDistance = start.y - cutSlope * start.x - cutOffset;
+        const endDistance = end.y - cutSlope * end.x - cutOffset;
+        const ratio = Math.abs(startDistance - endDistance) > 0.000001
+          ? startDistance / (startDistance - endDistance)
+          : 0;
+        return {
+          x: start.x + (end.x - start.x) * ratio,
+          y: start.y + (end.y - start.y) * ratio
+        };
+      };
+
+      for (let index = 0; index < points.length; index += 1) {
+        const current = points[index];
+        const next = points[(index + 1) % points.length];
+        const currentInside = inside(current);
+        const nextInside = inside(next);
+
+        if (currentInside && nextInside) clipped.push(next);
+        else if (currentInside && !nextInside) clipped.push(intersect(current, next));
+        else if (!currentInside && nextInside) clipped.push(intersect(current, next), next);
+      }
+
+      return clipped;
+    };
+
+    const drawGaze = (context, name, eye, emotion, aim, width, height) => {
+      const side = name === 'left' ? -1 : 1;
+      const tiltDirection = emotion.eyeTiltMode === 'same' ? 1 : side;
+      const centerX = eye.x * width;
+      const centerY = eye.y * height;
+      const offsetX = Math.max(-1, Math.min(1, aim.x)) * width * rig.gaze.pupilOffsetScale.x + emotion.pupilShiftX * width;
+      const offsetY = Math.max(-1, Math.min(1, aim.y)) * height * rig.gaze.pupilOffsetScale.y + emotion.pupilShiftY * height;
+      const lidCompression = 1 - (emotion.upperLid + emotion.lowerLid) * 0.24;
+      const pupilWidth = eye.radiusX * width * 2 * emotion.pupilScale * emotion.eyeScaleX;
+      const pupilHeight = eye.radiusY * height * 2 * emotion.pupilScale * emotion.eyeScaleY * Math.max(0.45, Math.min(1, lidCompression));
+
+      context.save();
+      context.translate(centerX + offsetX, centerY + offsetY);
+      context.rotate(eye.rotation + tiltDirection * emotion.eyeTiltAdd);
+      context.fillStyle = '#050505';
+
+      if (emotion.shape !== 'cut-ellipse') {
+        context.beginPath();
+        context.ellipse(0, 0, pupilWidth / 2, pupilHeight / 2, 0, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+        return;
+      }
+
+      const normalized = Array.from({ length: 72 }, (_, index) => {
+        const angle = Math.PI * 2 * index / 72;
+        return { x: Math.cos(angle), y: Math.sin(angle) };
+      });
+      const points = clipNormalizedEllipse(normalized, emotion.cutSlope ?? 1.6, emotion.cutOffset ?? -0.42);
+      const inner = name === 'left' ? 1 : -1;
+      context.beginPath();
+      points.forEach((point, index) => {
+        const x = point.x * pupilWidth / 2 * inner;
+        const y = point.y * pupilHeight / 2;
+        if (index === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      });
+      context.closePath();
+      context.fill();
+      context.restore();
+    };
+
+    const drawPreview = (canvas, preview, size = 360) => {
+      const context = canvas.getContext('2d');
+      canvas.width = size;
+      canvas.height = size;
+      context.clearRect(0, 0, size, size);
+      context.drawImage(baseImage, 0, 0, size, size);
+
+      if (!preview.emotion) return;
+
+      const emotion = rig.gaze.emotions[preview.emotion];
+      for (const name of EYE_NAMES) {
+        drawGaze(context, name, rig.gaze.eyes[name], emotion, preview.aim, size, size);
+      }
+    };
+
+    const createControl = ({ parent, label, value, min, max, step, onChange }) => {
+      const row = document.createElement('label');
+      row.className = 'control';
+      const labelNode = document.createElement('span');
+      labelNode.textContent = label;
+      const range = document.createElement('input');
+      range.type = 'range';
+      range.min = min;
+      range.max = max;
+      range.step = step;
+      range.value = value;
+      const number = document.createElement('input');
+      number.type = 'number';
+      number.min = min;
+      number.max = max;
+      number.step = step;
+      number.value = value;
+      const update = (next) => {
+        const rounded = round(next);
+        range.value = rounded;
+        number.value = rounded;
+        onChange(rounded);
+        render();
+      };
+      range.addEventListener('input', () => update(range.value));
+      number.addEventListener('input', () => update(number.value));
+      row.append(labelNode, range, number);
+      parent.append(row);
+    };
+
+    const rebuildControls = () => {
+      const emotionName = document.querySelector('#emotionSelect').value;
+      const left = document.querySelector('#leftControls');
+      const right = document.querySelector('#rightControls');
+      const emotionControls = document.querySelector('#emotionControls');
+      left.textContent = '';
+      right.textContent = '';
+      emotionControls.textContent = '';
+
+      for (const field of EYE_FIELDS) {
+        createControl({
+          parent: left,
+          label: field.label,
+          value: rig.gaze.eyes.left[field.key],
+          min: field.min,
+          max: field.max,
+          step: field.step,
+          onChange: (value) => { rig.gaze.eyes.left[field.key] = value; }
+        });
+        createControl({
+          parent: right,
+          label: field.label,
+          value: rig.gaze.eyes.right[field.key],
+          min: field.min,
+          max: field.max,
+          step: field.step,
+          onChange: (value) => { rig.gaze.eyes.right[field.key] = value; }
+        });
+      }
+
+      const emotion = rig.gaze.emotions[emotionName];
+      for (const field of EMOTION_FIELDS) {
+        if (!(field.key in emotion) || emotion[field.key] === null) continue;
+        createControl({
+          parent: emotionControls,
+          label: field.label,
+          value: emotion[field.key],
+          min: field.min,
+          max: field.max,
+          step: field.step,
+          onChange: (value) => { emotion[field.key] = value; }
+        });
+      }
+    };
+
+    const render = () => {
+      const selectedEmotion = document.querySelector('#emotionSelect').value;
+      const selectedAim = AIM_PRESETS[document.querySelector('#aimSelect').value] ?? AIM_PRESETS.center;
+      drawPreview(document.querySelector('#selectedCanvas'), {
+        label: selectedEmotion,
+        emotion: selectedEmotion,
+        aim: selectedAim
+      }, 560);
+
+      for (const { canvas, preview } of previewCanvases) {
+        drawPreview(canvas, preview, 320);
+      }
+
+      document.querySelector('#output').value = JSON.stringify({ gaze: rig.gaze }, null, 2);
+    };
+
+    const copyText = async (text) => {
+      const state = document.querySelector('#copyState');
+      try {
+        await navigator.clipboard.writeText(text);
+        state.textContent = '已复制';
+      } catch {
+        const output = document.querySelector('#output');
+        output.value = text;
+        output.focus();
+        output.select();
+        document.execCommand('copy');
+        state.textContent = '已复制';
+      }
+      window.setTimeout(() => { state.textContent = ''; }, 1200);
+    };
+
+    let previewCanvases = [];
+
+    Promise.all([
+      fetch('./rig.json').then((response) => response.json()),
+      loadImage('./base.png')
+    ]).then(([loadedRig, image]) => {
+      originalRig = clone(loadedRig);
+      rig = clone(loadedRig);
+      baseImage = image;
+
+      const emotionSelect = document.querySelector('#emotionSelect');
+      Object.keys(rig.gaze.emotions).forEach((emotionName) => {
+        const option = document.createElement('option');
+        option.value = emotionName;
+        option.textContent = emotionName;
+        emotionSelect.append(option);
+      });
+      emotionSelect.value = 'default';
+
+      const grid = document.querySelector('#expressionGrid');
+      previewCanvases = PREVIEWS.map((preview) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'preview';
+        const title = document.createElement('h3');
+        title.textContent = preview.label;
+        const canvas = document.createElement('canvas');
+        wrap.append(title, canvas);
+        grid.append(wrap);
+        return { canvas, preview };
+      });
+
+      emotionSelect.addEventListener('change', () => {
+        rebuildControls();
+        render();
+      });
+      document.querySelector('#aimSelect').addEventListener('change', render);
+      document.querySelector('#resetButton').addEventListener('click', () => {
+        rig = clone(originalRig);
+        rebuildControls();
+        render();
+      });
+      document.querySelector('#copyGazeButton').addEventListener('click', () => {
+        copyText(JSON.stringify({ gaze: rig.gaze }, null, 2));
+      });
+      document.querySelector('#copyRigButton').addEventListener('click', () => {
+        copyText(JSON.stringify(rig, null, 2));
+      });
+
+      rebuildControls();
+      render();
+    }).catch((error) => {
+      document.querySelector('#output').value = String(error);
+    });
   </script>
 </body>
 </html>
