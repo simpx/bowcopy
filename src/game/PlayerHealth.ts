@@ -3,6 +3,11 @@ export interface PlayerHealthState {
   readonly max: number;
 }
 
+const HEALTH_STEP = 0.5;
+
+const snapToHealthStep = (value: number): number =>
+  Math.round(value / HEALTH_STEP) * HEALTH_STEP;
+
 export class PlayerHealth {
   private current: number;
 
@@ -15,7 +20,7 @@ export class PlayerHealth {
   }
 
   damage(amount: number): PlayerHealthState {
-    this.current = Math.max(0, this.current - Math.max(0, amount));
+    this.current = Math.max(0, snapToHealthStep(this.current - Math.max(0, amount)));
 
     return this.state;
   }

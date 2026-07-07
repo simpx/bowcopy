@@ -231,6 +231,10 @@ export class CombatSfxDirector {
     this.play('hit_sand_or_rock', { force: 0.36, pos });
   }
 
+  playSporeBreak(pos: SimVector): void {
+    this.play('hit_sand_or_rock', { force: 0.42, pos });
+  }
+
   private play(key: CombatSfxKey, options: CueOptions = {}): void {
     if (!this.scene.cache.audio.exists(key)) return;
 

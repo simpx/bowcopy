@@ -65,7 +65,7 @@ export class CombatRoomScene extends Phaser.Scene {
     x: PLAYER_START.x,
     y: PLAYER_START.y
   });
-  private readonly playerHealth = new PlayerHealth(3);
+  private readonly playerHealth = new PlayerHealth(5);
   private readonly projectiles = new ArrowProjectileSystem();
   private readonly enemies = new DartGooberSystem();
   private readonly redShrooms = new RedShroomSystem();
@@ -201,7 +201,10 @@ export class CombatRoomScene extends Phaser.Scene {
     const shroomSporeEvents = this.shroomSpores.update(
       delta,
       this.currentRoomDefinition.bounds,
-      playerFrame.state.position
+      playerFrame.state.position,
+      {
+        playerBreaksSpores: playerFrame.state.dodge.activeMs > 0 || playerFrame.state.dodge.invulnerableMs > 0
+      }
     );
 
     this.handleEnemyDartEvents(enemyDartEvents);
@@ -375,6 +378,13 @@ export class CombatRoomScene extends Phaser.Scene {
     events: ReturnType<ShroomSporeProjectileSystem['update']>
   ) {
     for (const event of events) {
+      if (event.type === 'shroom-spore-dodge-broken') {
+        this.sfx?.playSporeBreak(event.position);
+        this.feedbackRenderer?.playSporeBreak(event.position);
+        this.shakeCamera('dodge');
+        continue;
+      }
+
       if (event.type !== 'shroom-spore-hit-player') {
         continue;
       }
@@ -410,7 +420,7 @@ export class CombatRoomScene extends Phaser.Scene {
 
     if (this.getCurrentEncounterKind() === 'red-shroom') {
       this.redShrooms.startEncounter(this.currentRoomDefinition.spawnPoints, {
-        enemyCount: Math.max(1, Math.ceil(roomState.remainingSpawnMarkers * 0.55)),
+        enemyCount: Math.max(4, Math.ceil(roomState.remainingSpawnMarkers * 0.95)),
         waveIndex: roomState.wave,
         variant: this.getCurrentShroomVariant()
       });

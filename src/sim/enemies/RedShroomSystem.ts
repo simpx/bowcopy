@@ -3,13 +3,14 @@ import type { ArrowProjectile, ShroomSporeBurstRequest } from '../projectiles';
 import type { RoomBounds, RoomSpawnPoint } from '../rooms';
 
 export type ShroomVariant = 'red' | 'purple';
-export type RedShroomPhase = 'spawning' | 'charging' | 'recovering';
+export type RedShroomPhase = 'spawning' | 'moving' | 'charging' | 'recovering';
 
 export interface RedShroomEnemy {
   readonly id: number;
   readonly spawnId: string;
   readonly variant: ShroomVariant;
   position: SimVector;
+  velocity: SimVector;
   facing: SimVector;
   hp: number;
   maxHp: number;
@@ -19,12 +20,17 @@ export interface RedShroomEnemy {
   spawnProgress: number;
   sporeCharge: number;
   releasePulse: number;
+  dizzyMs: number;
   idlePhase: number;
+  moveAmount: number;
+  walkPhase: number;
   hitFlashMs: number;
   radius: number;
 }
 
 interface RedShroomRuntime extends RedShroomEnemy {
+  moveDirection: SimVector;
+  moveSpeed: number;
   burstFired: boolean;
 }
 
@@ -69,25 +75,33 @@ export interface RedShroomEncounterOptions {
   readonly variant?: ShroomVariant;
 }
 
-const DEFAULT_ENCOUNTER_SIZE = 2;
-const FIRST_SPAWN_DELAY_MS = 280;
-const SPAWN_CADENCE_MS = 900;
+const DEFAULT_ENCOUNTER_SIZE = 4;
+const FIRST_SPAWN_DELAY_MS = 220;
+const SPAWN_CADENCE_MS = 640;
 const SPAWN_DURATION_MS = 430;
+const MOVE_MIN_MS = 620;
+const MOVE_MAX_MS = 1040;
+const MOVE_MIN_SPEED = 34;
+const MOVE_MAX_SPEED = 66;
+const MOVE_ANGLE_OFFSET = 0.72;
 const CHARGE_FIRE_AT_MS = 760;
 const CHARGE_DURATION_MS = 980;
 const RECOVERY_DURATION_MS = 680;
 const MAX_HP = 4;
 const HIT_FLASH_MS = 190;
-const RELEASE_PULSE_MS = 260;
-const ENEMY_HIT_RADIUS = 45;
-const SPORE_DAMAGE = 1;
+const RELEASE_PULSE_MS = 560;
+const SPORE_DIZZY_MS = 1200;
+const ENEMY_HIT_RADIUS = 40;
+const SPORE_DAMAGE = 0.5;
 const SPORE_RADIUS = 15;
 const SPORE_DISTANCE = 184;
 const SPORE_TRAVEL_MS = 560;
 const SPORE_LINGER_MS = 860;
-const SPORE_ORIGIN_Y = -46;
+const SPORE_ORIGIN_Y = -31;
 const SPORE_COLOR = 0xff4d54;
 const DEAD_ZONE = 0.001;
+
+const ENEMY_RADIUS = 32;
 
 const SHROOM_RULES: Record<
   ShroomVariant,
@@ -113,7 +127,7 @@ const SHROOM_RULES: Record<
     sporeDistance: 178,
     sporeTravelMs: 610,
     sporeLingerMs: 820,
-    sporeOriginY: -48,
+    sporeOriginY: -33,
     sporeColor: 0x8d75ff
   }
 };
@@ -123,12 +137,16 @@ const copyVector = (vector: SimVector): SimVector => ({
   y: vector.y
 });
 
+const zeroVector = (): SimVector => ({ x: 0, y: 0 });
+
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
 
 const clamp01 = (value: number): number => clamp(value, 0, 1);
 
 const decay = (value: number, deltaMs: number): number => Math.max(0, value - deltaMs);
+
+const randomRange = (min: number, max: number): number => min + Math.random() * (max - min);
 
 const normalize = (vector: SimVector): SimVector => {
   const length = Math.hypot(vector.x, vector.y);
@@ -143,11 +161,34 @@ const normalize = (vector: SimVector): SimVector => {
   };
 };
 
+const rotateVector = (vector: SimVector, radians: number): SimVector => {
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+
+  return {
+    x: vector.x * cos - vector.y * sin,
+    y: vector.x * sin + vector.y * cos
+  };
+};
+
 const vectorTo = (from: SimVector, to: SimVector): SimVector =>
   normalize({
     x: to.x - from.x,
     y: to.y - from.y
   });
+
+const clampPositionToBounds = (position: SimVector, bounds: RoomBounds): SimVector => ({
+  x: clamp(
+    position.x,
+    bounds.x + bounds.border + ENEMY_RADIUS,
+    bounds.x + bounds.width - bounds.border - ENEMY_RADIUS
+  ),
+  y: clamp(
+    position.y,
+    bounds.y + bounds.border + ENEMY_RADIUS,
+    bounds.y + bounds.height - bounds.border - ENEMY_RADIUS
+  )
+});
 
 const getSegmentDistanceSquared = (
   point: SimVector,
@@ -220,7 +261,7 @@ export class RedShroomSystem {
 
   update(
     deltaMs: number,
-    _bounds: RoomBounds,
+    bounds: RoomBounds,
     playerPosition: SimVector,
     arrows: readonly ArrowProjectile[]
   ): RedShroomFrame {
@@ -238,7 +279,7 @@ export class RedShroomSystem {
     this.applyArrowHits(arrows, events, consumedArrowIds);
 
     for (const enemy of this.enemies.values()) {
-      this.updateEnemy(enemy, deltaMs, playerPosition, events);
+      this.updateEnemy(enemy, deltaMs, bounds, playerPosition, events);
     }
 
     this.updateEncounterCleared(events);
@@ -307,6 +348,7 @@ export class RedShroomSystem {
       spawnId: spawn.id,
       variant: this.encounterVariant,
       position: { x: spawn.x, y: spawn.y },
+      velocity: zeroVector(),
       facing: { x: 0, y: 1 },
       hp: rules.maxHp,
       maxHp: rules.maxHp,
@@ -316,9 +358,14 @@ export class RedShroomSystem {
       spawnProgress: 0,
       sporeCharge: 0,
       releasePulse: 0,
+      dizzyMs: 0,
       idlePhase: Math.random() * Math.PI * 2,
+      moveAmount: 0,
+      walkPhase: randomRange(0, Math.PI * 2),
       hitFlashMs: 0,
       radius: ENEMY_HIT_RADIUS,
+      moveDirection: zeroVector(),
+      moveSpeed: 0,
       burstFired: false
     };
   }
@@ -377,21 +424,25 @@ export class RedShroomSystem {
   private updateEnemy(
     enemy: RedShroomRuntime,
     deltaMs: number,
+    bounds: RoomBounds,
     playerPosition: SimVector,
     events: RedShroomEvent[]
   ) {
     enemy.phaseElapsedMs += deltaMs;
     enemy.hitFlashMs = decay(enemy.hitFlashMs, deltaMs);
     enemy.releasePulse = clamp01(decay(enemy.releasePulse * RELEASE_PULSE_MS, deltaMs) / RELEASE_PULSE_MS);
+    enemy.dizzyMs = decay(enemy.dizzyMs, deltaMs);
     enemy.idlePhase += deltaMs * 0.004;
     enemy.facing = vectorTo(enemy.position, playerPosition);
 
     if (enemy.phase === 'spawning') {
+      enemy.velocity = zeroVector();
+      enemy.moveAmount = 0;
       enemy.spawnProgress = clamp01(enemy.phaseElapsedMs / enemy.phaseDurationMs);
       enemy.sporeCharge = 0;
 
       if (enemy.phaseElapsedMs >= enemy.phaseDurationMs) {
-        this.beginCharging(enemy);
+        this.beginMoving(enemy, playerPosition);
       }
 
       return;
@@ -399,15 +450,51 @@ export class RedShroomSystem {
 
     enemy.spawnProgress = 1;
 
+    if (enemy.phase === 'moving') {
+      this.updateMoving(enemy, deltaMs, bounds, playerPosition);
+      return;
+    }
+
     if (enemy.phase === 'charging') {
       this.updateCharging(enemy, events);
       return;
     }
 
-    this.updateRecovering(enemy);
+    this.updateRecovering(enemy, playerPosition);
+  }
+
+  private updateMoving(
+    enemy: RedShroomRuntime,
+    deltaMs: number,
+    bounds: RoomBounds,
+    playerPosition: SimVector
+  ) {
+    const deltaSeconds = deltaMs / 1000;
+
+    enemy.velocity = {
+      x: enemy.moveDirection.x * enemy.moveSpeed,
+      y: enemy.moveDirection.y * enemy.moveSpeed
+    };
+    enemy.position = clampPositionToBounds(
+      {
+        x: enemy.position.x + enemy.velocity.x * deltaSeconds,
+        y: enemy.position.y + enemy.velocity.y * deltaSeconds
+      },
+      bounds
+    );
+    enemy.facing = vectorTo(enemy.position, playerPosition);
+    enemy.moveAmount = clamp01(enemy.moveSpeed / MOVE_MAX_SPEED);
+    enemy.walkPhase += deltaMs * 0.013 * enemy.moveAmount;
+    enemy.sporeCharge = 0;
+
+    if (enemy.phaseElapsedMs >= enemy.phaseDurationMs) {
+      this.beginCharging(enemy);
+    }
   }
 
   private updateCharging(enemy: RedShroomRuntime, events: RedShroomEvent[]) {
+    enemy.velocity = zeroVector();
+    enemy.moveAmount = 0;
     enemy.sporeCharge = clamp01(enemy.phaseElapsedMs / CHARGE_FIRE_AT_MS);
 
     if (!enemy.burstFired && enemy.phaseElapsedMs >= CHARGE_FIRE_AT_MS) {
@@ -415,6 +502,7 @@ export class RedShroomSystem {
 
       enemy.burstFired = true;
       enemy.releasePulse = 1;
+      enemy.dizzyMs = SPORE_DIZZY_MS;
       events.push({
         type: 'red-shroom-spore-burst',
         enemyId: enemy.id,
@@ -437,18 +525,43 @@ export class RedShroomSystem {
     }
   }
 
-  private updateRecovering(enemy: RedShroomRuntime) {
+  private updateRecovering(enemy: RedShroomRuntime, playerPosition: SimVector) {
+    enemy.velocity = zeroVector();
+    enemy.moveAmount = 0;
     enemy.sporeCharge = 0;
 
     if (enemy.phaseElapsedMs >= enemy.phaseDurationMs) {
-      this.beginCharging(enemy);
+      this.beginMoving(enemy, playerPosition);
     }
+  }
+
+  private beginMoving(enemy: RedShroomRuntime, playerPosition: SimVector) {
+    const targetDirection = vectorTo(enemy.position, playerPosition);
+    const distanceToPlayer = Math.hypot(playerPosition.x - enemy.position.x, playerPosition.y - enemy.position.y);
+    const baseDirection = distanceToPlayer < 170
+      ? { x: -targetDirection.x, y: -targetDirection.y }
+      : targetDirection;
+    const moveDirection = normalize(
+      rotateVector(baseDirection, randomRange(-MOVE_ANGLE_OFFSET, MOVE_ANGLE_OFFSET))
+    );
+
+    enemy.phase = 'moving';
+    enemy.phaseElapsedMs = 0;
+    enemy.phaseDurationMs = randomRange(MOVE_MIN_MS, MOVE_MAX_MS);
+    enemy.moveDirection = moveDirection;
+    enemy.moveSpeed = randomRange(MOVE_MIN_SPEED, MOVE_MAX_SPEED);
+    enemy.velocity = zeroVector();
+    enemy.moveAmount = 0;
+    enemy.sporeCharge = 0;
+    enemy.burstFired = false;
   }
 
   private beginCharging(enemy: RedShroomRuntime) {
     enemy.phase = 'charging';
     enemy.phaseElapsedMs = 0;
     enemy.phaseDurationMs = CHARGE_DURATION_MS;
+    enemy.velocity = zeroVector();
+    enemy.moveAmount = 0;
     enemy.sporeCharge = 0;
     enemy.burstFired = false;
   }
@@ -457,6 +570,8 @@ export class RedShroomSystem {
     enemy.phase = 'recovering';
     enemy.phaseElapsedMs = 0;
     enemy.phaseDurationMs = RECOVERY_DURATION_MS;
+    enemy.velocity = zeroVector();
+    enemy.moveAmount = 0;
     enemy.sporeCharge = 0;
   }
 

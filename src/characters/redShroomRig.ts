@@ -7,9 +7,9 @@ export const RED_SHROOM_RIG = {
     textureKey: 'red-shroom-ai-v2-base',
     imageAsset: 'assets/enemies/red_shroom/red-shroom-ai-v2-base.png',
     imageSize: { width: 708, height: 778 },
-    scale: 0.15,
-    y: -42,
-    shadow: { width: 104, height: 24, y: 38 }
+    scale: 0.102,
+    y: -27,
+    shadow: { width: 72, height: 16, y: 18 }
   },
   attachments: {
     eyes: {
@@ -89,9 +89,9 @@ export const RED_SHROOM_RIG = {
       dizzy: {
         shape: 'spiral',
         eyeTiltAdd: 0.12,
-        eyeScaleX: 1.05,
-        eyeScaleY: 1.05,
-        pupilScale: 1,
+        eyeScaleX: 1.28,
+        eyeScaleY: 1.28,
+        pupilScale: 1.12,
         pupilShiftX: 0,
         pupilShiftY: 0,
         upperLid: 0,
@@ -112,7 +112,7 @@ export const RED_SHROOM_RIG = {
     imageAsset: 'assets/enemies/red_shroom/red-spore-ai-v3.png',
     imageSize: { width: 597, height: 604 },
     scale: 0.048,
-    originOffsetY: -46,
+    originOffsetY: -31,
     burstDistance: 184,
     travelMs: 560,
     lingerMs: 860,

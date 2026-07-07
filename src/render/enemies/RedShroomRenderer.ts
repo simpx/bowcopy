@@ -193,8 +193,11 @@ export class RedShroomRenderer {
     const release = enemy.releasePulse;
     const facing = normalize(enemy.facing);
     const emotion = this.getEyeEmotion(enemy, charge, hitFlash, release);
+    const walkWave = Math.sin(enemy.walkPhase);
+    const walkPulse = Math.abs(Math.cos(enemy.walkPhase));
     const squash =
       idleWave * character.motion.idleSquash +
+      walkPulse * enemy.moveAmount * 0.035 +
       charge * character.motion.chargeSquash -
       release * character.motion.releaseSquash;
     const scaleX = character.base.scale * (1 + squash + hitFlash * character.motion.hitScaleX);
@@ -206,12 +209,18 @@ export class RedShroomRenderer {
     visual.container.setScale(Math.max(0.05, spawnEase + Math.sin(enemy.spawnProgress * Math.PI) * 0.12));
     visual.container.setAlpha(0.18 + spawnEase * 0.82);
 
-    visual.shadow.setScale(0.82 + spawnEase * 0.18 + charge * 0.1, 1);
+    visual.shadow.setScale(0.82 + spawnEase * 0.18 + charge * 0.1 + enemy.moveAmount * walkPulse * 0.08, 1);
     visual.shadow.setAlpha(0.12 + spawnEase * 0.22);
 
-    visual.artLayer.setPosition(0, character.base.y + idleWave * character.motion.idleBob - release * 4);
+    visual.artLayer.setPosition(
+      0,
+      character.base.y +
+        idleWave * character.motion.idleBob +
+        walkWave * enemy.moveAmount * 2.4 -
+        release * 4
+    );
     visual.artLayer.setScale(scaleX, scaleY);
-    visual.body.setTint(hitFlash > 0 ? 0xfff0df : charge > 0.1 ? 0xffd2d6 : 0xffffff);
+    visual.body.setTint(hitFlash > 0 ? 0xfff0df : 0xffffff);
     this.updateEyes(visual.eyes, enemy.variant, facing, emotion, timeMs);
 
     visual.chargeGlow.setPosition(0, character.spores.originOffsetY);
@@ -232,11 +241,11 @@ export class RedShroomRenderer {
     release: number
   ): RedShroomEyeEmotion {
     if (hitFlash > 0.08) {
-      return 'dizzy';
+      return 'hit';
     }
 
-    if (release > 0.2) {
-      return 'alert';
+    if (enemy.dizzyMs > 0 || release > 0.05) {
+      return 'dizzy';
     }
 
     if (charge > 0.62) {
@@ -355,14 +364,14 @@ export class RedShroomRenderer {
     height: number,
     timeMs: number
   ) {
-    const radius = Math.min(width, height) * 0.48;
+    const radius = Math.min(width, height) * 0.62;
     const points: Phaser.Types.Math.Vector2Like[] = [];
     const phase = timeMs * 0.006;
 
-    for (let index = 0; index < 62; index += 1) {
-      const progress = index / 61;
-      const angle = progress * Math.PI * 4.8 + phase;
-      const localRadius = radius * progress;
+    for (let index = 0; index < 42; index += 1) {
+      const progress = index / 41;
+      const angle = progress * Math.PI * 2.55 + phase;
+      const localRadius = radius * (0.18 + progress * 0.82);
 
       points.push({
         x: Math.cos(angle) * localRadius,
@@ -370,7 +379,7 @@ export class RedShroomRenderer {
       });
     }
 
-    graphics.lineStyle(Math.max(4, radius * 0.16), EYE_PUPIL_COLOR, 1);
+    graphics.lineStyle(Math.max(16, radius * 0.2), EYE_PUPIL_COLOR, 1);
     graphics.strokePoints(points, false, false);
   }
 

@@ -354,7 +354,7 @@
         defaults: {
           eyes: { shape: 'cut-ellipse', eyeTiltAdd: 0.02, eyeScaleX: 1.18, eyeScaleY: 1.02, pupilScale: 1.08, pupilShiftX: 0, pupilShiftY: -0.002, cutSlope: 1.52, cutOffset: -0.34 },
           motion: { idleBob: 2.8, idleSquash: 0.02, chargeSquash: 0.12, releaseSquash: 0.16 },
-          spores: { scale: 0.048, originOffsetY: -46, burstDistance: 184, travelMs: 560, lingerMs: 860, trailLength: 12, trailWidth: 16, trailColor: 0xff4d54 },
+          spores: { scale: 0.048, originOffsetY: -31, burstDistance: 184, travelMs: 560, lingerMs: 860, trailLength: 12, trailWidth: 16, trailColor: 0xff4d54 },
           preview: { sporeProgress: 0.72 }
         }
       },
@@ -371,7 +371,7 @@
         defaults: {
           eyes: { shape: 'cut-ellipse', eyeTiltAdd: 0.018, eyeScaleX: 1.12, eyeScaleY: 0.98, pupilScale: 1.06, pupilShiftX: 0, pupilShiftY: -0.002, cutSlope: 1.45, cutOffset: -0.34 },
           motion: { idleBob: 2.6, idleSquash: 0.018, chargeSquash: 0.1, releaseSquash: 0.14 },
-          spores: { scale: 0.046, originOffsetY: -48, burstDistance: 178, travelMs: 610, lingerMs: 820, trailLength: 13, trailWidth: 13, trailColor: 0x8d75ff },
+          spores: { scale: 0.046, originOffsetY: -33, burstDistance: 178, travelMs: 610, lingerMs: 820, trailLength: 13, trailWidth: 13, trailColor: 0x8d75ff },
           preview: { sporeProgress: 0.72 }
         }
       }
@@ -382,7 +382,7 @@
       alert: { shape: 'ellipse', eyeTiltAdd: 0, eyeScaleX: 0.72, eyeScaleY: 0.72, pupilScale: 0.64, pupilShiftX: 0, pupilShiftY: -0.006, cutSlope: 1.5, cutOffset: -0.35 },
       aim: { shape: 'cut-ellipse', eyeTiltAdd: 0.015, eyeScaleX: 1.06, eyeScaleY: 0.94, pupilScale: 1.02, pupilShiftX: 0, pupilShiftY: -0.004, cutSlope: 1.65, cutOffset: -0.38 },
       hit: { shape: 'ellipse', eyeTiltAdd: 0, eyeScaleX: 0.82, eyeScaleY: 0.54, pupilScale: 0.76, pupilShiftX: -0.004, pupilShiftY: -0.006, cutSlope: 1.5, cutOffset: -0.35 },
-      dizzy: { shape: 'spiral', eyeTiltAdd: 0.12, eyeScaleX: 1.05, eyeScaleY: 1.05, pupilScale: 1, pupilShiftX: 0, pupilShiftY: 0, cutSlope: 1.5, cutOffset: -0.35 }
+      dizzy: { shape: 'spiral', eyeTiltAdd: 0.12, eyeScaleX: 1.28, eyeScaleY: 1.28, pupilScale: 1.12, pupilShiftX: 0, pupilShiftY: 0, cutSlope: 1.5, cutOffset: -0.35 }
     };
 
     const canvas = document.querySelector('#stage');
@@ -719,13 +719,34 @@
           x: point.x + (target.x - point.x) * 0.34,
           y: point.y + (target.y - point.y) * 0.34
         };
-        ctx.strokeStyle = colorToRgba(state.spores.trailColor, alphaBase * local);
-        ctx.lineWidth = state.spores.trailWidth * local;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(point.x, point.y);
-        ctx.lineTo(next.x, next.y);
-        ctx.stroke();
+        const tangent = {
+          x: next.x - point.x,
+          y: next.y - point.y
+        };
+        const tangentLength = Math.max(1, Math.hypot(tangent.x, tangent.y));
+        const normal = {
+          x: -tangent.y / tangentLength,
+          y: tangent.x / tangentLength
+        };
+        const spread = state.spores.trailWidth * (0.18 + local * 0.1);
+        const alpha = alphaBase * local;
+        const dotCount = activeShroom === 'purple' ? 6 : 4;
+        const highlightColor = activeShroom === 'purple' ? 0xb8aaff : 0xffb19a;
+
+        for (let dot = 0; dot < dotCount; dot += 1) {
+          const seed = i * 11.3 + dot * 5.1;
+          const along = 0.18 + (dot / Math.max(1, dotCount - 1)) * 0.7;
+          const side = Math.sin(seed) * spread;
+          const back = Math.cos(seed * 1.7) * spread * 0.55;
+          const radius = Math.max(1.2, state.spores.trailWidth * (0.06 + local * 0.045));
+          const x = point.x + (next.x - point.x) * along + normal.x * side - dir.x * back;
+          const y = point.y + (next.y - point.y) * along + normal.y * side - dir.y * back;
+
+          ctx.fillStyle = colorToRgba(dot % 4 === 0 ? highlightColor : state.spores.trailColor, alpha * (0.62 + local * 0.22));
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     }
 

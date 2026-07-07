@@ -310,7 +310,7 @@ function enemyBudgetForRoom(kind: DungeonRoomKind, depth: number, theme: Dungeon
   const baseBudget = Math.min(6, 2 + depth);
 
   if (theme === 'wood') return Math.min(7, baseBudget + 1);
-  if (theme === 'mushroom') return Math.max(2, baseBudget - 1);
+  if (theme === 'mushroom') return Math.min(7, baseBudget + 1);
 
   return baseBudget;
 }

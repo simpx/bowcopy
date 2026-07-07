@@ -7,9 +7,9 @@ export const PURPLE_SHROOM_RIG = {
     textureKey: 'purple-shroom-ai-v1-base',
     imageAsset: 'assets/enemies/purple_shroom/purple-shroom-ai-v1-base.png',
     imageSize: { width: 856, height: 905 },
-    scale: 0.13,
-    y: -46,
-    shadow: { width: 104, height: 24, y: 38 }
+    scale: 0.089,
+    y: -30,
+    shadow: { width: 72, height: 16, y: 18 }
   },
   attachments: {
     eyes: {
@@ -89,9 +89,9 @@ export const PURPLE_SHROOM_RIG = {
       dizzy: {
         shape: 'spiral',
         eyeTiltAdd: 0.12,
-        eyeScaleX: 1.05,
-        eyeScaleY: 1.05,
-        pupilScale: 1,
+        eyeScaleX: 1.28,
+        eyeScaleY: 1.28,
+        pupilScale: 1.12,
         pupilShiftX: 0,
         pupilShiftY: 0,
         upperLid: 0,
@@ -112,7 +112,7 @@ export const PURPLE_SHROOM_RIG = {
     imageAsset: 'assets/enemies/purple_shroom/purple-spore-ai-v1.png',
     imageSize: { width: 596, height: 607 },
     scale: 0.046,
-    originOffsetY: -48,
+    originOffsetY: -33,
     burstDistance: 178,
     travelMs: 610,
     lingerMs: 820,

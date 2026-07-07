@@ -22,6 +22,7 @@ const SPORE_DEPTH = 58;
 const TRAIL_DEPTH = 54;
 const IMPACT_DEPTH = 60;
 const PLAYER_IMPACT_COLOR = 0xffd0d5;
+const DODGE_BREAK_COLOR = 0x9eefff;
 const EXPIRE_COLOR = 0xff7380;
 const IMPACT_DURATION_MS = 210;
 const SPORE_CONFIGS = {
@@ -58,11 +59,18 @@ export class ShroomSporeProjectileRenderer {
 
   playEvents(events: readonly ShroomSporeProjectileEvent[]) {
     for (const event of events) {
+      const color =
+        event.type === 'shroom-spore-hit-player'
+          ? PLAYER_IMPACT_COLOR
+          : event.type === 'shroom-spore-dodge-broken'
+            ? DODGE_BREAK_COLOR
+            : EXPIRE_COLOR;
+
       this.impacts.push({
         position: event.position,
-        color: event.type === 'shroom-spore-hit-player' ? PLAYER_IMPACT_COLOR : EXPIRE_COLOR,
+        color,
         ageMs: 0,
-        durationMs: IMPACT_DURATION_MS
+        durationMs: event.type === 'shroom-spore-dodge-broken' ? 260 : IMPACT_DURATION_MS
       });
     }
   }
@@ -93,14 +101,44 @@ export class ShroomSporeProjectileRenderer {
         continue;
       }
 
-      for (let index = 1; index < spore.trail.length; index += 1) {
+      const lingerProgress =
+        spore.ageMs <= spore.travelMs
+          ? 0
+          : Math.min(1, (spore.ageMs - spore.travelMs) / Math.max(1, spore.lingerMs));
+      const fade = 1 - lingerProgress * 0.78;
+      const config = SPORE_CONFIGS[spore.variant];
+      const tailStartIndex = Math.max(1, spore.trail.length - 10);
+      const dotCount = spore.variant === 'purple' ? 6 : 4;
+      const highlightColor = spore.variant === 'purple' ? 0xb8aaff : 0xffb19a;
+
+      for (let index = tailStartIndex; index < spore.trail.length; index += 1) {
         const previous = spore.trail[index - 1];
         const point = spore.trail[index];
-        const progress = index / Math.max(1, spore.trail.length - 1);
-        const width = SPORE_CONFIGS[spore.variant].trailWidth * progress;
+        const progress = (index - tailStartIndex) / Math.max(1, spore.trail.length - tailStartIndex - 1);
+        const spread = config.trailWidth * (0.2 + progress * 0.18);
+        const alpha = (0.12 + progress * 0.28) * fade;
+        const tangent = {
+          x: point.x - previous.x,
+          y: point.y - previous.y
+        };
+        const tangentLength = Math.max(1, Math.hypot(tangent.x, tangent.y));
+        const normal = {
+          x: -tangent.y / tangentLength,
+          y: tangent.x / tangentLength
+        };
 
-        graphics.lineStyle(width, spore.color, 0.04 + progress * 0.28);
-        graphics.lineBetween(previous.x, previous.y, point.x, point.y);
+        for (let dot = 0; dot < dotCount; dot += 1) {
+          const seed = spore.id * 31.7 + index * 11.3 + dot * 5.1;
+          const along = 0.18 + (dot / Math.max(1, dotCount - 1)) * 0.7;
+          const side = Math.sin(seed) * spread;
+          const back = Math.cos(seed * 1.7) * spread * 0.55;
+          const radius = Math.max(1.2, config.trailWidth * (0.06 + progress * 0.045));
+          const x = previous.x + (point.x - previous.x) * along + normal.x * side - spore.direction.x * back;
+          const y = previous.y + (point.y - previous.y) * along + normal.y * side - spore.direction.y * back;
+
+          graphics.fillStyle(dot % 4 === 0 ? highlightColor : spore.color, alpha * (0.62 + progress * 0.22));
+          graphics.fillCircle(x, y, radius);
+        }
       }
     }
   }

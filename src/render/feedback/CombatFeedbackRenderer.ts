@@ -137,6 +137,11 @@ export class CombatFeedbackRenderer {
     this.emitDirectionalBurst(position, normalized, 10, TONE_COLORS.dodge, 42, 130, 3, 220);
   }
 
+  playSporeBreak(position: SimVector) {
+    this.addPulse(position, 'dodge', 6, 30, 2, 190);
+    this.emitBurst(position, 12, [TONE_COLORS.dodge, 0xffd0d5, 0xfff1b5], 48, 138, 3.2, 240);
+  }
+
   playDamage(position: SimVector, damage: number) {
     this.addPulse(position, 'damage', 18, 54, 4, 260);
     this.addLabel(`-${damage}`, { x: position.x, y: position.y - 48 }, 'damage', { x: -8, y: -44 }, 440);

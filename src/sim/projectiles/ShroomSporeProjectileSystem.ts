@@ -39,10 +39,19 @@ export type ShroomSporeProjectileEvent =
       damage: number;
     }
   | {
+      type: 'shroom-spore-dodge-broken';
+      id: number;
+      position: SimVector;
+    }
+  | {
       type: 'shroom-spore-expired';
       id: number;
       position: SimVector;
     };
+
+export interface ShroomSporeProjectileUpdateOptions {
+  readonly playerBreaksSpores?: boolean;
+}
 
 const TRAIL_POINTS = 12;
 const BOUNDS_MARGIN = 96;
@@ -154,7 +163,8 @@ export class ShroomSporeProjectileSystem {
   update(
     deltaMs: number,
     bounds: RoomBounds,
-    playerPosition: SimVector
+    playerPosition: SimVector,
+    options: ShroomSporeProjectileUpdateOptions = {}
   ): ShroomSporeProjectileEvent[] {
     const events: ShroomSporeProjectileEvent[] = [];
 
@@ -176,14 +186,22 @@ export class ShroomSporeProjectileSystem {
         if (spore.trail.length > TRAIL_POINTS) {
           spore.trail.splice(0, spore.trail.length - TRAIL_POINTS);
         }
-      } else if (spore.trail.length > 1) {
-        spore.trail.shift();
       }
 
       if (
         getSegmentDistanceSquared(playerPosition, spore.previousPosition, spore.position) <=
         (PLAYER_HIT_RADIUS + spore.radius) ** 2
       ) {
+        if (options.playerBreaksSpores) {
+          events.push({
+            type: 'shroom-spore-dodge-broken',
+            id: spore.id,
+            position: copyVector(spore.position)
+          });
+          this.spores.delete(spore.id);
+          continue;
+        }
+
         events.push({
           type: 'shroom-spore-hit-player',
           id: spore.id,
