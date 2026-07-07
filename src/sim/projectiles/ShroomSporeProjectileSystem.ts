@@ -53,7 +53,7 @@ export interface ShroomSporeProjectileUpdateOptions {
   readonly playerBreaksSpores?: boolean;
 }
 
-const TRAIL_POINTS = 12;
+const TRAIL_POINTS = 24;
 const BOUNDS_MARGIN = 96;
 const PLAYER_HIT_RADIUS = 27;
 const DEAD_ZONE = 0.001;

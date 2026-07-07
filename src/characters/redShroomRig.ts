@@ -116,7 +116,7 @@ export const RED_SHROOM_RIG = {
     burstDistance: 184,
     travelMs: 560,
     lingerMs: 860,
-    trailLength: 12,
+    trailLength: 20,
     trailWidth: 16,
     trailColor: 0xff4d54
   }

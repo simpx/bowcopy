@@ -354,7 +354,7 @@
         defaults: {
           eyes: { shape: 'cut-ellipse', eyeTiltAdd: 0.02, eyeScaleX: 1.18, eyeScaleY: 1.02, pupilScale: 1.08, pupilShiftX: 0, pupilShiftY: -0.002, cutSlope: 1.52, cutOffset: -0.34 },
           motion: { idleBob: 2.8, idleSquash: 0.02, chargeSquash: 0.12, releaseSquash: 0.16 },
-          spores: { scale: 0.048, originOffsetY: -31, burstDistance: 184, travelMs: 560, lingerMs: 860, trailLength: 12, trailWidth: 16, trailColor: 0xff4d54 },
+          spores: { scale: 0.048, originOffsetY: -31, burstDistance: 184, travelMs: 560, lingerMs: 860, trailLength: 20, trailWidth: 16, trailColor: 0xff4d54 },
           preview: { sporeProgress: 0.72 }
         }
       },
@@ -371,7 +371,7 @@
         defaults: {
           eyes: { shape: 'cut-ellipse', eyeTiltAdd: 0.018, eyeScaleX: 1.12, eyeScaleY: 0.98, pupilScale: 1.06, pupilShiftX: 0, pupilShiftY: -0.002, cutSlope: 1.45, cutOffset: -0.34 },
           motion: { idleBob: 2.6, idleSquash: 0.018, chargeSquash: 0.1, releaseSquash: 0.14 },
-          spores: { scale: 0.046, originOffsetY: -33, burstDistance: 178, travelMs: 610, lingerMs: 820, trailLength: 13, trailWidth: 13, trailColor: 0x8d75ff },
+          spores: { scale: 0.046, originOffsetY: -33, burstDistance: 178, travelMs: 610, lingerMs: 820, trailLength: 22, trailWidth: 13, trailColor: 0x8d75ff },
           preview: { sporeProgress: 0.72 }
         }
       }
@@ -729,7 +729,7 @@
           y: tangent.x / tangentLength
         };
         const spread = state.spores.trailWidth * (0.18 + local * 0.1);
-        const alpha = alphaBase * local;
+        const alpha = Math.max(alphaBase * 0.72, alphaBase * local);
         const dotCount = activeShroom === 'purple' ? 6 : 4;
         const highlightColor = activeShroom === 'purple' ? 0xb8aaff : 0xffb19a;
 
@@ -738,11 +738,29 @@
           const along = 0.18 + (dot / Math.max(1, dotCount - 1)) * 0.7;
           const side = Math.sin(seed) * spread;
           const back = Math.cos(seed * 1.7) * spread * 0.55;
-          const radius = Math.max(1.2, state.spores.trailWidth * (0.06 + local * 0.045));
+          const radius = Math.max(1.4, state.spores.trailWidth * (0.07 + local * 0.05));
           const x = point.x + (next.x - point.x) * along + normal.x * side - dir.x * back;
           const y = point.y + (next.y - point.y) * along + normal.y * side - dir.y * back;
 
           ctx.fillStyle = colorToRgba(dot % 4 === 0 ? highlightColor : state.spores.trailColor, alpha * (0.62 + local * 0.22));
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        const cloudCount = activeShroom === 'purple' ? 8 : 5;
+        const cloudColors = activeShroom === 'purple'
+          ? [0x8d75ff, 0x6f8dff, 0x6ed4ff, 0xb8aaff]
+          : [0xff4d54, 0xff7380, 0xffb19a];
+
+        for (let cloud = 0; cloud < cloudCount; cloud += 1) {
+          const seed = i * 17.9 + cloud * 7.1;
+          const x = point.x - dir.x * Math.cos(seed) * state.spores.trailWidth * 0.82 + normal.x * Math.sin(seed) * spread * 1.45;
+          const y = point.y - dir.y * Math.cos(seed) * state.spores.trailWidth * 0.82 + normal.y * Math.sin(seed) * spread * 1.45;
+          const radius = state.spores.trailWidth * (0.055 + local * 0.04);
+          const color = cloudColors[cloud % cloudColors.length];
+
+          ctx.fillStyle = colorToRgba(color, alpha * 0.64);
           ctx.beginPath();
           ctx.arc(x, y, radius, 0, Math.PI * 2);
           ctx.fill();

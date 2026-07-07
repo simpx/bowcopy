@@ -116,7 +116,7 @@ export const PURPLE_SHROOM_RIG = {
     burstDistance: 178,
     travelMs: 610,
     lingerMs: 820,
-    trailLength: 13,
+    trailLength: 22,
     trailWidth: 13,
     trailColor: 0x8d75ff
   }
