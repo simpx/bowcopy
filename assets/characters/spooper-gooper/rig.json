@@ -2,9 +2,12 @@
   "id": "spooper-gooper",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "asset-generated",
+  "status": "rigged",
   "sourceReferences": [
-    "source/reference-01.png"
+    "source/reference-01.png",
+    "source/video-appear-reference.jpg",
+    "source/video-black-bullet-reference.jpg",
+    "source/video-black-cloud-reference.jpg"
   ],
   "base": {
     "image": "base.png",
@@ -124,14 +127,34 @@
       "hovering",
       "attacking"
     ],
-    "contactDamage": 0.5
+    "hiddenInvulnerable": true,
+    "attackType": "black-ink-barrage",
+    "contactDamage": 0,
+    "projectileDamage": 0.5,
+    "projectileCount": 3,
+    "projectileSpreadDeg": 34,
+    "projectileSpeed": 92,
+    "projectileLifetimeMs": 1800,
+    "repositionAfterAttack": true
   },
   "prototype": {
     "system": "SpooperGooperSystem",
     "renderer": "SpooperGooperRenderer",
-    "notes": "Ghost is only vulnerable while visible; renderer owns opacity and hover."
+    "notes": "Ghost is vulnerable only while visible. It repositions by fading out/in and attacks with slow black ink/smoke projectiles rather than contact dashing."
   },
-  "projectiles": {},
+  "projectiles": {
+    "blackInk": {
+      "image": null,
+      "sourceImage": null,
+      "imageSize": null,
+      "scale": null,
+      "mode": "runtime-black-blob",
+      "originOffset": {
+        "x": 0,
+        "y": -10
+      }
+    }
+  },
   "vfx": {
     "vanish": {
       "mode": "runtime-puffs",
@@ -140,6 +163,12 @@
         "#ffffff",
         "#7c8ba8"
       ]
+    },
+    "blackInkTrail": {
+      "mode": "runtime-speck-trail",
+      "trailColor": "#090909",
+      "trailDensity": 0.72,
+      "cloudRadius": 28
     }
   },
   "audio": {
@@ -148,9 +177,7 @@
     "appear": null
   },
   "openItems": [
-    "Review generated base.png against comparison.png.",
-    "Tune exact eye positions, scale, and hitbox after visual approval.",
-    "Tune opacity and appear/disappear timing against real gameplay.",
-    "Decide whether ghost attack is contact-only or projectile-based."
+    "Tune opacity, appear/disappear timing, projectile speed, projectile count, and trail density against gameplay.",
+    "Decide whether runtime black blob projectiles are enough or a projectile core image is needed."
   ]
 }

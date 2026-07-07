@@ -2,9 +2,12 @@
   "id": "kaboomlet",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "asset-generated",
+  "status": "rigged",
   "sourceReferences": [
-    "source/reference-01.png"
+    "source/reference-01.png",
+    "source/video-approach-contact-reference.jpg",
+    "source/video-explosion-aoe-reference.jpg",
+    "source/video-explosion-radius-reference.jpg"
   ],
   "base": {
     "image": "base.png",
@@ -119,13 +122,16 @@
     ],
     "armDistance": 78,
     "armedCountdownMs": 760,
+    "keepChasingWhileArmed": true,
+    "deathExplosion": "always",
     "explosionRadius": 92,
-    "damage": 1
+    "playerDamage": 1,
+    "enemyDamage": "lethal"
   },
   "prototype": {
     "system": "KaboomletSystem",
     "renderer": "KaboomletRenderer",
-    "notes": "Chases until close, flashes during armed countdown, emits local explosion event."
+    "notes": "Chases until close, keeps moving while armed, and detonates on countdown completion or death. Explosion damages player and enemies so it can be used as AoE."
   },
   "projectiles": {},
   "vfx": {
@@ -144,8 +150,6 @@
     "explosion": null
   },
   "openItems": [
-    "Review generated base.png against comparison.png.",
-    "Tune exact eye positions, scale, and hitbox after visual approval.",
     "Tune explosion radius and player damage when wired into combat scene.",
     "Select fuse/explosion sounds after gameplay timing is stable."
   ]

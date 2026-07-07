@@ -1,25 +1,26 @@
 ---
-status: asset-generated
+status: rigged
 kind: enemy
 projectContext: bowbert
 lockedReference: source/reference-01.png
 sourceReferences:
   - source/reference-01.png
   - source/reference-02.png
+  - source/video-child-gameplay-reference.jpg
+  - source/video-parent-swarm-reference.jpg
 openItems:
-  - Review generated `base.png` against `comparison.png`.
-  - Tune exact eye positions, scale, and hitbox after visual approval.
-  - Decide whether splitting belongs in a later task.
+  - Confirm whether this folder should be renamed to `slime-child` after runtime integration.
+  - Integrate as the child spawned by `slime-parent` death.
 ---
 
 # Slime
 
 Role:
-- Bowbert project enemy.
+- Child slime enemy spawned by `slime-parent`.
 
 Behavior:
-- Hopper enemy: idle wobble, pre-jump squash, airborne stretch, landing squash, then short recovery.
-- Splitting is not part of this MVP task; record it as a follow-up after jump timing feels good.
+- Small hopper enemy: idle wobble, pre-jump squash, airborne stretch, landing squash, then short recovery.
+- Low health, faster and smaller than the parent. The parent splits into several of these on death.
 
 Visual target:
 - Match the locked reference silhouette, posture, outline weight, color blocking, focal features, and scale relationship.
@@ -28,13 +29,15 @@ Visual target:
 Source:
 - `source/reference-01.png`
 - `source/reference-02.png`
+- `source/video-child-gameplay-reference.jpg`
+- `source/video-parent-swarm-reference.jpg`
 
 Decomposition:
-- base.png: generated fixed enemy body.
+- base.png: generated fixed child slime body.
 - attachments/: only independently positioned art such as eyes, weapon, shell, hat, or props.
 - projectiles/: reusable projectile cores, no baked trails.
 - vfx/: runtime trail/particle notes if separate assets are needed.
-- runtime: gaze, squash/stretch, bob, tilt, attack/hit/death timing, projectile origin, particles.
+- runtime: child gaze, squash/stretch, jump arc, landing squash, hit/death timing, tiny landing particles.
 
 Image generation prompt packets:
 
@@ -46,11 +49,15 @@ Inputs:
 
 Mode: image-to-image, high reference fidelity.
 
-Positive prompt:
+Layer contract:
+- Fixed child slime body base with eye whites/sockets and small mobile-readable silhouette.
+- Runtime owns black gaze, jump squash/stretch, landing squash, hit deformation, and spawn/death particles.
+
+Generation prompt:
 > Transparent-background Bowbert project top-down doodle enemy sprite matching the locked reference. Preserve exact silhouette, posture, thick black outline, simple color blocking, focal face/eye features, and scale relationship. Create a clean reusable base layer for Bowbert runtime squash/stretch, bob, tilt, hit, and expression overlays.
 
-Negative prompt:
-> No new props, no extra limbs, no different pose, no camera angle change, no rendered floor, no baked motion trail, no text, no UI, no realistic material drift.
+Boundary notes:
+> Single centered child slime sprite, transparent background, clean edges, Bowbert doodle style, enough crop padding for squash/stretch.
 
 Acceptance checks:
 - Silhouette and palette match the locked reference.
@@ -64,11 +71,15 @@ Inputs:
 
 Mode: image-to-image when a projectile/effect reference exists.
 
-Positive prompt:
+Layer contract:
+- No projectile asset is currently needed for child slime.
+- Runtime owns jump motion, landing particles, and hit/death particles.
+
+Generation prompt:
 > TODO
 
-Negative prompt:
-> No background, no UI, no text, no unrelated props.
+Boundary notes:
+> Transparent background, clean edges, centered reusable asset only if a later effect core is requested.
 
 Acceptance checks:
 - TODO
@@ -76,6 +87,7 @@ Acceptance checks:
 Runtime rig notes:
 - use procedural hopper motion instead of frame animation.
 - motion fields: idleWobble, preJumpSquash, airStretch, landingSquash, jumpHeight, jumpDurationMs, recoverMs.
+- behavior fields: spawnedBy, hp, speed profile, contactDamage.
 - runtime preview should show idle, pre-jump, airborne, landing, hit, and death deformation.
 
 Preview notes:

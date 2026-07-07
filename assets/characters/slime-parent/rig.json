@@ -1,0 +1,81 @@
+{
+  "id": "slime-parent",
+  "kind": "enemy",
+  "projectContext": "bowbert",
+  "status": "reference-locked",
+  "sourceReferences": [
+    "source/reference-01.png",
+    "source/reference-02.jpg"
+  ],
+  "base": {
+    "image": null,
+    "plannedImage": "base.png",
+    "sourceImage": null,
+    "imageSize": null,
+    "scale": null,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.5
+    },
+    "hitbox": null,
+    "shadow": null
+  },
+  "gaze": {
+    "mode": "embedded-eye-pupils",
+    "archetype": "round-embedded",
+    "eyes": {},
+    "emotions": {
+      "default": null,
+      "jump": null,
+      "hit": null
+    }
+  },
+  "attachments": {},
+  "projectiles": {},
+  "vfx": {},
+  "motion": {
+    "idleWobble": null,
+    "idleBob": null,
+    "preJumpSquash": null,
+    "airStretch": null,
+    "landingSquash": null,
+    "hitScaleX": null,
+    "hitScaleY": null,
+    "jumpHeight": null,
+    "jumpDurationMs": null,
+    "recoverMs": null
+  },
+  "behavior": {
+    "phaseLoop": [
+      "spawning",
+      "squashing",
+      "jumping",
+      "landing",
+      "recovering",
+      "splitting"
+    ],
+    "role": "parent",
+    "splitOnDeath": true,
+    "childId": "slime",
+    "childCount": null,
+    "childSpawnRadius": null,
+    "parentHp": null,
+    "contactDamage": null
+  },
+  "prototype": {
+    "system": "SlimeSystem",
+    "renderer": "SlimeRenderer",
+    "notes": "Parent hopper uses the slime behavior family but splits into child slime instances on death."
+  },
+  "audio": {
+    "hit": null,
+    "death": null,
+    "jump": null,
+    "split": null
+  },
+  "openItems": [
+    "Generate or accept base.png from locked parent slime reference.",
+    "Backfill base image size, scale, shadow, hitbox, eye positions, and motion values after art exists.",
+    "Tune split child count and spawn radius during gameplay integration."
+  ]
+}

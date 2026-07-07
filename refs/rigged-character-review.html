@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bowbert Rigged Character Review</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1610;
+        --panel: #142218;
+        --panel-2: #101b15;
+        --line: #2d4234;
+        --text: #f4f3d2;
+        --muted: #b9c7a8;
+        --accent: #ffd85a;
+        --green: #7fe064;
+        --red: #ff705d;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          var(--bg);
+        background-size: 42px 42px;
+        color: var(--text);
+      }
+
+      main {
+        width: min(1480px, calc(100vw - 28px));
+        margin: 0 auto;
+        padding: 24px 0 36px;
+      }
+
+      header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 18px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(25px, 3vw, 40px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .summary {
+        max-width: 620px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.55;
+        text-align: right;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--panel) 92%, black);
+        overflow: hidden;
+        min-width: 0;
+      }
+
+      .card h2 {
+        margin: 0;
+        padding: 14px 14px 3px;
+        font-size: 20px;
+        letter-spacing: 0;
+      }
+
+      .tagline {
+        padding: 0 14px 12px;
+        color: var(--accent);
+        font-weight: 750;
+        font-size: 14px;
+      }
+
+      .preview {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1px;
+        background: var(--line);
+        border-block: 1px solid var(--line);
+      }
+
+      .imageBox {
+        min-height: 230px;
+        background:
+          radial-gradient(circle at 50% 80%, rgba(255, 216, 90, 0.11), transparent 46%),
+          var(--panel-2);
+        display: grid;
+        place-items: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .imageBox img {
+        display: block;
+        width: min(76%, 240px);
+        max-height: 220px;
+        object-fit: contain;
+        image-rendering: auto;
+        filter: drop-shadow(0 12px 0 rgba(0, 0, 0, 0.18));
+        transform-origin: center 65%;
+      }
+
+      .imageBox .comparison {
+        width: 100%;
+        height: 100%;
+        max-height: none;
+        object-fit: contain;
+        padding: 8px;
+        filter: none;
+      }
+
+      .label {
+        position: absolute;
+        left: 9px;
+        top: 8px;
+        padding: 4px 7px;
+        border-radius: 4px;
+        background: rgba(8, 14, 11, 0.78);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .stateRow {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        padding: 12px;
+        background: #101a14;
+      }
+
+      .state {
+        min-height: 112px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          #0d1711;
+        background-size: 22px 22px;
+        display: grid;
+        place-items: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .state img {
+        width: 72px;
+        height: 72px;
+        object-fit: contain;
+        transform-origin: center 70%;
+        filter: drop-shadow(0 7px 0 rgba(0, 0, 0, 0.22));
+      }
+
+      .state span {
+        position: absolute;
+        left: 6px;
+        top: 5px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 750;
+      }
+
+      .evidenceGrid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        padding: 12px;
+        border-top: 1px solid var(--line);
+        background: #0f1913;
+      }
+
+      .evidence {
+        min-height: 96px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        background: #0b130e;
+        position: relative;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+      }
+
+      .evidence img {
+        width: 100%;
+        height: 100%;
+        max-height: 126px;
+        object-fit: cover;
+      }
+
+      .evidence span {
+        position: absolute;
+        left: 6px;
+        top: 5px;
+        padding: 3px 6px;
+        border-radius: 4px;
+        background: rgba(8, 14, 11, 0.76);
+        color: var(--accent);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .kaboomlet .state.armed img {
+        animation: armedPulse 0.72s ease-in-out infinite;
+      }
+
+      .kaboomlet .state.explode::after {
+        content: "";
+        width: 62px;
+        height: 62px;
+        border: 5px solid rgba(255, 112, 93, 0.7);
+        border-radius: 50%;
+        position: absolute;
+        animation: ring 0.9s ease-out infinite;
+      }
+
+      .slime .state.jump img {
+        animation: slimeJump 1s ease-in-out infinite;
+      }
+
+      .slime .state.land img {
+        transform: scale(1.26, 0.72) translateY(12px);
+      }
+
+      .spooper-gooper .state.appear img {
+        animation: ghostAppear 1.2s ease-in-out infinite;
+      }
+
+      .spooper-gooper .state.attack img {
+        animation: ghostAttack 0.9s ease-in-out infinite;
+      }
+
+      .notes {
+        display: grid;
+        gap: 9px;
+        padding: 14px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .note {
+        border-left: 3px solid var(--accent);
+        padding-left: 10px;
+      }
+
+      .note strong {
+        color: var(--green);
+      }
+
+      .decision {
+        margin-top: 6px;
+        padding: 10px 12px;
+        border: 1px solid rgba(255, 216, 90, 0.34);
+        border-radius: 6px;
+        background: rgba(255, 216, 90, 0.075);
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      @keyframes armedPulse {
+        0%,
+        100% {
+          transform: scale(1);
+          filter: drop-shadow(0 7px 0 rgba(0, 0, 0, 0.22)) saturate(1);
+        }
+        50% {
+          transform: scale(1.14, 0.9);
+          filter: drop-shadow(0 7px 0 rgba(0, 0, 0, 0.22)) saturate(1.7) brightness(1.15);
+        }
+      }
+
+      @keyframes ring {
+        from {
+          opacity: 0.85;
+          transform: scale(0.35);
+        }
+        to {
+          opacity: 0;
+          transform: scale(1.45);
+        }
+      }
+
+      @keyframes slimeJump {
+        0%,
+        100% {
+          transform: translateY(10px) scale(1.2, 0.72);
+        }
+        35% {
+          transform: translateY(-18px) scale(0.82, 1.24);
+        }
+        70% {
+          transform: translateY(4px) scale(1, 1);
+        }
+      }
+
+      @keyframes ghostAppear {
+        0%,
+        100% {
+          opacity: 0.28;
+          transform: translateY(10px) scale(0.82);
+        }
+        50% {
+          opacity: 1;
+          transform: translateY(-6px) scale(1.03);
+        }
+      }
+
+      @keyframes ghostAttack {
+        0%,
+        100% {
+          transform: translateX(0) scale(1);
+        }
+        45% {
+          transform: translateX(-14px) scale(1.18, 0.86);
+        }
+      }
+
+      @media (max-width: 1100px) {
+        header {
+          align-items: start;
+          flex-direction: column;
+        }
+
+        .summary {
+          text-align: left;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        .imageBox {
+          min-height: 210px;
+        }
+      }
+
+      @media (max-width: 560px) {
+        main {
+          width: min(100vw - 16px, 520px);
+          padding-top: 14px;
+        }
+
+        .preview {
+          grid-template-columns: 1fr;
+        }
+
+        .stateRow {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .evidenceGrid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Rigged Character Review</h1>
+        <div class="summary">
+          这页只用于确认设定和视觉方向。上方是当前资产，下方是从原视频提取的行为证据，确认后再改 brief/rig/runtime。
+        </div>
+      </header>
+
+      <section class="grid">
+        <article class="card kaboomlet">
+          <h2>Kaboomlet</h2>
+          <div class="tagline">炸弹追击怪：靠近后倒计时；倒计时或死亡触发 AoE</div>
+          <div class="preview">
+            <div class="imageBox">
+              <span class="label">Reference</span>
+              <img src="../assets/characters/kaboomlet/source/reference-01.png" alt="Kaboomlet reference" />
+            </div>
+            <div class="imageBox">
+              <span class="label">Base</span>
+              <img src="../assets/characters/kaboomlet/base.png" alt="Kaboomlet base" />
+            </div>
+          </div>
+          <div class="stateRow">
+            <div class="state"><span>idle</span><img src="../assets/characters/kaboomlet/base.png" alt="" /></div>
+            <div class="state armed"><span>armed</span><img src="../assets/characters/kaboomlet/base.png" alt="" /></div>
+            <div class="state explode"><span>explode</span><img src="../assets/characters/kaboomlet/base.png" alt="" /></div>
+            <div class="state"><span>hit</span><img style="transform: scale(1.12, .86)" src="../assets/characters/kaboomlet/base.png" alt="" /></div>
+          </div>
+          <div class="evidenceGrid">
+            <div class="evidence">
+              <span>approach</span>
+              <img src="../assets/characters/kaboomlet/source/video-approach-contact-reference.jpg" alt="Kaboomlet approach video frame" />
+            </div>
+            <div class="evidence">
+              <span>aoe</span>
+              <img src="../assets/characters/kaboomlet/source/video-explosion-aoe-reference.jpg" alt="Kaboomlet explosion video frame" />
+            </div>
+            <div class="evidence">
+              <span>radius</span>
+              <img src="../assets/characters/kaboomlet/source/video-explosion-radius-reference.jpg" alt="Kaboomlet radius video frame" />
+            </div>
+          </div>
+          <div class="notes">
+            <div class="note"><strong>视觉：</strong>小体型、危险色、厚黑描边，适合做近身压力怪。</div>
+            <div class="note"><strong>Runtime：</strong>追玩家、武装闪烁、倒计时继续移动、死亡爆炸、爆炸环和火花都程序化。</div>
+            <div class="decision">建议确认：倒计时结束自爆；被箭打死也自爆；爆炸伤玩家，也伤敌人，玩家可利用它清怪。</div>
+          </div>
+        </article>
+
+        <article class="card slime">
+          <h2>Slime</h2>
+          <div class="tagline">分裂跳跃怪：母体被打死后生成多个小跳跃怪</div>
+          <div class="preview">
+            <div class="imageBox">
+              <span class="label">Reference</span>
+              <img src="../assets/characters/slime/source/reference-01.png" alt="Slime reference" />
+            </div>
+            <div class="imageBox">
+              <span class="label">Base</span>
+              <img src="../assets/characters/slime/base.png" alt="Slime base" />
+            </div>
+          </div>
+          <div class="stateRow">
+            <div class="state"><span>idle</span><img src="../assets/characters/slime/base.png" alt="" /></div>
+            <div class="state land"><span>pre-jump</span><img src="../assets/characters/slime/base.png" alt="" /></div>
+            <div class="state jump"><span>jump</span><img src="../assets/characters/slime/base.png" alt="" /></div>
+            <div class="state"><span>hit</span><img style="transform: scale(1.18, .76)" src="../assets/characters/slime/base.png" alt="" /></div>
+          </div>
+          <div class="evidenceGrid">
+            <div class="evidence">
+              <span>parent</span>
+              <img src="../assets/characters/slime/source/reference-01.png" alt="Large slime parent reference" />
+            </div>
+            <div class="evidence">
+              <span>child</span>
+              <img src="../assets/characters/slime/source/reference-02.png" alt="Small slime child reference" />
+            </div>
+            <div class="evidence">
+              <span>swarm</span>
+              <img src="../assets/characters/slime/source/video-parent-swarm-reference.jpg" alt="Slime swarm video frame" />
+            </div>
+          </div>
+          <div class="notes">
+            <div class="note"><strong>视觉：</strong>应拆成两个资产：大母体和小子体。当前 base 更接近小子体，不适合作为母体。</div>
+            <div class="note"><strong>Runtime：</strong>母体跳跃、死亡分裂；子体低血量、更快、更小，仍然用跳跃 squash/stretch。</div>
+            <div class="decision">建议确认：新增 parent slime 资产；保留当前 `slime` 作为 child 或重命名为 `slime-child`。</div>
+          </div>
+        </article>
+
+        <article class="card spooper-gooper">
+          <h2>Spooper Gooper</h2>
+          <div class="tagline">幽灵弹幕怪：漂浮换位，显形后发射黑色墨滴弹幕</div>
+          <div class="preview">
+            <div class="imageBox">
+              <span class="label">Reference</span>
+              <img src="../assets/characters/spooper-gooper/source/reference-01.png" alt="Spooper Gooper reference" />
+            </div>
+            <div class="imageBox">
+              <span class="label">Base</span>
+              <img src="../assets/characters/spooper-gooper/base.png" alt="Spooper Gooper base" />
+            </div>
+          </div>
+          <div class="stateRow">
+            <div class="state appear"><span>appear</span><img src="../assets/characters/spooper-gooper/base.png" alt="" /></div>
+            <div class="state"><span>hover</span><img src="../assets/characters/spooper-gooper/base.png" alt="" /></div>
+            <div class="state attack"><span>attack</span><img src="../assets/characters/spooper-gooper/base.png" alt="" /></div>
+            <div class="state"><span>vanish</span><img style="opacity:.36; transform: scale(.78)" src="../assets/characters/spooper-gooper/base.png" alt="" /></div>
+          </div>
+          <div class="evidenceGrid">
+            <div class="evidence">
+              <span>appear</span>
+              <img src="../assets/characters/spooper-gooper/source/video-appear-reference.jpg" alt="Spooper appear video frame" />
+            </div>
+            <div class="evidence">
+              <span>bullet</span>
+              <img src="../assets/characters/spooper-gooper/source/video-black-bullet-reference.jpg" alt="Spooper black projectile video frame" />
+            </div>
+            <div class="evidence">
+              <span>cloud</span>
+              <img src="../assets/characters/spooper-gooper/source/video-black-cloud-reference.jpg" alt="Spooper black cloud video frame" />
+            </div>
+          </div>
+          <div class="notes">
+            <div class="note"><strong>视觉：</strong>半透明/漂浮感由 runtime 做，base 保持清晰轮廓。</div>
+            <div class="note"><strong>Runtime：</strong>alpha、hover bob、消失换位、黑色墨滴弹、黑烟拖尾/爆散都程序化。</div>
+            <div class="decision">建议确认：它不做接触短冲；攻击是黑色慢速弹幕，显形时可被打，隐身时不可被打。</div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

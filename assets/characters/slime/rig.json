@@ -2,10 +2,12 @@
   "id": "slime",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "asset-generated",
+  "status": "rigged",
   "sourceReferences": [
     "source/reference-01.png",
-    "source/reference-02.png"
+    "source/reference-02.png",
+    "source/video-child-gameplay-reference.jpg",
+    "source/video-parent-swarm-reference.jpg"
   ],
   "base": {
     "image": "base.png",
@@ -118,13 +120,17 @@
       "landing",
       "recovering"
     ],
-    "split": "follow-up",
+    "role": "child",
+    "spawnedBy": "slime-parent",
+    "split": false,
+    "hp": 1,
+    "speedProfile": "small-fast-hopper",
     "contactDamage": 0.5
   },
   "prototype": {
     "system": "SlimeSystem",
     "renderer": "SlimeRenderer",
-    "notes": "Periodic hopper with runtime squash/stretch. Splitting is intentionally deferred."
+    "notes": "Child hopper spawned by slime-parent death. Uses runtime squash/stretch and small fast jumps."
   },
   "projectiles": {},
   "vfx": {},
@@ -134,9 +140,7 @@
     "jump": null
   },
   "openItems": [
-    "Review generated base.png against comparison.png.",
-    "Tune exact eye positions, scale, and hitbox after visual approval.",
-    "Tune eye sockets only after final base exists.",
-    "Decide whether splitting belongs in MVP after jump loop is playable."
+    "Decide whether to rename this folder to slime-child before runtime integration.",
+    "Wire as the child spawned by slime-parent death."
   ]
 }
