@@ -31,7 +31,7 @@
           "y": 0.648,
           "radiusX": 0.0816,
           "radiusY": 0.0729,
-          "rotation": 1.5528,
+          "rotation": 0.0,
           "cuts": []
         },
         "right": {
@@ -39,7 +39,7 @@
           "y": 0.6481,
           "radiusX": 0.0816,
           "radiusY": 0.0732,
-          "rotation": -1.3937,
+          "rotation": 0.0,
           "cuts": []
         }
       },
