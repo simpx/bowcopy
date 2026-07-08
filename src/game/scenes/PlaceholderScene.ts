@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 
 import { DesktopInputAdapter } from '../../input/DesktopInputAdapter';
-import { TouchInputAdapter } from '../../input/TouchInputAdapter';
 import { InputController } from '../../input/InputController';
 import type { InputSnapshot, InputVector } from '../../input/types';
 import { TouchInputOverlay } from '../../ui/TouchInputOverlay';
@@ -13,7 +12,6 @@ const MOVE_ARROW_LENGTH = 72;
 export class PlaceholderScene extends Phaser.Scene {
   private readonly inputController = new InputController();
   private desktopInput?: DesktopInputAdapter;
-  private touchInput?: TouchInputAdapter;
   private touchOverlay?: TouchInputOverlay;
   private debugGraphics?: Phaser.GameObjects.Graphics;
   private debugText?: Phaser.GameObjects.Text;
@@ -75,7 +73,6 @@ export class PlaceholderScene extends Phaser.Scene {
       .setDepth(2);
 
     this.desktopInput = new DesktopInputAdapter(this, this.inputController, () => this.playerPosition);
-    this.touchInput = new TouchInputAdapter(this, this.inputController);
 
     const parent = this.game.canvas.parentElement;
 
@@ -89,7 +86,6 @@ export class PlaceholderScene extends Phaser.Scene {
 
   update(_time: number, delta: number) {
     this.desktopInput?.update();
-    this.touchInput?.update();
 
     const snapshot = this.inputController.consumeSnapshot();
 
@@ -175,8 +171,6 @@ export class PlaceholderScene extends Phaser.Scene {
   private disposeInput() {
     this.desktopInput?.dispose();
     this.desktopInput = undefined;
-    this.touchInput?.dispose();
-    this.touchInput = undefined;
     this.touchOverlay?.dispose();
     this.touchOverlay = undefined;
   }

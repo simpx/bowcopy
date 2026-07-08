@@ -465,3 +465,8 @@ body {
   aspect-ratio: 8 / 5;
   background: #16241a;
 }
+
+.wb-face-cut-handle {
+  fill: #ff9d5d;
+  cursor: ns-resize;
+}

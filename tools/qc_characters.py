@@ -385,6 +385,96 @@ def check_status_evidence(folder: Path, status: str, errors: list[str], warnings
             errors.append(f"status '{status}' requires playtest/ screenshots as evidence")
 
 
+
+EYE_IOU_ERROR = 0.78
+EYE_IOU_WARN = 0.88
+
+
+def check_eyes(folder: Path, runtime: dict, errors: list[str], warnings: list[str], info: dict) -> None:
+    """Eye checks per docs/studio/eyes.md: container structure, template
+    reference discipline, and calibration IoU against the baked eye whites."""
+    gaze = runtime.get("gaze") or {}
+    eyes = gaze.get("eyes") or {}
+    emotions = gaze.get("emotions") or {}
+
+    required = ("x", "y", "radiusX", "radiusY", "rotation", "cuts")
+    for name in ("left", "right"):
+        eye = eyes.get(name)
+        if not isinstance(eye, dict) or any(key not in eye for key in required):
+            errors.append(
+                f"gaze.eyes.{name} missing container fields ({'/'.join(required)}); run tools/fit_eyes.py"
+            )
+            return
+
+    if emotions.get("template") != "standard":
+        errors.append("gaze.emotions.template must reference the shared 'standard' eye template")
+
+    if emotions.get("overrides"):
+        keys = ", ".join(sorted(emotions["overrides"]))
+        warnings.append(f"gaze.emotions.overrides present ({keys}); expression forks are debt to converge")
+
+    base_path = folder / "base.png"
+    if not base_path.exists():
+        return
+
+    try:
+        import numpy as np
+        from PIL import Image
+        import fit_eyes
+    except Exception:
+        warnings.append("eye calibration IoU check skipped (numpy/PIL not installed)")
+        return
+
+    image = Image.open(base_path)
+    width, height = image.size
+    mask = fit_eyes.load_white_mask(image)
+    iou_values = {}
+
+    for name in ("left", "right"):
+        eye = eyes[name]
+        ellipse = {
+            "cx": eye["x"] * width,
+            "cy": eye["y"] * height,
+            "rx": eye["radiusX"] * width,
+            "ry": eye["radiusY"] * height,
+            "rotation": eye["rotation"],
+        }
+        container = fit_eyes.container_mask(ellipse, eye.get("cuts") or [], mask.shape)
+
+        if not (mask & container).any():
+            errors.append(f"gaze.eyes.{name}: container does not overlap any baked eye white")
+            continue
+
+        # Isolate the white blob(s) the container sits on: work in a padded
+        # bbox around the container and keep components touching it.
+        ys, xs = np.nonzero(container)
+        pad_y = int((ys.max() - ys.min()) * 0.4) + 4
+        pad_x = int((xs.max() - xs.min()) * 0.4) + 4
+        y0, y1 = max(0, ys.min() - pad_y), min(height, ys.max() + pad_y)
+        x0, x1 = max(0, xs.min() - pad_x), min(width, xs.max() + pad_x)
+        local_mask = mask[y0:y1, x0:x1]
+        local_container = container[y0:y1, x0:x1]
+        blob = np.zeros_like(local_mask)
+
+        for component in fit_eyes.connected_components(local_mask):
+            if (component & local_container).any():
+                blob |= component
+
+        union = float(np.logical_or(blob, local_container).sum())
+        iou = float(np.logical_and(blob, local_container).sum()) / union if union else 0.0
+        iou_values[name] = round(iou, 3)
+
+        if iou < EYE_IOU_ERROR:
+            errors.append(
+                f"gaze.eyes.{name}: container vs baked eye white IoU {iou:.2f} < {EYE_IOU_ERROR}; recalibrate with tools/fit_eyes.py"
+            )
+        elif iou < EYE_IOU_WARN:
+            warnings.append(f"gaze.eyes.{name}: container vs eye white IoU {iou:.2f} (soft threshold {EYE_IOU_WARN})")
+
+    if iou_values:
+        info["eyeIou"] = iou_values
+
+
 def audit_character(folder: Path) -> dict:
     errors: list[str] = []
     warnings: list[str] = []
@@ -417,6 +507,8 @@ def audit_character(folder: Path) -> dict:
                 check_palette_against_reference(folder, str(base_image), locked_reference, warnings, info)
             if "status" in rig:
                 warnings.append("rig.json contains a 'status' field; status belongs in brief.md only")
+            if isinstance(rig.get("runtime"), dict):
+                check_eyes(folder, rig["runtime"], errors, warnings, info)
     else:
         errors.append("rig.json is missing")
 

@@ -119,13 +119,8 @@ export class CombatFeedbackRenderer {
 
   playDodge(position: SimVector, direction: SimVector) {
     const normalized = normalize(direction);
-    const labelPosition = {
-      x: position.x - normalized.x * 18,
-      y: position.y - 42 - normalized.y * 8
-    };
 
     this.addPulse(position, 'dodge', 14, 38, 2, 220);
-    this.addLabel('Dodge', labelPosition, 'dodge', { x: normalized.x * 34, y: -34 }, 340);
     this.emitDirectionalBurst(position, normalized, 10, TONE_COLORS.dodge, 42, 130, 3, 220);
   }
 

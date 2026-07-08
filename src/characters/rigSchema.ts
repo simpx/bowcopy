@@ -81,6 +81,8 @@ export interface GazeRig {
 
 export interface BowbertMotionRig {
   readonly walkSquash: number;
+  /** Full turns the body rolls during a dodge. */
+  readonly dodgeSpin: number;
   readonly idleSquash: number;
   readonly hitSquash: number;
   readonly dodgeStretch: number;

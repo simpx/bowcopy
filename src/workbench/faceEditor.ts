@@ -1,24 +1,35 @@
+import type { EyeContainerTuning, EyeName } from '../characters/rigSchema';
+import { computeContainerOutline } from '../render/eyes/eyeGeometry';
+
 import type { TunableRig } from './rigRegistry';
 
 /**
  * Direct-manipulation face editor ("捏脸"): shows base.png at rest with the
- * runtime eye geometry overlaid as draggable shapes. Drag an eye to move it,
- * drag the corner handle to resize. Edits mutate the live rig for instant
- * preview in the sim slot; Submit posts the diff as a proposal to the review
- * inbox (humans never write rig.json directly).
- *
- * Geometry matches the runtime renderers: eye center = (x * W, y * H) on the
- * base image; embedded eyes are ellipses with rx = radiusX * W and
- * ry = radiusY * H; Bowbert-style attached eyes are circles with
- * r = outerRadius * W.
+ * runtime eye containers overlaid using the exact shared geometry module
+ * (ellipse ∩ cuts — the outline you drag is the outline the game clips
+ * against). Drag the socket to move it, the square handle to resize, and
+ * the diamond handle on a cut edge to slide the cut. Edits mutate the live
+ * rig for instant preview in the sim slot; Submit posts the diff as a
+ * proposal to the review inbox (humans never write rig.json directly).
  */
 
-type EyeTuning = Record<string, number>;
-type EyeName = 'left' | 'right';
+interface MutableCut {
+  slope: number;
+  offset: number;
+}
+
+interface MutableEye {
+  x: number;
+  y: number;
+  radiusX: number;
+  radiusY: number;
+  rotation: number;
+  cuts: MutableCut[];
+}
 
 interface FaceRig {
   readonly base?: { readonly imageSize?: { readonly width: number; readonly height: number } };
-  readonly gaze?: { readonly eyes?: Partial<Record<EyeName, EyeTuning>> };
+  readonly gaze?: { readonly eyes?: Partial<Record<EyeName, MutableEye>> };
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -43,18 +54,15 @@ export const buildFaceEditor = (
   }
 
   const { width, height } = image;
-  const eyePair: ReadonlyArray<readonly [EyeName, EyeTuning]> = [
+  const eyePair: ReadonlyArray<readonly [EyeName, MutableEye]> = [
     ['left', left],
     ['right', right]
   ];
-  const baseline: Record<EyeName, EyeTuning> = {
-    left: { ...left },
-    right: { ...right }
-  };
-  const isCircle = typeof left.outerRadius === 'number';
-  const radiusXPx = (eye: EyeTuning): number => (isCircle ? eye.outerRadius : eye.radiusX) * width;
-  const radiusYPx = (eye: EyeTuning): number =>
-    isCircle ? eye.outerRadius * width : eye.radiusY * height;
+  const snapshot = (eye: MutableEye): MutableEye => ({
+    ...eye,
+    cuts: eye.cuts.map((cut) => ({ ...cut }))
+  });
+  const baseline: Record<EyeName, MutableEye> = { left: snapshot(left), right: snapshot(right) };
 
   const section = document.createElement('section');
 
@@ -68,7 +76,7 @@ export const buildFaceEditor = (
   const hint = document.createElement('p');
 
   hint.className = 'wb-hint';
-  hint.textContent = '拖动眼睛调位置,拖角上的小方块调大小;改动即时同步到实机画面。';
+  hint.textContent = '拖眼窝调位置,方块调大小,切线上的菱形滑动切口;即时同步到实机画面。';
 
   const stage = document.createElement('div');
 
@@ -84,59 +92,104 @@ export const buildFaceEditor = (
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
   stage.append(img, svg);
 
+  const handleSize = width * 0.065;
+
   interface EyeShape {
     readonly name: EyeName;
-    readonly eye: EyeTuning;
-    readonly ellipse: SVGEllipseElement;
-    readonly handle: SVGRectElement;
+    readonly eye: MutableEye;
+    readonly outline: SVGPolygonElement;
+    readonly resizeHandle: SVGRectElement;
+    readonly cutHandles: SVGRectElement[];
   }
 
-  // Sized for fingers: ~24px on a typical mobile render of the stage.
-  const handleSize = width * 0.065;
   const shapes: EyeShape[] = eyePair.map(([name, eye]) => {
-    const ellipse = document.createElementNS(SVG_NS, 'ellipse');
-    const handle = document.createElementNS(SVG_NS, 'rect');
+    const outline = document.createElementNS(SVG_NS, 'polygon');
+    const resizeHandle = document.createElementNS(SVG_NS, 'rect');
 
-    ellipse.classList.add('wb-face-eye');
-    ellipse.setAttribute('vector-effect', 'non-scaling-stroke');
-    handle.classList.add('wb-face-handle');
-    handle.setAttribute('width', String(handleSize));
-    handle.setAttribute('height', String(handleSize));
-    svg.append(ellipse, handle);
+    outline.classList.add('wb-face-eye');
+    outline.setAttribute('vector-effect', 'non-scaling-stroke');
+    resizeHandle.classList.add('wb-face-handle');
+    resizeHandle.setAttribute('width', String(handleSize));
+    resizeHandle.setAttribute('height', String(handleSize));
+    svg.append(outline, resizeHandle);
 
-    return { name, eye, ellipse, handle };
+    const cutHandles = eye.cuts.map(() => {
+      const handle = document.createElementNS(SVG_NS, 'rect');
+
+      handle.classList.add('wb-face-cut-handle');
+      handle.setAttribute('width', String(handleSize * 0.9));
+      handle.setAttribute('height', String(handleSize * 0.9));
+      svg.append(handle);
+
+      return handle;
+    });
+
+    return { name, eye, outline, resizeHandle, cutHandles };
   });
 
   const readout = document.createElement('p');
 
   readout.className = 'wb-face-readout';
 
+  const toImagePoint = (eye: MutableEye, local: { x: number; y: number }) => {
+    const cosR = Math.cos(eye.rotation);
+    const sinR = Math.sin(eye.rotation);
+    const sx = local.x * eye.radiusX * width;
+    const sy = local.y * eye.radiusY * height;
+
+    return {
+      x: eye.x * width + sx * cosR - sy * sinR,
+      y: eye.y * height + sx * sinR + sy * cosR
+    };
+  };
+
+  const toLocalPoint = (eye: MutableEye, point: { x: number; y: number }) => {
+    const cosR = Math.cos(-eye.rotation);
+    const sinR = Math.sin(-eye.rotation);
+    const dx = point.x - eye.x * width;
+    const dy = point.y - eye.y * height;
+
+    return {
+      x: (dx * cosR - dy * sinR) / (eye.radiusX * width),
+      y: (dx * sinR + dy * cosR) / (eye.radiusY * height)
+    };
+  };
+
   const sync = () => {
-    for (const { eye, ellipse, handle } of shapes) {
-      const cx = eye.x * width;
-      const cy = eye.y * height;
-      const rx = radiusXPx(eye);
-      const ry = radiusYPx(eye);
+    for (const shape of shapes) {
+      const { eye } = shape;
+      const outline = computeContainerOutline(
+        eye as unknown as EyeContainerTuning,
+        image
+      );
 
-      ellipse.setAttribute('cx', String(cx));
-      ellipse.setAttribute('cy', String(cy));
-      ellipse.setAttribute('rx', String(rx));
-      ellipse.setAttribute('ry', String(ry));
+      shape.outline.setAttribute(
+        'points',
+        outline.map((point) => `${point.x},${point.y}`).join(' ')
+      );
 
-      const rotation = isCircle ? 0 : ((eye.rotation ?? 0) * 180) / Math.PI;
+      const corner = toImagePoint(eye, { x: 0.707, y: 0.707 });
 
-      ellipse.setAttribute('transform', `rotate(${rotation} ${cx} ${cy})`);
-      handle.setAttribute('x', String(cx + rx * 0.707 - handleSize / 2));
-      handle.setAttribute('y', String(cy + ry * 0.707 - handleSize / 2));
+      shape.resizeHandle.setAttribute('x', String(corner.x - handleSize / 2));
+      shape.resizeHandle.setAttribute('y', String(corner.y - handleSize / 2));
+
+      shape.cutHandles.forEach((handle, index) => {
+        const cut = eye.cuts[index];
+        // Chord midpoint = closest point of the cut line to the eye center.
+        const t = cut.offset / (1 + cut.slope * cut.slope);
+        const midpoint = toImagePoint(eye, { x: -cut.slope * t, y: t });
+
+        handle.setAttribute('x', String(midpoint.x - (handleSize * 0.9) / 2));
+        handle.setAttribute('y', String(midpoint.y - (handleSize * 0.9) / 2));
+        handle.setAttribute('transform', `rotate(45 ${midpoint.x} ${midpoint.y})`);
+      });
     }
 
     readout.textContent = shapes
       .map(({ name, eye }) => {
-        const size = isCircle
-          ? `r ${round4(eye.outerRadius)}`
-          : `r ${round4(eye.radiusX)}×${round4(eye.radiusY)}`;
+        const cuts = eye.cuts.length > 0 ? ` cut ${eye.cuts.map((c) => round4(c.offset)).join('/')}` : '';
 
-        return `${name} (${round4(eye.x)}, ${round4(eye.y)}) ${size}`;
+        return `${name} (${round4(eye.x)}, ${round4(eye.y)}) r ${round4(eye.radiusX)}×${round4(eye.radiusY)}${cuts}`;
       })
       .join('  |  ');
   };
@@ -150,20 +203,13 @@ export const buildFaceEditor = (
     };
   };
 
-  const mirrorInto = (source: EyeTuning, target: EyeTuning) => {
+  const mirrorInto = (source: MutableEye, target: MutableEye) => {
     target.x = round4(1 - source.x);
     target.y = source.y;
-
-    if (isCircle) {
-      target.outerRadius = source.outerRadius;
-    } else {
-      target.radiusX = source.radiusX;
-      target.radiusY = source.radiusY;
-
-      if (typeof source.rotation === 'number') {
-        target.rotation = -source.rotation;
-      }
-    }
+    target.radiusX = source.radiusX;
+    target.radiusY = source.radiusY;
+    target.rotation = -source.rotation;
+    target.cuts = source.cuts.map((cut) => ({ slope: -cut.slope, offset: cut.offset }));
   };
 
   const mirrorToggle = document.createElement('input');
@@ -171,17 +217,21 @@ export const buildFaceEditor = (
   mirrorToggle.type = 'checkbox';
   mirrorToggle.checked = true;
 
-  let drag: { readonly shape: EyeShape; readonly kind: 'move' | 'resize' } | null = null;
+  type DragKind = { kind: 'move' } | { kind: 'resize' } | { kind: 'cut'; index: number };
+  let drag: ({ shape: EyeShape } & DragKind) | null = null;
 
   for (const shape of shapes) {
-    const start = (kind: 'move' | 'resize') => (event: PointerEvent) => {
-      drag = { shape, kind };
+    const start = (dragKind: DragKind) => (event: PointerEvent) => {
+      drag = { shape, ...dragKind };
       svg.setPointerCapture(event.pointerId);
       event.preventDefault();
     };
 
-    shape.ellipse.addEventListener('pointerdown', start('move'));
-    shape.handle.addEventListener('pointerdown', start('resize'));
+    shape.outline.addEventListener('pointerdown', start({ kind: 'move' }));
+    shape.resizeHandle.addEventListener('pointerdown', start({ kind: 'resize' }));
+    shape.cutHandles.forEach((handle, index) => {
+      handle.addEventListener('pointerdown', start({ kind: 'cut', index }));
+    });
   }
 
   svg.addEventListener('pointermove', (event) => {
@@ -195,15 +245,15 @@ export const buildFaceEditor = (
     if (drag.kind === 'move') {
       eye.x = round4(clamp(point.x / width, 0, 1));
       eye.y = round4(clamp(point.y / height, 0, 1));
+    } else if (drag.kind === 'resize') {
+      eye.radiusX = round4(clamp(Math.abs(point.x - eye.x * width) / width / 0.707, 0.01, 0.5));
+      eye.radiusY = round4(clamp(Math.abs(point.y - eye.y * height) / height / 0.707, 0.01, 0.5));
     } else {
-      const rx = round4(clamp(Math.abs(point.x - eye.x * width) / width, 0.01, 0.5));
+      const local = toLocalPoint(eye, point);
+      const cut = eye.cuts[drag.index];
 
-      if (isCircle) {
-        eye.outerRadius = rx;
-      } else {
-        eye.radiusX = rx;
-        eye.radiusY = round4(clamp(Math.abs(point.y - eye.y * height) / height, 0.01, 0.5));
-      }
+      // Slide the cut along its normal: new offset keeps the slope.
+      cut.offset = round4(clamp(local.y - cut.slope * local.x, -1.2, 1.2));
     }
 
     if (mirrorToggle.checked) {
@@ -235,13 +285,22 @@ export const buildFaceEditor = (
 
   status.className = 'wb-rig-status';
 
+  const applyEye = (target: MutableEye, source: MutableEye) => {
+    target.x = source.x;
+    target.y = source.y;
+    target.radiusX = source.radiusX;
+    target.radiusY = source.radiusY;
+    target.rotation = source.rotation;
+    target.cuts = source.cuts.map((cut) => ({ ...cut }));
+  };
+
   const reset = document.createElement('button');
 
   reset.className = 'wb-btn';
   reset.textContent = '重置';
   reset.addEventListener('click', () => {
-    Object.assign(left, baseline.left);
-    Object.assign(right, baseline.right);
+    applyEye(left, baseline.left);
+    applyEye(right, baseline.right);
     sync();
     onChanged();
     status.textContent = '已恢复为 rig.json 当前值';
@@ -255,11 +314,30 @@ export const buildFaceEditor = (
     const changes: string[] = [];
 
     for (const [name, eye] of eyePair) {
-      for (const key of Object.keys(baseline[name])) {
-        if (eye[key] !== baseline[name][key]) {
-          changes.push(`gaze.eyes.${name}.${key} ${round4(baseline[name][key])} → ${round4(eye[key])}`);
+      const base = baseline[name];
+
+      for (const key of ['x', 'y', 'radiusX', 'radiusY', 'rotation'] as const) {
+        if (eye[key] !== base[key]) {
+          changes.push(`gaze.eyes.${name}.${key} ${round4(base[key])} → ${round4(eye[key])}`);
         }
       }
+
+      eye.cuts.forEach((cut, index) => {
+        const baseCut = base.cuts[index];
+
+        if (!baseCut) {
+          changes.push(`gaze.eyes.${name}.cuts[${index}] 新增 slope ${cut.slope} offset ${cut.offset}`);
+          return;
+        }
+
+        for (const key of ['slope', 'offset'] as const) {
+          if (cut[key] !== baseCut[key]) {
+            changes.push(
+              `gaze.eyes.${name}.cuts[${index}].${key} ${round4(baseCut[key])} → ${round4(cut[key])}`
+            );
+          }
+        }
+      });
     }
 
     if (changes.length === 0) {

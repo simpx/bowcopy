@@ -119,9 +119,14 @@ export class BowbertRenderer {
     this.container.setPosition(Math.round(state.position.x), Math.round(state.position.y));
     this.container.setDepth(70 + state.position.y / 1000);
     this.container.setRotation(
-      Phaser.Math.Clamp(state.velocity.x / 380, -1, 1) * motion.tiltVelocity +
-        state.dodge.direction.x * dodgeWave * 0.13
+      Phaser.Math.Clamp(state.velocity.x / 380, -1, 1) * motion.tiltVelocity
     );
+
+    // Real roll: the body (and eyes) tumble a full dodgeSpin turns over the
+    // dodge; the shadow stays flat because it lives outside the body.
+    const spinSign = state.dodge.direction.x !== 0 ? Math.sign(state.dodge.direction.x) : 1;
+    const dodgeSpin = dodgeProgress * Math.PI * 2 * motion.dodgeSpin * spinSign;
+
     this.container.setAlpha(
       state.dodge.invulnerableMs > 0 && Math.sin(timeMs * 0.07) > 0 ? 0.72 : 1
     );
@@ -134,10 +139,12 @@ export class BowbertRenderer {
       base.y - Math.abs(walkWave) * motion.walkBob - aim.y * recoil * motion.recoilY
     );
     this.body.setScale(scaleX, scaleY);
+    this.body.setRotation(dodgeSpin);
     this.body.setTint(hitFlash > 0 ? 0xfff0d4 : 0xffffff);
     if (this.eyeLayer) {
       this.eyeLayer.setPosition(this.body.x, this.body.y);
       this.eyeLayer.setScale(scaleX, scaleY);
+      this.eyeLayer.setRotation(dodgeSpin);
       this.updateEyes(aim, eyeEmotion);
     }
 
