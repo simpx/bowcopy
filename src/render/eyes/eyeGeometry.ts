@@ -274,9 +274,19 @@ export const computeEyeShapes = (
   };
 
   const rest = containerCentroid(container.cuts);
+
+  // Gaze tracking and expression shifts are WORLD directions — a character
+  // looks at the player regardless of how its socket ellipse is rotated
+  // (rotation is art calibration). Build the offset in image axes, then
+  // carry it into the rotated local frame so the container clamp still
+  // operates in local units.
+  const worldXPx =
+    (clamp(frame.facingX, -1, 1) * frame.offsetScaleX + expression.pupilShiftX) * radiusXPx;
+  const worldYPx =
+    (clamp(frame.facingY, -1, 1) * frame.offsetScaleY + expression.pupilShiftY) * radiusYPx;
   const rawCenter: EyePoint = {
-    x: rest.x + clamp(frame.facingX, -1, 1) * frame.offsetScaleX + expression.pupilShiftX,
-    y: rest.y + clamp(frame.facingY, -1, 1) * frame.offsetScaleY + expression.pupilShiftY
+    x: rest.x + (worldXPx * cosR + worldYPx * sinR) / radiusXPx,
+    y: rest.y + (-worldXPx * sinR + worldYPx * cosR) / radiusYPx
   };
 
   const pupilRadiusX = expression.pupilRadiusX;

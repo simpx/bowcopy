@@ -298,12 +298,17 @@ def fit_character(character_id: str) -> dict:
                 cuts = [{"slope": round(cut_params[5], 4), "offset": round(cut_params[6], 4)}]
                 quality = cut_score
 
+        # A near-circular socket has no meaningful major axis; report zero
+        # rotation instead of eigenvector noise (which destabilizes tooling).
+        ratio = min(ellipse["rx"], ellipse["ry"]) / max(ellipse["rx"], ellipse["ry"])
+        rotation = 0.0 if (ratio >= 0.9 and not cuts) else ellipse["rotation"]
+
         eyes[name] = {
             "x": round(ellipse["cx"] / width, 4),
             "y": round(ellipse["cy"] / height, 4),
             "radiusX": round(ellipse["rx"] / width, 4),
             "radiusY": round(ellipse["ry"] / height, 4),
-            "rotation": round(ellipse["rotation"], 4),
+            "rotation": round(rotation, 4),
             "cuts": cuts
         }
         debug[name] = {"iou": round(quality, 4), "ellipse": ellipse, "cuts": cuts, "blob": blob}
