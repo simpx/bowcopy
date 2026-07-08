@@ -1,4 +1,6 @@
+import { BACKBOARD_RIG } from '../characters/backboardRig';
 import { BOWBERT_RIG } from '../characters/bowbertRig';
+import { DOORBERT_RIG } from '../characters/doorbertRig';
 import { DART_GOOBER_RIG } from '../characters/dartGooberRig';
 import { DART_TRI_GOOBER_RIG } from '../characters/dartTriGooberRig';
 import { KABOOMLET_RIG } from '../characters/kaboomletRig';
@@ -7,6 +9,7 @@ import { RED_SHROOM_RIG } from '../characters/redShroomRig';
 import { SLIME_PARENT_RIG } from '../characters/slimeParentRig';
 import { SLIME_RIG } from '../characters/slimeRig';
 import { SPOOPER_GOOPER_RIG } from '../characters/spooperGooperRig';
+import { SWITCHEROO_RIG } from '../characters/switcherooRig';
 
 export interface TunableRig {
   /** Character folder under assets/characters (write-back target). */
@@ -48,6 +51,12 @@ export const getTunableRigs = (slotId: string): TunableRig[] => {
       return [
         { folder: 'spooper-gooper', label: 'Spooper Gooper', rig: SPOOPER_GOOPER_RIG as unknown as Record<string, unknown> }
       ];
+    case 'backboard':
+      return [{ folder: 'backboard', label: 'Backboard', rig: BACKBOARD_RIG as unknown as Record<string, unknown> }];
+    case 'switcheroo':
+      return [{ folder: 'switcheroo', label: 'Switcheroo', rig: SWITCHEROO_RIG as unknown as Record<string, unknown> }];
+    case 'doorbert':
+      return [{ folder: 'doorbert', label: 'Doorbert', rig: DOORBERT_RIG as unknown as Record<string, unknown> }];
     default:
       return [];
   }

@@ -31,6 +31,7 @@ import {
   ShroomSporeProjectileRenderer
 } from '../render/projectiles';
 import type { InputSnapshot } from '../input/types';
+import { createDisplaySlots } from './displaySlot';
 
 /**
  * The workbench runs the exact same sim systems and renderers as the game
@@ -572,5 +573,7 @@ export const createWorkbenchSlots = (): WorkbenchSlot[] => [
   new ShroomSlot('purple'),
   new KaboomletSlot(),
   new SlimeSlot(),
-  new SpooperGooperSlot()
+  new SpooperGooperSlot(),
+  // Rigged-but-not-integrated characters review on display stands.
+  ...createDisplaySlots()
 ];

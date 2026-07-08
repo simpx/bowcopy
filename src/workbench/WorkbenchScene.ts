@@ -14,6 +14,7 @@ import {
   preloadShroomSporeProjectileAssets
 } from '../render/projectiles';
 import type { SimVector } from '../sim/player';
+import { preloadDisplaySlotAssets } from './displaySlot';
 import { createWorkbenchSlots, type WorkbenchCell, type WorkbenchSlot } from './slots';
 
 export interface WorkbenchGrid {
@@ -92,6 +93,7 @@ export class WorkbenchScene extends Phaser.Scene {
     preloadKaboomletAssets(this);
     preloadSlimeAssets(this);
     preloadSpooperGooperAssets(this);
+    preloadDisplaySlotAssets(this);
   }
 
   create() {
