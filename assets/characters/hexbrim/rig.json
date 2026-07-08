@@ -1,0 +1,33 @@
+{
+  "id": "hexbrim",
+  "kind": "enemy",
+  "projectContext": "bowbert",
+  "base": {
+    "image": "base.png"
+  },
+  "runtime": {
+    "id": "hexbrim",
+    "base": {
+      "source": "fixed-ai-image",
+      "textureKey": "hexbrim-base-ai-v1",
+      "imageAsset": "assets/characters/hexbrim/base.png",
+      "imageSize": {
+        "width": 883,
+        "height": 1254
+      },
+      "scale": 0.16,
+      "y": -26,
+      "shadow": {
+        "width": 84,
+        "height": 20,
+        "y": 34
+      }
+    },
+    "motion": {
+      "hoverBob": 6,
+      "swayTilt": 0.06,
+      "hitScaleX": 0.07,
+      "hitScaleY": 0.05
+    }
+  }
+}
