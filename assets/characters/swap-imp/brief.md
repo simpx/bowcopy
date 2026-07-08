@@ -7,7 +7,6 @@ sourceReferences: []
 openItems:
   - Concept art candidates needed in source/; lock one reference to advance.
   - Tune swap cadence, telegraph duration, player-priority weight, and swap radius after integration.
-  - Decide whether a failed target search dashes (blink) or skips the turn.
 ---
 
 # Swap Imp
@@ -18,7 +17,7 @@ Role:
 Behavior (new `swap` pattern):
 - skitter: nervous short darts, keeps middle distance, never approaches directly.
 - windup (telegraph ~0.6s): both ends of the swap are marked — the imp flashes and the chosen target gets a matching marker, giving the player a beat to react.
-- swap: instant position exchange. Target selection within radius: Bowbert weighted higher (~60%), otherwise a random sibling imp; nothing in range → short blink-dash instead.
+- swap: instant position exchange. Target selection within radius: Bowbert weighted higher (~60%), otherwise a random sibling imp; nothing in range → the windup fizzles and it skips straight to cooldown (decided 2026-07-08).
 - cooldown (~3–5s), then repeat. No contact damage in v1 — the threat is disorientation.
 
 Integration notes (self-contained, no cross-kit services needed):

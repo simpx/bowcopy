@@ -7,7 +7,6 @@ sourceReferences: []
 openItems:
   - Concept art candidates needed in source/; lock one reference to advance.
   - Doorling (the spawned minion) is a second character folder in the same kit (slime-parent -> slime precedent); design it after the door is locked.
-  - Decide whether the door is only damageable while open (classic) or always with reduced damage when shut.
   - Tune spawn interval, doorlings per burst, and alive cap after integration.
 ---
 
@@ -20,7 +19,8 @@ Behavior (new `spawner` pattern):
 - rooted: never moves from its spawn point; idle breathing wobble; watches the player.
 - creak (telegraph ~0.8s): the door leaf swings ajar, interior glow spills out, hinge shiver.
 - spawn burst: 1–2 doorlings pop out with spawn poofs; alive cap ~4 — at cap it fakes out (opens, nothing comes, slams).
-- slam + stagger: shuts with a squash; briefly dizzy (the vulnerability read if we gate damage on openness).
+- slam + stagger: shuts with a squash; briefly dizzy.
+- Damage gate (decided 2026-07-08): the door is ONLY damageable while open (creak/spawn/stagger windows); arrows thunk off the shut door with a wall-hit feedback. Killing it pops any doorlings still alive? No — doorlings persist and must be cleaned up separately (keeps the priority-target decision interesting).
 
 Doorling (same kit, own folder later):
 - Tiny 1-HP critter, simple chase + contact-bite, dies in one hit with a satisfying pop. Visual: a splinter/keyhole gremlin echoing the door's palette.
