@@ -1,0 +1,9 @@
+{
+  "id": "mimic-door",
+  "kind": "enemy",
+  "projectContext": "bowbert",
+  "base": {
+    "image": null
+  },
+  "notes": "stub: values land after reference lock; runtime section appears at rigging"
+}
