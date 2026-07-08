@@ -1,6 +1,7 @@
 export * from './BackboardSystem';
 export * from './DartGooberSystem';
 export * from './DoorbertSystem';
+export * from './HexbrimSystem';
 export * from './KaboomletSystem';
 export * from './RedShroomSystem';
 export * from './SlimeSystem';

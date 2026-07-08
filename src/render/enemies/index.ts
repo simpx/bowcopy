@@ -1,6 +1,7 @@
 export * from './BackboardRenderer';
 export * from './DartGooberRenderer';
 export * from './DoorbertRenderer';
+export * from './HexbrimRenderer';
 export * from './DartTriGooberRenderer';
 export * from './KaboomletRenderer';
 export * from './RedShroomRenderer';

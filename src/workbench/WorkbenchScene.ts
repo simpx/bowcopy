@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { preloadBackboardAssets } from '../render/enemies/BackboardRenderer';
 import { preloadDartGooberAssets } from '../render/enemies/DartGooberRenderer';
 import { preloadDoorbertAssets } from '../render/enemies/DoorbertRenderer';
+import { preloadHexbrimAssets } from '../render/enemies/HexbrimRenderer';
 import { preloadDartTriGooberAssets } from '../render/enemies/DartTriGooberRenderer';
 import { preloadKaboomletAssets } from '../render/enemies/KaboomletRenderer';
 import { preloadRedShroomAssets } from '../render/enemies/RedShroomRenderer';
@@ -130,6 +131,11 @@ export class WorkbenchScene extends Phaser.Scene {
 
     if (need('doorbert')) {
       preloadDoorbertAssets(this);
+    }
+
+    if (need('hexbrim')) {
+      preloadHexbrimAssets(this);
+      preloadEnemyDartProjectileAssets(this);
     }
 
     preloadDisplaySlotAssets(this, this.focusId);

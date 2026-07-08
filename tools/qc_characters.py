@@ -393,7 +393,13 @@ EYE_IOU_WARN = 0.88
 def check_eyes(folder: Path, runtime: dict, errors: list[str], warnings: list[str], info: dict) -> None:
     """Eye checks per docs/studio/eyes.md: container structure, template
     reference discipline, and calibration IoU against the baked eye whites."""
-    gaze = runtime.get("gaze") or {}
+    gaze = runtime.get("gaze")
+
+    # Eyeless characters (e.g. the hexbrim boss: hat + cloak, no face) omit
+    # the gaze section entirely; every eye check is skipped for them.
+    if not gaze:
+        return
+
     eyes = gaze.get("eyes") or {}
     emotions = gaze.get("emotions") or {}
 

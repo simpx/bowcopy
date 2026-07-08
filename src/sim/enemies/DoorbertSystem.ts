@@ -209,8 +209,6 @@ export class DoorbertSystem {
       events.push({ type: 'doorbert-encounter-cleared' });
     }
 
-    this.forceOpenRequested = false;
-
     return { events, consumedArrowIds: Array.from(consumedArrowIds) };
   }
 
@@ -404,6 +402,7 @@ export class DoorbertSystem {
       door.phase === 'idle' &&
       (door.phaseElapsedMs >= door.phaseDurationMs || this.forceOpenRequested)
     ) {
+      this.forceOpenRequested = false;
       // The portal tears open on the side facing the player.
       const side = playerPosition.x >= door.position.x ? 1 : -1;
 

@@ -20,6 +20,7 @@ export const ENCOUNTER_KINDS = [
   'slime',
   'slime-parent',
   'doorbert',
+  'hexbrim',
   'spooper-gooper',
   'switcheroo'
 ] as const;

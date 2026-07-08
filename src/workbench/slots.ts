@@ -4,6 +4,7 @@ import {
   BackboardSystem,
   DartGooberSystem,
   DoorbertSystem,
+  HexbrimSystem,
   KaboomletSystem,
   RedShroomSystem,
   SlimeSystem,
@@ -23,6 +24,7 @@ import {
   DartGooberRenderer,
   DartTriGooberRenderer,
   DoorbertRenderer,
+  HexbrimRenderer,
   KaboomletRenderer,
   RedShroomRenderer,
   SlimeRenderer,
@@ -807,6 +809,87 @@ class DoorbertSlot extends EnemySlotBase {
   }
 }
 
+
+class HexbrimSlot extends EnemySlotBase {
+  private readonly system = new HexbrimSystem();
+  private readonly darts = new EnemyDartProjectileSystem();
+  private renderer!: HexbrimRenderer;
+  private dartRenderer!: EnemyDartProjectileRenderer;
+
+  readonly actions = [
+    { label: '强制弹幕', run: () => this.system.debugForce('volley') },
+    { label: '强制咒术', run: () => this.system.debugForce('hexcast') },
+    { label: '强制传送', run: () => this.system.debugForce('teleport') },
+    { label: '强制分身', run: () => this.system.debugForce('clones') }
+  ];
+
+  constructor() {
+    super('hexbrim', 'Hexbrim (BOSS)');
+  }
+
+  protected onCreate() {
+    this.renderer = new HexbrimRenderer(this.scene);
+    this.renderer.create();
+    this.dartRenderer = new EnemyDartProjectileRenderer(this.scene);
+    this.dartRenderer.create();
+  }
+
+  start() {
+    this.darts.clear();
+    this.system.startEncounter(this.cell.spawnPoints);
+  }
+
+  protected step(timeMs: number, deltaMs: number, target: SimVector, arrows: readonly ArrowProjectile[]) {
+    const frame = this.system.update(deltaMs, this.cell.bounds, target, arrows);
+
+    for (const event of frame.events) {
+      if (event.type === 'hexbrim-spawned') {
+        this.feedback.playEnemySpawn(event.position);
+      } else if (event.type === 'hexbrim-volley') {
+        for (const direction of event.directions) {
+          this.darts.fireDart({
+            origin: event.origin,
+            direction,
+            speed: 220,
+            damage: 1,
+            style: 'black-ink'
+          });
+        }
+      } else if (event.type === 'hexbrim-hit' && event.hp > 0) {
+        this.feedback.playArrowEnemy(event.position, event.damage);
+      } else if (event.type === 'hexbrim-clone-dispelled') {
+        this.feedback.playSporeBreak(event.position);
+      } else if (event.type === 'hexbrim-killed') {
+        this.feedback.playEnemyDeath(event.position);
+      }
+    }
+
+    const dartEvents = this.darts.update(deltaMs, this.cell.bounds, clampToBounds(target, this.cell.bounds));
+
+    this.renderer.playEvents(frame.events);
+    this.dartRenderer.playEvents(dartEvents);
+    this.renderer.update(timeMs, deltaMs, this.system.getActiveEntities(), this.system.getActiveHexes());
+    this.dartRenderer.update(deltaMs, this.darts.getActiveDarts());
+
+    return frame.consumedArrowIds;
+  }
+
+  protected cleared(): boolean {
+    return this.system.isEncounterCleared();
+  }
+
+  protected enemyPositions(): readonly SimVector[] {
+    return this.system.getActiveEntities().filter((e) => e.visible).map((e) => e.position);
+  }
+
+  destroy() {
+    this.renderer.destroy();
+    this.dartRenderer.destroy();
+    this.system.clear();
+    this.darts.clear();
+  }
+}
+
 export const createWorkbenchSlots = (): WorkbenchSlot[] => [
   new BowbertSlot(),
   new DartGooberSlot('dart-goober'),
@@ -819,6 +902,7 @@ export const createWorkbenchSlots = (): WorkbenchSlot[] => [
   new BackboardSlot(),
   new SwitcherooSlot(),
   new DoorbertSlot(),
+  new HexbrimSlot(),
   // Rigged-but-not-integrated characters review on display stands.
   ...createDisplaySlots()
 ];

@@ -75,7 +75,8 @@ const DEBUG_ENCOUNTER_THEMES: Partial<Record<EncounterKind, RoomTheme>> = {
   'spooper-gooper': 'boss',
   backboard: 'wood',
   switcheroo: 'stone',
-  doorbert: 'boss'
+  doorbert: 'boss',
+  hexbrim: 'boss'
 };
 
 export class CombatRoomScene extends Phaser.Scene {

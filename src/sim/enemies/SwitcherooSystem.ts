@@ -190,8 +190,6 @@ export class SwitcherooSystem {
       events.push({ type: 'switcheroo-encounter-cleared' });
     }
 
-    this.forceSwapRequested = false;
-
     return { events, consumedArrowIds: Array.from(consumedArrowIds), playerTeleport };
   }
 
@@ -382,7 +380,11 @@ export class SwitcherooSystem {
       this.moveSkitter(enemy, deltaMs, bounds);
 
       if (enemy.phaseElapsedMs >= enemy.phaseDurationMs || this.forceSwapRequested) {
-        if (enemy.phase === 'cooldown' && !this.forceSwapRequested) {
+        const wasForced = this.forceSwapRequested;
+
+        this.forceSwapRequested = false;
+
+        if (enemy.phase === 'cooldown' && !wasForced) {
           this.enterPhase(enemy, 'skitter');
         } else if (this.pickTarget(enemy, playerPosition)) {
           this.enterPhase(enemy, 'windup');

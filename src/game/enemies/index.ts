@@ -1,6 +1,7 @@
 import { BackboardKit } from './backboardKit';
 import { DartGooberKit } from './dartGooberKit';
 import { DoorbertKit } from './doorbertKit';
+import { HexbrimKit } from './hexbrimKit';
 import { KaboomletKit } from './kaboomletKit';
 import { ShroomKit } from './shroomKit';
 import { SlimeKit } from './slimeKit';
@@ -25,5 +26,6 @@ export const createEnemyKits = (): EnemyKit[] => [
   new SpooperGooperKit(),
   new BackboardKit(),
   new SwitcherooKit(),
-  new DoorbertKit()
+  new DoorbertKit(),
+  new HexbrimKit()
 ];
