@@ -1,0 +1,66 @@
+{
+  "id": "keylet",
+  "kind": "enemy",
+  "projectContext": "bowbert",
+  "base": {
+    "image": "base.png"
+  },
+  "runtime": {
+    "id": "keylet",
+    "base": {
+      "source": "fixed-ai-image",
+      "textureKey": "keylet-base-ai-v1",
+      "imageAsset": "assets/characters/keylet/base.png",
+      "imageSize": {
+        "width": 612,
+        "height": 985
+      },
+      "scale": 0.042,
+      "y": -10,
+      "shadow": {
+        "width": 26,
+        "height": 9,
+        "y": 16
+      }
+    },
+    "gaze": {
+      "eyes": {
+        "left": {
+          "x": 0.3151,
+          "y": 0.3213,
+          "radiusX": 0.1264,
+          "radiusY": 0.0779,
+          "rotation": 0.0,
+          "cuts": []
+        },
+        "right": {
+          "x": 0.6857,
+          "y": 0.3216,
+          "radiusX": 0.1265,
+          "radiusY": 0.0781,
+          "rotation": 0.0,
+          "cuts": []
+        }
+      },
+      "pupilOffsetScale": {
+        "x": 0.28,
+        "y": 0.2
+      },
+      "emotions": {
+        "template": "standard"
+      }
+    },
+    "motion": {
+      "idleWobble": 0.025,
+      "idleBob": 1.7,
+      "preJumpSquash": 0.22,
+      "airStretch": 0.18,
+      "landingSquash": 0.2,
+      "hitScaleX": 0.1,
+      "hitScaleY": 0.08,
+      "jumpHeight": 34,
+      "jumpDurationMs": 720,
+      "recoverMs": 260
+    }
+  }
+}

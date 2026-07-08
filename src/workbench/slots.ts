@@ -1,11 +1,14 @@
 import type Phaser from 'phaser';
 
 import {
+  BackboardSystem,
   DartGooberSystem,
+  DoorbertSystem,
   KaboomletSystem,
   RedShroomSystem,
   SlimeSystem,
-  SpooperGooperSystem
+  SpooperGooperSystem,
+  SwitcherooSystem
 } from '../sim/enemies';
 import { BowbertPlayerModel, type SimVector } from '../sim/player';
 import {
@@ -16,12 +19,15 @@ import {
 } from '../sim/projectiles';
 import type { RoomBounds, RoomSpawnPoint } from '../sim/rooms';
 import {
+  BackboardRenderer,
   DartGooberRenderer,
   DartTriGooberRenderer,
+  DoorbertRenderer,
   KaboomletRenderer,
   RedShroomRenderer,
   SlimeRenderer,
-  SpooperGooperRenderer
+  SpooperGooperRenderer,
+  SwitcherooRenderer
 } from '../render/enemies';
 import { CombatFeedbackRenderer } from '../render/feedback';
 import { BowbertRenderer } from '../render/player';
@@ -55,6 +61,10 @@ export interface WorkbenchSlot {
   hit(damage: number): void;
   aliveCount(): number;
   destroy(): void;
+  /** Skill-specific debug actions rendered as extra buttons on the card. */
+  actions?: ReadonlyArray<{ label: string; run(): void }>;
+  /** Fires a real arrow from `origin` toward the slot's enemy (canvas click). */
+  shootArrowFrom?(origin: SimVector): void;
   /** Player-only extras; undefined on enemy slots. */
   toggleFiring?(): boolean;
   togglePatrol?(): boolean;
@@ -92,6 +102,8 @@ abstract class EnemySlotBase implements WorkbenchSlot {
 
   private pendingArrows: ArrowProjectile[] = [];
   private restartInMs = -1;
+  private readonly liveArrows = new ArrowProjectileSystem();
+  private liveArrowRenderer?: ArrowProjectileRenderer;
 
   constructor(
     readonly id: string,
@@ -103,7 +115,22 @@ abstract class EnemySlotBase implements WorkbenchSlot {
     this.cell = cell;
     this.feedback = feedback;
     this.onCreate();
+    this.liveArrowRenderer = new ArrowProjectileRenderer(scene);
+    this.liveArrowRenderer.create();
     this.start();
+  }
+
+  /** Canvas click: fire a real arrow from the click point at the enemy. */
+  shootArrowFrom(origin: SimVector) {
+    const target = this.enemyPositions()[0] ?? this.cell.center;
+    const length = Math.hypot(target.x - origin.x, target.y - origin.y) || 1;
+
+    this.liveArrows.fireArrow({
+      origin: { ...origin },
+      direction: { x: (target.x - origin.x) / length, y: (target.y - origin.y) / length },
+      speed: 360,
+      damage: 1
+    });
   }
 
   hit(damage: number) {
@@ -119,10 +146,22 @@ abstract class EnemySlotBase implements WorkbenchSlot {
   }
 
   update(timeMs: number, deltaMs: number, target: SimVector) {
-    const arrows = this.pendingArrows;
+    const synthetic = this.pendingArrows;
 
     this.pendingArrows = [];
-    this.step(timeMs, deltaMs, target, arrows);
+
+    const arrowEvents = this.liveArrows.update(deltaMs, this.cell.bounds);
+
+    this.liveArrowRenderer?.playEvents(arrowEvents);
+
+    const arrows = [...synthetic, ...this.liveArrows.getActiveArrows()];
+    const consumedArrowIds = this.step(timeMs, deltaMs, target, arrows);
+
+    for (const arrowId of consumedArrowIds) {
+      this.liveArrows.removeArrow(arrowId);
+    }
+
+    this.liveArrowRenderer?.update(deltaMs, this.liveArrows.getActiveArrows());
 
     if (!this.cleared()) {
       this.restartInMs = -1;
@@ -149,7 +188,7 @@ abstract class EnemySlotBase implements WorkbenchSlot {
     deltaMs: number,
     target: SimVector,
     arrows: readonly ArrowProjectile[]
-  ): void;
+  ): readonly number[];
   protected abstract cleared(): boolean;
   protected abstract enemyPositions(): readonly SimVector[];
 }
@@ -200,6 +239,8 @@ class DartGooberSlot extends EnemySlotBase {
     this.dartRenderer.playEvents(dartEvents);
     this.renderer.update(timeMs, deltaMs, this.system.getActiveEnemies());
     this.dartRenderer.update(deltaMs, this.darts.getActiveDarts());
+
+    return frame.consumedArrowIds;
   }
 
   protected cleared(): boolean {
@@ -269,6 +310,8 @@ class ShroomSlot extends EnemySlotBase {
     this.sporeRenderer.playEvents(sporeEvents);
     this.renderer.update(timeMs, deltaMs, this.system.getActiveEnemies());
     this.sporeRenderer.update(deltaMs, this.spores.getActiveSpores());
+
+    return frame.consumedArrowIds;
   }
 
   protected cleared(): boolean {
@@ -321,6 +364,8 @@ class KaboomletSlot extends EnemySlotBase {
 
     this.renderer.playEvents(frame.events);
     this.renderer.update(timeMs, deltaMs, this.system.getActiveEnemies());
+
+    return frame.consumedArrowIds;
   }
 
   protected cleared(): boolean {
@@ -369,6 +414,8 @@ class SlimeSlot extends EnemySlotBase {
 
     this.renderer.playEvents(frame.events);
     this.renderer.update(timeMs, deltaMs, this.system.getActiveEnemies());
+
+    return frame.consumedArrowIds;
   }
 
   protected cleared(): boolean {
@@ -435,6 +482,8 @@ class SpooperGooperSlot extends EnemySlotBase {
     this.dartRenderer.playEvents(dartEvents);
     this.renderer.update(timeMs, deltaMs, this.system.getActiveEnemies());
     this.dartRenderer.update(deltaMs, this.darts.getActiveDarts());
+
+    return frame.consumedArrowIds;
   }
 
   protected cleared(): boolean {
@@ -565,6 +614,199 @@ class BowbertSlot implements WorkbenchSlot {
   }
 }
 
+
+class BackboardSlot extends EnemySlotBase {
+  private readonly system = new BackboardSystem();
+  private readonly darts = new EnemyDartProjectileSystem();
+  private renderer!: BackboardRenderer;
+  private dartRenderer!: EnemyDartProjectileRenderer;
+
+  readonly actions = [{ label: '强制招架', run: () => this.system.debugForceParry() }];
+
+  constructor() {
+    super('backboard', 'Backboard');
+  }
+
+  protected onCreate() {
+    this.renderer = new BackboardRenderer(this.scene);
+    this.renderer.create();
+    this.dartRenderer = new EnemyDartProjectileRenderer(this.scene);
+    this.dartRenderer.create();
+  }
+
+  start() {
+    this.darts.clear();
+    this.system.startEncounter(this.cell.spawnPoints, { enemyCount: ENCOUNTER_SIZE });
+  }
+
+  protected step(timeMs: number, deltaMs: number, target: SimVector, arrows: readonly ArrowProjectile[]) {
+    const frame = this.system.update(deltaMs, this.cell.bounds, target, arrows);
+
+    for (const event of frame.events) {
+      if (event.type === 'backboard-spawned') {
+        this.feedback.playEnemySpawn(event.position);
+      } else if (event.type === 'backboard-reflected') {
+        this.darts.fireDart({
+          origin: event.origin,
+          direction: event.direction,
+          speed: 250,
+          damage: event.damage,
+          style: 'goober-dart'
+        });
+      } else if (event.type === 'backboard-hit' && event.hp > 0) {
+        this.feedback.playArrowEnemy(event.position, event.damage);
+      } else if (event.type === 'backboard-killed') {
+        this.feedback.playEnemyDeath(event.position);
+      }
+    }
+
+    const dartEvents = this.darts.update(deltaMs, this.cell.bounds, clampToBounds(target, this.cell.bounds));
+
+    this.renderer.playEvents(frame.events);
+    this.dartRenderer.playEvents(dartEvents);
+    this.renderer.update(timeMs, deltaMs, this.system.getActiveEnemies());
+    this.dartRenderer.update(deltaMs, this.darts.getActiveDarts());
+
+    return frame.consumedArrowIds;
+  }
+
+  protected cleared(): boolean {
+    return this.system.isEncounterCleared();
+  }
+
+  protected enemyPositions(): readonly SimVector[] {
+    return this.system.getActiveEnemies().map((enemy) => enemy.position);
+  }
+
+  destroy() {
+    this.renderer.destroy();
+    this.dartRenderer.destroy();
+    this.system.clear();
+    this.darts.clear();
+  }
+}
+
+class SwitcherooSlot extends EnemySlotBase {
+  private readonly system = new SwitcherooSystem();
+  private renderer!: SwitcherooRenderer;
+
+  readonly actions = [{ label: '强制交换', run: () => this.system.debugForceSwap() }];
+
+  constructor() {
+    super('switcheroo', 'Switcheroo');
+  }
+
+  protected onCreate() {
+    this.renderer = new SwitcherooRenderer(this.scene);
+    this.renderer.create();
+  }
+
+  start() {
+    this.system.startEncounter(this.cell.spawnPoints, { enemyCount: ENCOUNTER_SIZE });
+  }
+
+  protected step(timeMs: number, deltaMs: number, target: SimVector, arrows: readonly ArrowProjectile[]) {
+    const frame = this.system.update(deltaMs, this.cell.bounds, target, arrows);
+
+    for (const event of frame.events) {
+      if (event.type === 'switcheroo-spawned') {
+        this.feedback.playEnemySpawn(event.position);
+      } else if (event.type === 'switcheroo-windup') {
+        this.feedback.playSporeBreak(event.position);
+        this.feedback.playSporeBreak(event.targetPosition);
+      } else if (event.type === 'switcheroo-hit' && event.hp > 0) {
+        this.feedback.playArrowEnemy(event.position, event.damage);
+      } else if (event.type === 'switcheroo-killed') {
+        this.feedback.playEnemyDeath(event.position);
+      }
+    }
+
+    this.renderer.playEvents(frame.events);
+    this.renderer.update(timeMs, deltaMs, this.system.getActiveEnemies());
+
+    return frame.consumedArrowIds;
+  }
+
+  protected cleared(): boolean {
+    return this.system.isEncounterCleared();
+  }
+
+  protected enemyPositions(): readonly SimVector[] {
+    return this.system.getActiveEnemies().map((enemy) => enemy.position);
+  }
+
+  destroy() {
+    this.renderer.destroy();
+    this.system.clear();
+  }
+}
+
+class DoorbertSlot extends EnemySlotBase {
+  private readonly system = new DoorbertSystem();
+  private renderer!: DoorbertRenderer;
+  private lastTarget: SimVector = { x: 0, y: 0 };
+
+  readonly actions = [{ label: '强制开门', run: () => this.system.debugForceOpen() }];
+
+  constructor() {
+    super('doorbert', 'Doorbert (+ Keylet)');
+  }
+
+  protected onCreate() {
+    this.renderer = new DoorbertRenderer(this.scene);
+    this.renderer.create();
+  }
+
+  start() {
+    this.system.startEncounter(this.cell.spawnPoints, { enemyCount: 1 });
+  }
+
+  protected step(timeMs: number, deltaMs: number, target: SimVector, arrows: readonly ArrowProjectile[]) {
+    this.lastTarget = target;
+
+    const frame = this.system.update(deltaMs, this.cell.bounds, target, arrows);
+
+    for (const event of frame.events) {
+      if (event.type === 'doorbert-spawned' || event.type === 'keylet-spawned') {
+        this.feedback.playEnemySpawn(event.position);
+      } else if (event.type === 'doorbert-blocked') {
+        this.feedback.playArrowWall(event.position);
+      } else if (event.type === 'doorbert-hit' && event.hp > 0) {
+        this.feedback.playArrowEnemy(event.position, event.damage);
+      } else if (event.type === 'doorbert-killed' || event.type === 'keylet-killed') {
+        this.feedback.playEnemyDeath(event.position);
+      }
+    }
+
+    this.renderer.playEvents(frame.events);
+    this.renderer.update(
+      timeMs,
+      deltaMs,
+      this.system.getActiveDoors(),
+      this.system.getActiveKeylets(),
+      this.lastTarget
+    );
+
+    return frame.consumedArrowIds;
+  }
+
+  protected cleared(): boolean {
+    return this.system.isEncounterCleared();
+  }
+
+  protected enemyPositions(): readonly SimVector[] {
+    return [
+      ...this.system.getActiveDoors().map((door) => door.position),
+      ...this.system.getActiveKeylets().map((keylet) => keylet.position)
+    ];
+  }
+
+  destroy() {
+    this.renderer.destroy();
+    this.system.clear();
+  }
+}
+
 export const createWorkbenchSlots = (): WorkbenchSlot[] => [
   new BowbertSlot(),
   new DartGooberSlot('dart-goober'),
@@ -574,6 +816,9 @@ export const createWorkbenchSlots = (): WorkbenchSlot[] => [
   new KaboomletSlot(),
   new SlimeSlot(),
   new SpooperGooperSlot(),
+  new BackboardSlot(),
+  new SwitcherooSlot(),
+  new DoorbertSlot(),
   // Rigged-but-not-integrated characters review on display stands.
   ...createDisplaySlots()
 ];

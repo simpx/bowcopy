@@ -7,6 +7,7 @@ sourceReferences:
   - source/reference-01.png
   - source/candidate-02.png
 openItems:
+  - INTEGRATED (kit + workbench slot + /?encounter=switcheroo). Review aids: 强制交换 button; in workbench the "player" endpoint is the review cursor. Status stays rigged pending human workbench review.
   - Tune swap cadence, telegraph duration, player-priority weight, and swap radius after integration.
 ---
 

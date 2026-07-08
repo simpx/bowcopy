@@ -123,6 +123,10 @@ const buildSlotCard = (slot: WorkbenchSlotHandle): HTMLElement => {
       button('击杀', () => slot.kill()),
       button('重生', () => slot.respawn())
     );
+
+    for (const action of slot.actions ?? []) {
+      actions.append(button(action.label, action.run));
+    }
   } else {
     actions.append(
       button('受击', () => slot.hit()),

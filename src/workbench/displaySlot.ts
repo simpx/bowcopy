@@ -1,13 +1,7 @@
 import Phaser from 'phaser';
 
-import backboardBaseUrl from '../../assets/characters/backboard/base.png';
-import doorbertBaseUrl from '../../assets/characters/doorbert/base.png';
-import switcherooBaseUrl from '../../assets/characters/switcheroo/base.png';
-import { BACKBOARD_RIG } from '../characters/backboardRig';
-import { DOORBERT_RIG } from '../characters/doorbertRig';
 import { resolveEyeExpressions } from '../characters/eyeEmotionTemplates';
 import type { EyeContainerTuning, EyeName } from '../characters/rigSchema';
-import { SWITCHEROO_RIG } from '../characters/switcherooRig';
 import { drawRuntimeEye } from '../render/eyes/runtimeEye';
 import type { CombatFeedbackRenderer } from '../render/feedback';
 import type { SimVector } from '../sim/player';
@@ -181,11 +175,8 @@ export class DisplaySlot implements WorkbenchSlot {
   }
 }
 
-export const createDisplaySlots = (): DisplaySlot[] => [
-  new DisplaySlot('backboard', 'Backboard', BACKBOARD_RIG as unknown as DisplayRig, backboardBaseUrl),
-  new DisplaySlot('switcheroo', 'Switcheroo', SWITCHEROO_RIG as unknown as DisplayRig, switcherooBaseUrl),
-  new DisplaySlot('doorbert', 'Doorbert', DOORBERT_RIG as unknown as DisplayRig, doorbertBaseUrl)
-];
+// Characters at `rigged` that have not yet earned a kit go here.
+export const createDisplaySlots = (): DisplaySlot[] => [];
 
 export const preloadDisplaySlotAssets = (scene: Phaser.Scene, focusId?: string) => {
   for (const slot of createDisplaySlots()) {

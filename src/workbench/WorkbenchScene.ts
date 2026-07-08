@@ -1,11 +1,14 @@
 import Phaser from 'phaser';
 
+import { preloadBackboardAssets } from '../render/enemies/BackboardRenderer';
 import { preloadDartGooberAssets } from '../render/enemies/DartGooberRenderer';
+import { preloadDoorbertAssets } from '../render/enemies/DoorbertRenderer';
 import { preloadDartTriGooberAssets } from '../render/enemies/DartTriGooberRenderer';
 import { preloadKaboomletAssets } from '../render/enemies/KaboomletRenderer';
 import { preloadRedShroomAssets } from '../render/enemies/RedShroomRenderer';
 import { preloadSlimeAssets } from '../render/enemies/SlimeRenderer';
 import { preloadSpooperGooperAssets } from '../render/enemies/SpooperGooperRenderer';
+import { preloadSwitcherooAssets } from '../render/enemies/SwitcherooRenderer';
 import { CombatFeedbackRenderer } from '../render/feedback';
 import { preloadBowbertPlayerAssets } from '../render/player/BowbertRenderer';
 import {
@@ -49,6 +52,7 @@ export interface WorkbenchSlotHandle {
   readonly id: string;
   readonly label: string;
   readonly kind: 'player' | 'enemy';
+  readonly actions?: ReadonlyArray<{ label: string; run(): void }>;
   hit(): void;
   kill(): void;
   respawn(): void;
@@ -115,6 +119,19 @@ export class WorkbenchScene extends Phaser.Scene {
       preloadSpooperGooperAssets(this);
     }
 
+    if (need('backboard')) {
+      preloadBackboardAssets(this);
+      preloadEnemyDartProjectileAssets(this);
+    }
+
+    if (need('switcheroo')) {
+      preloadSwitcherooAssets(this);
+    }
+
+    if (need('doorbert')) {
+      preloadDoorbertAssets(this);
+    }
+
     preloadDisplaySlotAssets(this, this.focusId);
   }
 
@@ -143,6 +160,24 @@ export class WorkbenchScene extends Phaser.Scene {
     });
     this.input.once(Phaser.Input.Events.POINTER_DOWN, () => {
       this.pointerSeen = true;
+    });
+
+    // Canvas click = fire a real arrow inside that cell (skill review).
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, (pointer: Phaser.Input.Pointer) => {
+      const world = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+
+      this.slots.forEach((slot, index) => {
+        const { bounds } = this.getCell(index);
+
+        if (
+          world.x >= bounds.x &&
+          world.x <= bounds.x + bounds.width &&
+          world.y >= bounds.y &&
+          world.y <= bounds.y + bounds.height
+        ) {
+          slot.shootArrowFrom?.({ x: world.x, y: world.y });
+        }
+      });
     });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.disposeSlots());
@@ -178,6 +213,7 @@ export class WorkbenchScene extends Phaser.Scene {
       id: slot.id,
       label: slot.label,
       kind: slot.kind,
+      actions: slot.actions,
       hit: () => slot.hit(1),
       kill: () => slot.hit(999),
       respawn: () => slot.start(),

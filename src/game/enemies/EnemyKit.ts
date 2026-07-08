@@ -11,14 +11,20 @@ import type {
 } from '../../sim/projectiles';
 import type { RoomBounds, RoomSpawnPoint } from '../../sim/rooms';
 
-export type EncounterKind =
-  | 'dart-goober'
-  | 'dart-tri-goober'
-  | 'red-shroom'
-  | 'kaboomlet'
-  | 'slime'
-  | 'slime-parent'
-  | 'spooper-gooper';
+export const ENCOUNTER_KINDS = [
+  'backboard',
+  'dart-goober',
+  'dart-tri-goober',
+  'red-shroom',
+  'kaboomlet',
+  'slime',
+  'slime-parent',
+  'doorbert',
+  'spooper-gooper',
+  'switcheroo'
+] as const;
+
+export type EncounterKind = (typeof ENCOUNTER_KINDS)[number];
 
 export type EnemyCameraShake = 'hit' | 'damage' | 'dodge' | 'room-clear';
 
@@ -45,6 +51,8 @@ export interface EnemyKitServices {
   shakeCamera(kind: EnemyCameraShake): void;
   /** Dodge-aware player damage incl. hearts HUD, feedback, and camera shake. */
   damagePlayer(sourcePosition: SimVector, damage: number): void;
+  /** Moves Bowbert instantly (switcheroo swaps). Optional: absent in tooling hosts. */
+  teleportPlayer?(position: SimVector): void;
   damagePlayerFromRadius(position: SimVector, radius: number, damage: number): void;
   /** Marks the room cleared with sfx/feedback/shake and optional projectile cleanup. */
   encounterCleared(options: { clearSpores: boolean; clearDarts: boolean }): void;

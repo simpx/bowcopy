@@ -7,6 +7,7 @@ sourceReferences:
   - source/reference-01.png
   - source/candidate-02.png
 openItems:
+  - INTEGRATED (kit + workbench slot + /?encounter=backboard). Review aids: cell click fires a real arrow; 强制招架 button. Status stays rigged pending human workbench review.
   - Decide reflected-arrow visual (v1 reuses the enemy dart projectile; a dedicated bounced-arrow look is a later polish).
   - Tune parry window / recover window / reflect damage after integration.
 ---

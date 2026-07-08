@@ -38,6 +38,8 @@ const exposeAutomationHooks = (controller: WorkbenchController) => {
     kill: (id: string) => find(id)?.kill(),
     respawn: (id: string) => find(id)?.respawn(),
     dodge: (id: string) => find(id)?.dodge?.(),
+    action: (id: string, label: string) =>
+      find(id)?.actions?.find((entry) => entry.label === label)?.run(),
     aliveCount: (id: string) => find(id)?.aliveCount() ?? 0,
     setSpeed: (factor: number) => controller.setSpeed(factor)
   };

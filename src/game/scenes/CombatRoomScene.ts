@@ -12,6 +12,7 @@ import { BowbertPlayerModel, type BowbertPlayerEvent, type SimVector } from '../
 import { type ShroomVariant } from '../../sim/enemies';
 import {
   createEnemyKits,
+  ENCOUNTER_KINDS,
   type EncounterKind,
   type EnemyKit,
   type EnemyKitServices
@@ -71,7 +72,10 @@ const DEBUG_ENCOUNTER_THEMES: Partial<Record<EncounterKind, RoomTheme>> = {
   kaboomlet: 'wood',
   slime: 'stone',
   'slime-parent': 'stone',
-  'spooper-gooper': 'boss'
+  'spooper-gooper': 'boss',
+  backboard: 'wood',
+  switcheroo: 'stone',
+  doorbert: 'boss'
 };
 
 export class CombatRoomScene extends Phaser.Scene {
@@ -358,6 +362,10 @@ export class CombatRoomScene extends Phaser.Scene {
       getPlayerPosition: () => this.player.state.position,
       shakeCamera: (kind) => this.shakeCamera(kind),
       damagePlayer: (sourcePosition, damage) => this.damagePlayerFromEnemy(sourcePosition, damage),
+      teleportPlayer: (position) => {
+        this.player.state.position.x = position.x;
+        this.player.state.position.y = position.y;
+      },
       damagePlayerFromRadius: (position, radius, damage) =>
         this.damagePlayerFromRadius(position, radius, damage),
       encounterCleared: (options) => this.encounterClearedByKit(options),
@@ -524,19 +532,9 @@ export class CombatRoomScene extends Phaser.Scene {
   private getDebugEncounterKind(): EncounterKind | undefined {
     const value = new URLSearchParams(window.location.search).get('encounter');
 
-    if (
-      value === 'dart-goober' ||
-      value === 'dart-tri-goober' ||
-      value === 'red-shroom' ||
-      value === 'kaboomlet' ||
-      value === 'slime' ||
-      value === 'slime-parent' ||
-      value === 'spooper-gooper'
-    ) {
-      return value;
-    }
-
-    return undefined;
+    return ENCOUNTER_KINDS.includes(value as EncounterKind)
+      ? (value as EncounterKind)
+      : undefined;
   }
 
   private isDebugPlayerDemoEnabled(): boolean {
