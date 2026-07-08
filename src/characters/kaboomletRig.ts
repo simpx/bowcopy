@@ -1,17 +1,20 @@
 export const KABOOMLET_RIG = {
   id: 'kaboomlet',
   base: {
-    scale: 1,
+    textureKey: 'kaboomlet-base',
+    imageAsset: 'assets/characters/kaboomlet/base.png',
+    imageSize: { width: 1254, height: 1254 },
+    scale: 0.1,
     y: -18,
     shadow: { width: 66, height: 15, y: 22 },
     hitboxRadius: 35
   },
   gaze: {
     eyes: {
-      left: { x: -11, y: -9, radiusX: 5.5, radiusY: 4.8, rotation: -0.18 },
-      right: { x: 12, y: -9, radiusX: 5.5, radiusY: 4.8, rotation: 0.18 }
+      left: { x: 0.292, y: 0.563, radiusX: 0.052, radiusY: 0.048, rotation: -0.18 },
+      right: { x: 0.687, y: 0.562, radiusX: 0.052, radiusY: 0.048, rotation: 0.18 }
     },
-    pupilOffsetScale: { x: 3, y: 2 }
+    pupilOffsetScale: { x: 0.014, y: 0.01 }
   },
   motion: {
     idleBob: 1.9,

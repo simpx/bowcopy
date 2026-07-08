@@ -1,0 +1,98 @@
+{
+  "id": "arrow",
+  "kind": "projectile",
+  "projectContext": "bowbert",
+  "status": "playtested",
+  "sourceReferences": [
+    "source/reference-01.png"
+  ],
+  "runtime": {
+    "renderer": "src/render/projectiles/ArrowProjectileRenderer.ts",
+    "system": "src/sim/projectiles/ArrowProjectileSystem.ts",
+    "owner": "bowbert",
+    "preload": false
+  },
+  "physics": {
+    "speed": 575,
+    "damage": 1,
+    "ttlMs": 1250,
+    "trailPoints": 7,
+    "boundsMargin": 42,
+    "muzzleDistance": 38,
+    "cadenceMs": 360
+  },
+  "visual": {
+    "localForward": "+x",
+    "shaft": {
+      "x": -15,
+      "y": 0,
+      "width": 34,
+      "height": 4,
+      "color": "#5d3b2c",
+      "alpha": 1
+    },
+    "highlight": {
+      "x": -14,
+      "y": -1.2,
+      "width": 24,
+      "height": 1.3,
+      "color": "#f7ead7",
+      "alpha": 0.7
+    },
+    "head": {
+      "x": 18,
+      "y": 0,
+      "points": [
+        [-7, -7],
+        [8, 0],
+        [-7, 7]
+      ],
+      "color": "#ffcf57",
+      "alpha": 1
+    },
+    "fletching": {
+      "x": -31,
+      "y": 0,
+      "points": [
+        [7, -6],
+        [-5, 0],
+        [7, 6]
+      ],
+      "color": "#eef7ff",
+      "alpha": 0.95
+    }
+  },
+  "trail": {
+    "points": 7,
+    "widthBase": 7,
+    "color": "#ffd06a",
+    "alphaMin": 0.08,
+    "alphaMax": 0.28
+  },
+  "impacts": {
+    "boundary": {
+      "durationMs": 180,
+      "color": "#fff1b5",
+      "radiusStart": 4,
+      "radiusEnd": 20,
+      "strokeWidth": 2,
+      "strokeAlpha": 0.75,
+      "fillAlpha": 0.65,
+      "dotRadius": 2.2
+    }
+  },
+  "exports": {
+    "flight": "exports/arrow-flight.png",
+    "trail": "exports/arrow-trail.png",
+    "impact": "exports/arrow-impact.png",
+    "comparison": "comparison.png"
+  },
+  "audio": {
+    "shoot": "assets/audio/sfx/game/shoot_arrow.ogg",
+    "boundary": null
+  },
+  "openItems": [
+    "Runtime arrow remains procedural; no bitmap projectile base is required yet.",
+    "Impact behavior is intentionally quiet against room boundaries per current audio policy."
+  ]
+}

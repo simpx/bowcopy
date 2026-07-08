@@ -1,5 +1,5 @@
 ---
-status: rigged
+status: playtested
 kind: enemy
 projectContext: bowbert
 lockedReference: source/reference-01.png
@@ -9,7 +9,6 @@ sourceReferences:
   - source/video-black-bullet-reference.jpg
   - source/video-black-cloud-reference.jpg
 openItems:
-  - Add or generate a reusable black ink projectile core if procedural dots are not enough.
   - Tune black projectile speed, count, spread, and trail density in gameplay.
 ---
 
@@ -33,10 +32,24 @@ Source:
 - `source/video-black-bullet-reference.jpg`
 - `source/video-black-cloud-reference.jpg`
 
+Generated candidates:
+- `base.png`: promoted from `exports/base-v2-candidate.png` as the current runtime base.
+- `base-source.png`: promoted from `exports/base-v2-green.png` as the retained chroma source.
+- `exports/base-before-regeneration.png`: previous runtime base kept for rollback/comparison.
+- `exports/base-v2-candidate.png`: regenerated Bowbert Studio base candidate with stable white sockets and no baked projectile/VFX.
+- `exports/base-v2-green.png`: chroma-key source for the regenerated candidate.
+
+Runtime evidence:
+- `src/characters/spooperGooperRig.ts`: points to `assets/characters/spooper-gooper/base.png` and stores normalized eye placement.
+- `src/render/enemies/SpooperGooperRenderer.ts`: loads the accepted PNG base and overlays runtime black gaze.
+- `src/game/scenes/CombatRoomScene.ts`: maps boss rooms and `?encounter=spooper-gooper` debug previews to Spooper Gooper.
+- `playtest/runtime-encounter.png`: browser screenshot proof that the accepted PNG base renders in the game scene.
+- `../../projectiles/black-ink/`: dedicated black ink projectile package used by Spooper's attack.
+
 Decomposition:
 - base.png: generated fixed enemy body.
 - attachments/: only independently positioned art such as eyes, weapon, shell, hat, or props.
-- projectiles/: black ink/smoke projectile core if a bitmap core is needed; no baked trail.
+- projectiles/: black ink/smoke projectile is tracked in `../../projectiles/black-ink`; no baked trail.
 - vfx/: black dot trail, black cloud burst, vanish puff, and appear/disappear opacity are runtime effects.
 - runtime: gaze, opacity, hover drift, appear/disappear timing, black projectile firing, trail particles, hit/death timing.
 
@@ -51,7 +64,7 @@ Mode: image-to-image, high reference fidelity.
 
 Layer contract:
 - Fixed ghost body base with stable silhouette, eye whites, lower tendrils, and thick outline.
-- Runtime owns black gaze, opacity, hover, vanish/appear puffs, black ink projectiles, projectile trails, and cloud bursts.
+- Runtime owns black gaze, opacity, hover, vanish/appear puffs, black ink projectile style, projectile trails, and cloud bursts.
 
 Generation prompt:
 > Transparent-background Bowbert project top-down doodle enemy sprite matching the locked reference. Preserve exact silhouette, posture, thick black outline, simple color blocking, focal face/eye features, and scale relationship. Create a clean reusable base layer for Bowbert runtime squash/stretch, bob, tilt, hit, and expression overlays.

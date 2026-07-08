@@ -1,0 +1,147 @@
+{
+  "id": "silly-sigils",
+  "kind": "reward-ui-icon-set",
+  "projectContext": "bowbert",
+  "status": "asset-generated",
+  "sourceReferences": [
+    "../../../refs/video-notes.md",
+    "../../../docs/replication-plan.md",
+    "../../../refs/keyframes/0990_sigils.jpg"
+  ],
+  "style": {
+    "viewBox": "0 0 96 96",
+    "cardWidth": 190,
+    "cardMinHeight": 236,
+    "iconSize": 84,
+    "cornerRadius": 8,
+    "outlineWidth": 5,
+    "innerOutlineWidth": 2,
+    "dropShadow": "0 10px 0 #020503, 0 18px 26px rgb(0 0 0 / 34%)",
+    "background": "#102016",
+    "cardBackground": "#16291e",
+    "cardEdge": "#020503",
+    "cardInset": "#234430",
+    "text": "#fff6c8",
+    "mutedText": "#b9caa5",
+    "accent": "#e9cf6f",
+    "choiceGlow": "#eedcff"
+  },
+  "palette": {
+    "black": "#020503",
+    "white": "#fff8e8",
+    "gold": "#e9cf6f",
+    "green": "#74bd64",
+    "blue": "#6fb3e9",
+    "red": "#ff4f6f",
+    "purple": "#b889f2",
+    "brown": "#7a5036",
+    "gray": "#839083",
+    "darkGreen": "#264632"
+  },
+  "rewardChoice": {
+    "cardsOffered": 3,
+    "layout": "wizard-room-choice-row",
+    "spawnRoomTheme": "wizard",
+    "copyTone": "short-effect-plus-cost",
+    "openItems": [
+      "Final wizard NPC and reward selection flow are not implemented yet."
+    ]
+  },
+  "sigils": [
+    {
+      "id": "triple-shot",
+      "name": "Triple Shot",
+      "rarity": "common",
+      "icon": "triple-arrows",
+      "accent": "#e9cf6f",
+      "effect": "Fire three arrows in a spread.",
+      "tradeoff": "Longer shoot cooldown.",
+      "gameplayHooks": {
+        "arrowCountAdd": 2,
+        "spreadDegrees": 14,
+        "shootCooldownMultiplier": 1.35
+      }
+    },
+    {
+      "id": "zoomsters",
+      "name": "Zoomsters",
+      "rarity": "common",
+      "icon": "speed-boots",
+      "accent": "#6fb3e9",
+      "effect": "Move faster.",
+      "tradeoff": "Lose max health.",
+      "gameplayHooks": {
+        "moveSpeedMultiplier": 1.22,
+        "maxHealthDelta": -1
+      }
+    },
+    {
+      "id": "piercer",
+      "name": "Piercer",
+      "rarity": "common",
+      "icon": "piercing-arrow",
+      "accent": "#fff8e8",
+      "effect": "Arrows pierce enemies.",
+      "tradeoff": "Future charge slows movement.",
+      "gameplayHooks": {
+        "arrowPierceCount": 2,
+        "chargeMoveSpeedMultiplier": 0.72
+      }
+    },
+    {
+      "id": "arrow-fringe",
+      "name": "Arrow Fringe",
+      "rarity": "uncommon",
+      "icon": "random-arrows",
+      "accent": "#ff4f6f",
+      "effect": "Add a random extra arrow.",
+      "tradeoff": "Less predictable shots.",
+      "gameplayHooks": {
+        "extraRandomArrows": 1,
+        "randomSpreadDegrees": 52
+      }
+    },
+    {
+      "id": "useless",
+      "name": "Useless",
+      "rarity": "joke",
+      "icon": "empty-scribble",
+      "accent": "#839083",
+      "effect": "Does nothing.",
+      "tradeoff": "Still takes a slot.",
+      "gameplayHooks": {}
+    },
+    {
+      "id": "peaceful",
+      "name": "Peaceful",
+      "rarity": "uncommon",
+      "icon": "peaceful-room",
+      "accent": "#74bd64",
+      "effect": "Some rooms spawn no monsters.",
+      "tradeoff": "Lower combat rewards later.",
+      "gameplayHooks": {
+        "emptyRoomChanceAdd": 0.16,
+        "rewardMultiplier": 0.9
+      }
+    },
+    {
+      "id": "silly-hatter",
+      "name": "Silly Hatter",
+      "rarity": "joke",
+      "icon": "silly-hat",
+      "accent": "#b889f2",
+      "effect": "Wear a random hat.",
+      "tradeoff": "Purely cosmetic for now.",
+      "gameplayHooks": {
+        "cosmeticHat": "random"
+      }
+    }
+  ],
+  "runtimeReferences": [
+    "../../../src/data/sigilKit.ts"
+  ],
+  "openItems": [
+    "Wizard-room reward choice UI is not implemented yet.",
+    "Gameplay effects are planned data only; no sigil simulation is wired yet."
+  ]
+}

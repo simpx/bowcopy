@@ -1,0 +1,206 @@
+{
+  "id": "combat-feedback",
+  "kind": "effect",
+  "projectContext": "bowbert",
+  "status": "playtested",
+  "sourceReferences": [],
+  "runtime": {
+    "renderer": "src/render/feedback/CombatFeedbackRenderer.ts",
+    "scene": "src/game/scenes/CombatRoomScene.ts",
+    "preload": false
+  },
+  "depth": {
+    "pulse": 116,
+    "particles": 118,
+    "labels": 122
+  },
+  "tones": {
+    "wall": {
+      "color": "#fff1b5",
+      "textColor": "#fff1b5",
+      "label": "Thunk",
+      "pulse": {
+        "startRadius": 4,
+        "endRadius": 24,
+        "lineWidth": 2,
+        "durationMs": 180
+      },
+      "particles": {
+        "count": 7,
+        "colors": [
+          "#fff1b5"
+        ],
+        "minSpeed": 28,
+        "maxSpeed": 88,
+        "radius": 2.4,
+        "durationMs": 190
+      }
+    },
+    "hit": {
+      "color": "#ffcf57",
+      "textColor": "#ffcf57",
+      "label": "-1",
+      "pulse": {
+        "startRadius": 6,
+        "endRadius": 30,
+        "lineWidth": 3,
+        "durationMs": 210
+      },
+      "particles": {
+        "count": 9,
+        "colors": [
+          "#ffcf57",
+          "#fff1b5"
+        ],
+        "minSpeed": 48,
+        "maxSpeed": 112,
+        "radius": 3,
+        "durationMs": 210
+      }
+    },
+    "death": {
+      "color": "#e96945",
+      "textColor": "#ffd69c",
+      "label": "Down",
+      "pulse": {
+        "startRadius": 10,
+        "endRadius": 46,
+        "lineWidth": 4,
+        "durationMs": 270
+      },
+      "particles": {
+        "count": 18,
+        "colors": [
+          "#e96945",
+          "#ffcf57",
+          "#a2d07e"
+        ],
+        "minSpeed": 70,
+        "maxSpeed": 168,
+        "radius": 4.8,
+        "durationMs": 340
+      }
+    },
+    "spawn": {
+      "color": "#a2d07e",
+      "textColor": "#c2f26d",
+      "label": "Pop",
+      "pulse": {
+        "startRadius": 18,
+        "endRadius": 42,
+        "lineWidth": 2,
+        "durationMs": 300
+      },
+      "particles": {
+        "count": 8,
+        "colors": [
+          "#a2d07e",
+          "#f1c07a"
+        ],
+        "minSpeed": 34,
+        "maxSpeed": 92,
+        "radius": 3.4,
+        "durationMs": 230
+      }
+    },
+    "dodge": {
+      "color": "#8fe8ff",
+      "textColor": "#9eefff",
+      "label": "Dodge",
+      "pulse": {
+        "startRadius": 14,
+        "endRadius": 38,
+        "lineWidth": 2,
+        "durationMs": 220
+      },
+      "particles": {
+        "count": 10,
+        "colors": [
+          "#8fe8ff"
+        ],
+        "minSpeed": 42,
+        "maxSpeed": 130,
+        "radius": 3,
+        "durationMs": 220,
+        "directional": true
+      }
+    },
+    "damage": {
+      "color": "#ff8f6b",
+      "textColor": "#ffad8f",
+      "label": "-0.5",
+      "pulse": {
+        "startRadius": 18,
+        "endRadius": 54,
+        "lineWidth": 4,
+        "durationMs": 260
+      },
+      "particles": {
+        "count": 14,
+        "colors": [
+          "#ff8f6b",
+          "#ffd0a1"
+        ],
+        "minSpeed": 62,
+        "maxSpeed": 148,
+        "radius": 4.6,
+        "durationMs": 290
+      }
+    },
+    "clear": {
+      "color": "#f5e38a",
+      "textColor": "#f5e38a",
+      "label": "Room clear",
+      "pulse": {
+        "startRadius": 44,
+        "endRadius": 118,
+        "lineWidth": 5,
+        "durationMs": 420
+      },
+      "particles": {
+        "count": 34,
+        "colors": [
+          "#f5e38a",
+          "#a2d07e",
+          "#8fe8ff",
+          "#ffcf57"
+        ],
+        "minSpeed": 86,
+        "maxSpeed": 176,
+        "radius": 4.1,
+        "durationMs": 460
+      },
+      "roomPulse": {
+        "durationMs": 520,
+        "insetStart": 20,
+        "insetEnd": 0,
+        "alpha": 0.32
+      }
+    }
+  },
+  "motion": {
+    "particleDamping": 0.982,
+    "gravity": 112,
+    "pulseFillAlpha": 0.16,
+    "labelLiftScale": 0.1
+  },
+  "exports": {
+    "hit": "exports/combat-feedback-hit.png",
+    "death": "exports/combat-feedback-death.png",
+    "dodge": "exports/combat-feedback-dodge.png",
+    "clear": "exports/combat-feedback-clear.png",
+    "combo": "exports/combat-feedback-combo.png",
+    "comparison": "comparison.png"
+  },
+  "audio": {
+    "wall": "assets/audio/sfx/game/hit_sand_or_rock.ogg",
+    "hit": "assets/audio/sfx/game/shroom_hit.wav",
+    "death": "assets/audio/sfx/game/shroom_death.wav",
+    "dodge": "assets/audio/sfx/game/dodge_roll.ogg",
+    "damage": "assets/audio/sfx/game/player_damage_soft.wav",
+    "clear": "assets/audio/sfx/game/room_clear.mp3"
+  },
+  "openItems": [
+    "Tune text labels and particle density after mobile readability review."
+  ]
+}

@@ -113,7 +113,7 @@ export class ShroomSporeProjectileRenderer {
 
       const config = SPORE_CONFIGS[spore.variant];
       const tailStartIndex = 1;
-      const dotCount = spore.variant === 'purple' ? 4 : 3;
+      const dotCount = spore.variant === 'purple' ? 6 : 5;
       const highlightColor = spore.variant === 'purple' ? 0xb8aaff : 0xffb19a;
 
       for (let index = tailStartIndex; index < spore.trail.length; index += 1) {
@@ -121,7 +121,7 @@ export class ShroomSporeProjectileRenderer {
         const point = spore.trail[index];
         const progress = (index - tailStartIndex) / Math.max(1, spore.trail.length - tailStartIndex - 1);
         const spread = config.trailWidth * (0.16 + progress * 0.14);
-        const alpha = (0.14 + progress * 0.26) * fade;
+        const alpha = (0.24 + progress * 0.36) * fade;
         const tangent = {
           x: point.x - previous.x,
           y: point.y - previous.y
@@ -137,7 +137,7 @@ export class ShroomSporeProjectileRenderer {
           const along = 0.18 + (dot / Math.max(1, dotCount - 1)) * 0.7;
           const side = Math.sin(seed) * spread;
           const back = Math.cos(seed * 1.7) * spread * 0.55;
-          const radius = Math.max(1.2, config.trailWidth * (0.055 + progress * 0.042));
+          const radius = Math.max(1.5, config.trailWidth * (0.085 + progress * 0.064));
           const x = previous.x + (point.x - previous.x) * along + normal.x * side - spore.direction.x * back;
           const y = previous.y + (point.y - previous.y) * along + normal.y * side - spore.direction.y * back;
 

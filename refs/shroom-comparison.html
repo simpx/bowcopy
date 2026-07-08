@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shroom Character Comparison</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #07110c;
+        color: #f7f1d0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+          #07110c;
+        background-size: 44px 44px;
+      }
+
+      main {
+        width: 1200px;
+        padding: 28px;
+      }
+
+      h1 {
+        margin: 0 0 18px;
+        font-size: 36px;
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+
+      .panel {
+        min-height: 430px;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        border: 1px solid #2e4a37;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #101c14;
+      }
+
+      .label {
+        padding: 11px 12px;
+        border-bottom: 1px solid #2e4a37;
+        color: #ffd75d;
+        font-size: 15px;
+        font-weight: 900;
+      }
+
+      .stage {
+        display: grid;
+        place-items: center;
+        min-height: 372px;
+        padding: 18px;
+        background: radial-gradient(circle at center 62%, rgba(255, 215, 93, 0.08), transparent 48%), #0a1610;
+      }
+
+      img,
+      canvas {
+        max-width: 100%;
+        max-height: 342px;
+        object-fit: contain;
+        filter: drop-shadow(0 8px 0 rgba(0, 0, 0, 0.16));
+      }
+
+      canvas {
+        width: 342px;
+        height: 342px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1></h1>
+      <div class="grid">
+        <section class="panel">
+          <div class="label">Locked Reference</div>
+          <div class="stage"><img id="reference" alt="" /></div>
+        </section>
+        <section class="panel">
+          <div class="label">Accepted Base</div>
+          <div class="stage"><img id="base" alt="" /></div>
+        </section>
+        <section class="panel">
+          <div class="label">Runtime Assembly</div>
+          <div class="stage"><canvas id="canvas" width="684" height="684"></canvas></div>
+        </section>
+      </div>
+    </main>
+    <script>
+      const id = new URLSearchParams(window.location.search).get("id") || "red-shroom";
+      const folder = `../assets/characters/${id}/`;
+      const loadImage = (src) =>
+        new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = reject;
+          image.src = src;
+        });
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+      const drawCutEllipse = (ctx, width, height, config) => {
+        const radiusX = width / 2;
+        const radiusY = height / 2;
+        const slope = config.cutSlope ?? 1.6;
+        const offset = (config.cutOffset ?? -0.36) * radiusY;
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.beginPath();
+        ctx.moveTo(-radiusX * 1.4, slope * -radiusX + offset);
+        ctx.lineTo(radiusX * 1.4, slope * radiusX + offset);
+        ctx.lineTo(radiusX * 1.4, radiusY * 1.4);
+        ctx.lineTo(-radiusX * 1.4, radiusY * 1.4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      };
+
+      const drawEyes = (ctx, rig) => {
+        const config = rig.gaze.emotions.angry ?? rig.gaze.emotions.default;
+        const { width, height } = rig.base.imageSize;
+        ctx.fillStyle = "#050505";
+        for (const key of ["left", "right"]) {
+          const eye = rig.gaze.eyes[key];
+          const x = (eye.x - 0.5) * width;
+          const y = (eye.y - 0.5) * height;
+          const w = eye.radiusX * width * 2 * (config.eyeScaleX ?? 1) * (config.pupilScale ?? 1);
+          const h = eye.radiusY * height * 2 * (config.eyeScaleY ?? 1) * (config.pupilScale ?? 1);
+          const mirror = key === "left" ? -1 : 1;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate((eye.rotation ?? 0) + (config.eyeTiltAdd ?? 0) * mirror);
+          if (config.shape === "cut-ellipse") {
+            drawCutEllipse(ctx, w, h, config);
+          } else {
+            ctx.beginPath();
+            ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      };
+
+      const render = async () => {
+        const rig = await fetch(`${folder}rig.json`).then((response) => response.json());
+        const base = await loadImage(`${folder}${rig.base.image}`);
+        document.querySelector("h1").textContent = `${id} asset comparison`;
+        document.querySelector("#reference").src = `${folder}${rig.sourceReferences?.[0] ?? "source/reference-01.png"}`;
+        document.querySelector("#base").src = `${folder}${rig.base.image}`;
+        const ctx = document.querySelector("#canvas").getContext("2d");
+        ctx.clearRect(0, 0, 684, 684);
+        ctx.fillStyle = "#122219";
+        ctx.fillRect(0, 0, 684, 684);
+        ctx.strokeStyle = "rgba(255,255,255,.045)";
+        for (let line = 0; line <= 684; line += 57) {
+          ctx.beginPath();
+          ctx.moveTo(line, 0);
+          ctx.lineTo(line, 684);
+          ctx.moveTo(0, line);
+          ctx.lineTo(684, line);
+          ctx.stroke();
+        }
+        ctx.save();
+        ctx.translate(342, 360 + (rig.base.offset?.y ?? 0) * 2.1);
+        ctx.scale((rig.base.scale ?? 0.1) * 8, (rig.base.scale ?? 0.1) * 8);
+        ctx.drawImage(base, -rig.base.imageSize.width / 2, -rig.base.imageSize.height / 2);
+        drawEyes(ctx, rig);
+        ctx.restore();
+      };
+
+      render();
+    </script>
+  </body>
+</html>

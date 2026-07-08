@@ -1,12 +1,18 @@
 import { InputController } from '../input/InputController';
 import type { InputVector } from '../input/types';
+import { TOUCH_CONTROLS_RIG } from '../data/touchControlsKit';
 
 const TOUCH_INPUT_STYLE_ID = 'bowbert-touch-input-styles';
+const TOUCH_LAYOUT = TOUCH_CONTROLS_RIG.layout;
+const TOUCH_STYLE = TOUCH_CONTROLS_RIG.style;
+const TOUCH_INPUT = TOUCH_CONTROLS_RIG.input;
+const TOUCH_COPY = TOUCH_CONTROLS_RIG.copy;
+
 const TOUCH_INPUT_STYLES = `
 .touch-input-overlay {
   position: absolute;
   inset: 0;
-  z-index: 5;
+  z-index: ${TOUCH_LAYOUT.zIndex};
   display: none;
   pointer-events: none;
 }
@@ -19,7 +25,7 @@ const TOUCH_INPUT_STYLES = `
 
 .touch-input-joystick {
   position: absolute;
-  width: clamp(104px, 19vmin, 132px);
+  width: ${TOUCH_LAYOUT.joystickWidth};
   aspect-ratio: 1;
   border-radius: 50%;
   touch-action: none;
@@ -27,8 +33,8 @@ const TOUCH_INPUT_STYLES = `
 
 .touch-input-joystick-left {
   z-index: 2;
-  left: max(18px, env(safe-area-inset-left));
-  bottom: max(18px, env(safe-area-inset-bottom));
+  left: ${TOUCH_LAYOUT.joystickLeft};
+  bottom: ${TOUCH_LAYOUT.joystickBottom};
 }
 
 .touch-input-aim-zone {
@@ -37,19 +43,19 @@ const TOUCH_INPUT_STYLES = `
   right: 0;
   bottom: 0;
   z-index: 1;
-  width: 58%;
+  width: ${TOUCH_LAYOUT.aimZoneWidth};
   pointer-events: auto;
   touch-action: none;
 }
 
 .touch-input-right-cluster {
   position: absolute;
-  right: max(18px, env(safe-area-inset-right));
-  bottom: max(18px, env(safe-area-inset-bottom));
+  right: ${TOUCH_LAYOUT.rightClusterRight};
+  bottom: ${TOUCH_LAYOUT.rightClusterBottom};
   z-index: 2;
   display: flex;
   align-items: end;
-  gap: clamp(12px, 2.6vmin, 20px);
+  gap: ${TOUCH_LAYOUT.rightClusterGap};
   pointer-events: none;
 }
 
@@ -63,27 +69,25 @@ const TOUCH_INPUT_STYLES = `
 .touch-input-joystick-ring {
   position: absolute;
   inset: 0;
-  border: 2px solid rgb(218 235 255 / 48%);
+  border: ${TOUCH_STYLE.ringBorder};
   border-radius: inherit;
-  background:
-    radial-gradient(circle at center, rgb(248 241 220 / 12%) 0 31%, transparent 32%),
-    rgb(17 23 34 / 44%);
-  box-shadow: 0 10px 34px rgb(0 0 0 / 26%);
+  background: ${TOUCH_STYLE.ringBackground};
+  box-shadow: ${TOUCH_STYLE.ringShadow};
 }
 
 .touch-input-joystick-stick {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: clamp(42px, 8vmin, 56px);
+  width: ${TOUCH_LAYOUT.stickWidth};
   aspect-ratio: 1;
-  border: 2px solid rgb(248 241 220 / 72%);
+  border: ${TOUCH_STYLE.stickBorder};
   border-radius: 50%;
-  background: rgb(248 241 220 / 30%);
-  box-shadow: 0 6px 18px rgb(0 0 0 / 22%);
+  background: ${TOUCH_STYLE.stickBackground};
+  box-shadow: ${TOUCH_STYLE.stickShadow};
   transform: translate3d(0, 0, 0);
   translate: -50% -50%;
-  transition: transform 80ms ease-out;
+  transition: transform ${TOUCH_STYLE.stickTransitionMs}ms ease-out;
 }
 
 .touch-input-joystick.is-active .touch-input-joystick-stick {
@@ -91,21 +95,21 @@ const TOUCH_INPUT_STYLES = `
 }
 
 .touch-input-dodge {
-  width: clamp(64px, 11vmin, 78px);
+  width: ${TOUCH_LAYOUT.dodgeWidth};
   aspect-ratio: 1;
-  border: 2px solid rgb(248 241 220 / 64%);
+  border: ${TOUCH_STYLE.dodgeBorder};
   border-radius: 50%;
-  color: #f8f1dc;
-  background: rgb(92 225 185 / 24%);
-  box-shadow: 0 10px 34px rgb(0 0 0 / 24%);
-  font: 700 clamp(11px, 2.1vmin, 13px) / 1 Inter, ui-sans-serif, system-ui, sans-serif;
+  color: ${TOUCH_STYLE.dodgeText};
+  background: ${TOUCH_STYLE.dodgeBackground};
+  box-shadow: ${TOUCH_STYLE.dodgeShadow};
+  font: ${TOUCH_STYLE.dodgeFont};
   letter-spacing: 0;
   text-transform: uppercase;
   touch-action: none;
 }
 
 .touch-input-dodge:active {
-  background: rgb(92 225 185 / 42%);
+  background: ${TOUCH_STYLE.dodgeActiveBackground};
   transform: translateY(1px);
 }
 
@@ -115,24 +119,24 @@ const TOUCH_INPUT_STYLES = `
   }
 }
 
-@media (max-height: 430px) and (orientation: landscape) {
+@media (max-height: ${TOUCH_LAYOUT.compactLandscape.maxHeightPx}px) and (orientation: landscape) {
   .touch-input-joystick-left,
   .touch-input-right-cluster {
-    bottom: max(12px, env(safe-area-inset-bottom));
+    bottom: ${TOUCH_LAYOUT.compactLandscape.joystickBottom};
   }
 
   .touch-input-joystick {
-    width: clamp(88px, 22vh, 108px);
+    width: ${TOUCH_LAYOUT.compactLandscape.joystickWidth};
   }
 
   .touch-input-dodge {
-    width: clamp(56px, 14vh, 66px);
+    width: ${TOUCH_LAYOUT.compactLandscape.dodgeWidth};
   }
 }
 
 @media (orientation: portrait) {
   .touch-input-aim-zone {
-    width: 64%;
+    width: ${TOUCH_LAYOUT.portraitAimZoneWidth};
   }
 }
 `;
@@ -260,7 +264,7 @@ class VirtualJoystick {
       this.centerY = rect.top + rect.height / 2;
     }
 
-    this.radius = Math.max(1, Math.min(rect.width, rect.height) * 0.38);
+    this.radius = Math.max(1, Math.min(rect.width, rect.height) * TOUCH_INPUT.radiusFactor);
   }
 
   private updateFromPointer(event: PointerEvent) {
@@ -276,7 +280,11 @@ class VirtualJoystick {
     this.options.stick.style.transform = `translate3d(${visualX}px, ${visualY}px, 0)`;
 
     if (this.options.mode === 'direction') {
-      this.options.onMove(distance > this.radius * 0.12 ? makeVector(directionX, directionY) : makeVector(0, 0));
+      this.options.onMove(
+        distance > this.radius * TOUCH_INPUT.directionDeadZone
+          ? makeVector(directionX, directionY)
+          : makeVector(0, 0)
+      );
       return;
     }
 
@@ -301,20 +309,20 @@ export class TouchInputOverlay {
 
     this.root.className = 'touch-input-overlay';
 
-    const left = createJoystickElements('touch-input-joystick-left', 'Movement joystick');
-    const right = createJoystickElements('touch-input-joystick-right', 'Aim and fire joystick');
+    const left = createJoystickElements('touch-input-joystick-left', TOUCH_COPY.movementLabel);
+    const right = createJoystickElements('touch-input-joystick-right', TOUCH_COPY.aimLabel);
     const aimZone = document.createElement('div');
     const rightCluster = document.createElement('div');
 
     aimZone.className = 'touch-input-aim-zone';
-    aimZone.setAttribute('aria-label', 'Aim and fire area');
+    aimZone.setAttribute('aria-label', TOUCH_COPY.aimZoneLabel);
 
     rightCluster.className = 'touch-input-right-cluster';
 
     this.dodgeButton.type = 'button';
     this.dodgeButton.className = 'touch-input-dodge';
-    this.dodgeButton.textContent = 'Dodge';
-    this.dodgeButton.setAttribute('aria-label', 'Dodge');
+    this.dodgeButton.textContent = TOUCH_COPY.dodge;
+    this.dodgeButton.setAttribute('aria-label', TOUCH_COPY.dodge);
     this.dodgeButton.addEventListener('pointerdown', this.handleDodgePointerDown);
 
     rightCluster.append(this.dodgeButton, right.root);
@@ -324,7 +332,7 @@ export class TouchInputOverlay {
     this.leftJoystick = new VirtualJoystick({
       root: left.root,
       stick: left.stick,
-      mode: 'analog',
+      mode: TOUCH_INPUT.leftMode,
       onMove: (vector) => input.setMoveVector(vector, 'touch'),
       onEnd: () => input.setMoveVector(makeVector(0, 0), 'touch')
     });
@@ -333,8 +341,8 @@ export class TouchInputOverlay {
       root: right.root,
       stick: right.stick,
       eventRoot: aimZone,
-      mode: 'direction',
-      centerMode: 'pointer',
+      mode: TOUCH_INPUT.rightMode,
+      centerMode: TOUCH_INPUT.rightCenterMode,
       onMove: (vector) => {
         input.setAimVector(vector, 'touch');
         input.setFiring(isActiveVector(vector), 'touch');

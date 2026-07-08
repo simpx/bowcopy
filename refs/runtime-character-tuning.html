@@ -1,0 +1,1029 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bowbert Runtime Character Tuning</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07110c;
+        --panel: #101c14;
+        --panel-2: #14251a;
+        --line: #2e4a37;
+        --text: #f7f1d0;
+        --muted: #b8c8ae;
+        --accent: #ffd75d;
+        --ok: #8eea7a;
+        --danger: #ff7d5c;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.034) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.034) 1px, transparent 1px),
+          var(--bg);
+        background-size: 44px 44px;
+        color: var(--text);
+      }
+
+      main {
+        width: min(1500px, calc(100vw - 24px));
+        margin: 0 auto;
+        padding: 22px 0 40px;
+      }
+
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 18px;
+        margin-bottom: 16px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        font-size: clamp(26px, 3vw, 42px);
+        line-height: 1;
+      }
+
+      .summary {
+        color: var(--muted);
+        max-width: 690px;
+        text-align: right;
+        line-height: 1.48;
+        font-size: 14px;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0 0 14px;
+      }
+
+      button,
+      select,
+      input[type="range"] {
+        font: inherit;
+      }
+
+      button,
+      select {
+        min-height: 36px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #112017;
+        color: var(--text);
+      }
+
+      button {
+        padding: 0 12px;
+        cursor: pointer;
+        font-weight: 800;
+      }
+
+      button.active {
+        border-color: var(--accent);
+        color: #10140b;
+        background: var(--accent);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .character {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--panel) 94%, black);
+        overflow: hidden;
+      }
+
+      .character > .head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        padding: 13px 14px 10px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .name {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .name h2 {
+        font-size: 22px;
+      }
+
+      .status {
+        color: var(--ok);
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .links {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: end;
+      }
+
+      .links a {
+        display: inline-grid;
+        place-items: center;
+        min-height: 30px;
+        padding: 0 9px;
+        border-radius: 5px;
+        border: 1px solid var(--line);
+        color: var(--text);
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 800;
+        background: #0c1811;
+      }
+
+      .body {
+        display: grid;
+        grid-template-columns: minmax(330px, 1.1fr) minmax(250px, 0.9fr);
+        gap: 1px;
+        background: var(--line);
+      }
+
+      .preview,
+      .side {
+        background: var(--panel);
+      }
+
+      .preview {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        min-height: 440px;
+      }
+
+      .canvas-wrap {
+        display: grid;
+        place-items: center;
+        min-height: 300px;
+        padding: 10px;
+        background:
+          radial-gradient(circle at center 66%, rgba(255, 215, 93, 0.08), transparent 45%),
+          #0a1610;
+      }
+
+      canvas {
+        width: min(100%, 520px);
+        max-height: 320px;
+        border: 1px solid #223828;
+        border-radius: 6px;
+        background: #122219;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        padding: 12px;
+        border-top: 1px solid var(--line);
+      }
+
+      label {
+        display: grid;
+        gap: 5px;
+        min-width: 0;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      label span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        accent-color: var(--accent);
+      }
+
+      .images {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+        gap: 1px;
+        background: var(--line);
+      }
+
+      .image-cell {
+        position: relative;
+        min-height: 126px;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background: #0a1510;
+      }
+
+      .image-cell img {
+        display: block;
+        max-width: 92%;
+        max-height: 120px;
+        object-fit: contain;
+        filter: drop-shadow(0 7px 0 rgba(0, 0, 0, 0.16));
+      }
+
+      .image-cell .label {
+        position: absolute;
+        left: 7px;
+        top: 6px;
+        padding: 3px 6px;
+        border-radius: 4px;
+        color: var(--accent);
+        background: rgba(3, 8, 5, 0.76);
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .side {
+        display: grid;
+        grid-template-rows: auto auto 1fr;
+        min-height: 440px;
+      }
+
+      .facts {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 12px;
+      }
+
+      .fact {
+        min-height: 50px;
+        border: 1px solid #25402e;
+        border-radius: 6px;
+        background: var(--panel-2);
+        padding: 8px;
+      }
+
+      .fact b {
+        display: block;
+        color: var(--accent);
+        font-size: 11px;
+        margin-bottom: 4px;
+      }
+
+      .fact span {
+        font-size: 13px;
+        color: var(--text);
+        overflow-wrap: anywhere;
+      }
+
+      pre {
+        margin: 0;
+        padding: 12px;
+        overflow: auto;
+        min-height: 190px;
+        max-height: 255px;
+        border-top: 1px solid var(--line);
+        color: #dfe8d6;
+        background: #08110c;
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      .vfx {
+        position: absolute;
+        inset: auto 8px 8px auto;
+        padding: 3px 6px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.55);
+        color: var(--danger);
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      @media (max-width: 1100px) {
+        header,
+        .grid,
+        .body {
+          grid-template-columns: 1fr;
+        }
+
+        .summary {
+          text-align: left;
+        }
+      }
+
+      @media (max-width: 620px) {
+        main {
+          width: min(100vw - 12px, 1500px);
+          padding-top: 12px;
+        }
+
+        .character > .head,
+        .controls,
+        .facts {
+          grid-template-columns: 1fr;
+        }
+
+        .images {
+          grid-template-columns: 1fr;
+        }
+
+        .image-cell {
+          min-height: 150px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Runtime Character Tuning</h1>
+        <div class="summary">
+          当前已接入角色/敌人的 base、runtime 眼神、基础动作、playtest 证据和 rig 数据总览。这里不改文件，只用来检查当前资产是否能按 Bowbert 运行时方式组合。
+        </div>
+      </header>
+
+      <div class="toolbar" aria-label="global controls">
+        <button type="button" data-global-state="default" class="active">默认</button>
+        <button type="button" data-global-state="aim">瞄准</button>
+        <button type="button" data-global-state="attack">攻击</button>
+        <button type="button" data-global-state="hit">受击</button>
+        <button type="button" data-global-state="jump">跳跃</button>
+        <button type="button" data-global-state="armed">倒计时</button>
+      </div>
+
+      <div id="characters" class="grid"></div>
+    </main>
+
+    <template id="character-template">
+      <article class="character">
+        <div class="head">
+          <div class="name">
+            <h2></h2>
+            <span class="status"></span>
+          </div>
+          <div class="links">
+            <a data-link="folder" href="#">folder</a>
+            <a data-link="game" href="#">game</a>
+            <a data-link="split" href="#">split</a>
+          </div>
+        </div>
+        <div class="body">
+          <section class="preview">
+            <div class="images">
+              <div class="image-cell">
+                <span class="label">Reference</span>
+                <img data-img="reference" alt="" />
+              </div>
+              <div class="image-cell">
+                <span class="label">Base</span>
+                <img data-img="base" alt="" />
+              </div>
+              <div class="image-cell" data-projectile-cell hidden>
+                <span class="label">Projectile</span>
+                <img data-img="projectile" alt="" />
+              </div>
+              <div class="image-cell">
+                <span class="label">Playtest</span>
+                <img data-img="playtest" alt="" />
+              </div>
+            </div>
+            <div class="canvas-wrap">
+              <canvas width="520" height="320"></canvas>
+            </div>
+            <div class="controls">
+              <label>
+                <span>眼神/状态</span>
+                <select data-control="emotion"></select>
+              </label>
+              <label>
+                <span>动作</span>
+                <select data-control="motion">
+                  <option value="idle">idle</option>
+                  <option value="walk">walk/chase</option>
+                  <option value="jump">jump/hover</option>
+                  <option value="attack">attack/armed</option>
+                  <option value="hit">hit</option>
+                </select>
+              </label>
+              <label>
+                <span>朝向 X</span>
+                <input data-control="aimX" type="range" min="-1" max="1" step="0.01" value="1" />
+              </label>
+              <label>
+                <span>朝向 Y</span>
+                <input data-control="aimY" type="range" min="-1" max="1" step="0.01" value="0" />
+              </label>
+              <label>
+                <span>预览缩放</span>
+                <input data-control="zoom" type="range" min="0.75" max="1.9" step="0.01" value="1.28" />
+              </label>
+              <label>
+                <span>VFX</span>
+                <select data-control="vfx">
+                  <option value="on">on</option>
+                  <option value="off">off</option>
+                </select>
+              </label>
+            </div>
+          </section>
+          <aside class="side">
+            <div class="facts">
+              <div class="fact"><b>behavior</b><span data-fact="behavior"></span></div>
+              <div class="fact"><b>base scale</b><span data-fact="scale"></span></div>
+              <div class="fact"><b>hitbox</b><span data-fact="hitbox"></span></div>
+              <div class="fact"><b>open items</b><span data-fact="open"></span></div>
+            </div>
+            <div class="toolbar" style="padding: 0 12px 12px; margin: 0">
+              <button type="button" data-action="copy">复制 rig</button>
+              <button type="button" data-action="copy-preview">复制当前预览参数</button>
+            </div>
+            <pre></pre>
+          </aside>
+        </div>
+      </article>
+    </template>
+
+    <script>
+      const CHARACTERS = [
+        {
+          id: "bowbert",
+          name: "Bowbert",
+          debug: "dart-goober",
+          playtest: "playtest/runtime-encounter.png",
+          states: ["default", "aim", "focused", "alert", "hit"]
+        },
+        {
+          id: "dart-goober",
+          name: "Dart Goober",
+          debug: "dart-goober",
+          playtest: "playtest/runtime-encounter.png",
+          states: ["default", "angry", "alert", "aim", "hit"]
+        },
+        {
+          id: "dart-tri-goober",
+          name: "Dart Tri Goober",
+          debug: "dart-tri-goober",
+          playtest: "playtest/runtime-encounter.png",
+          states: ["default", "angry", "aim", "hit"]
+        },
+        {
+          id: "red-shroom",
+          name: "Red Shroom",
+          debug: "red-shroom&variant=red",
+          playtest: "playtest/runtime-encounter.png",
+          states: ["default", "angry", "aim", "dizzy", "hit"]
+        },
+        {
+          id: "purple-shroom",
+          name: "Purple Shroom",
+          debug: "red-shroom&variant=purple",
+          playtest: "playtest/runtime-encounter.png",
+          states: ["default", "angry", "aim", "dizzy", "hit"]
+        },
+        {
+          id: "kaboomlet",
+          name: "Kaboomlet",
+          debug: "kaboomlet",
+          playtest: "playtest/runtime-encounter.png",
+          states: ["default", "armed", "hit"]
+        },
+        {
+          id: "slime-parent",
+          name: "Slime Parent",
+          debug: "slime-parent",
+          splitDebug: "slime-parent&split=1",
+          playtest: "playtest/runtime-encounter.png",
+          states: ["default", "jump", "hit"]
+        },
+        {
+          id: "slime",
+          name: "Slime Child",
+          debug: "slime",
+          playtest: "playtest/runtime-encounter.png",
+          states: ["default", "jump", "hit"]
+        },
+        {
+          id: "spooper-gooper",
+          name: "Spooper Gooper",
+          debug: "spooper-gooper",
+          playtest: "playtest/runtime-encounter.png",
+          states: ["default", "attack", "hit"]
+        }
+      ];
+
+      const PREVIEW_ORIGIN = { x: 260, y: 178 };
+      const IMAGE_ROOT = "../assets/characters/";
+      const GAME_ROOT = "../";
+
+      const bySelector = (root, selector) => root.querySelector(selector);
+
+      const loadImage = (src) =>
+        new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = reject;
+          image.src = src;
+        });
+
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+      const drawEllipseShape = (ctx, width, height) => {
+        ctx.beginPath();
+        ctx.ellipse(0, 0, width / 2, height / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      };
+
+      const drawCutEllipseShape = (ctx, width, height, config) => {
+        const radiusX = width / 2;
+        const radiusY = height / 2;
+        const slope = config.cutSlope ?? 1.6;
+        const offset = (config.cutOffset ?? -0.36) * radiusY;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(0, 0, radiusX, radiusY, 0, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.beginPath();
+        ctx.moveTo(-radiusX * 1.4, slope * -radiusX + offset);
+        ctx.lineTo(radiusX * 1.4, slope * radiusX + offset);
+        ctx.lineTo(radiusX * 1.4, radiusY * 1.4);
+        ctx.lineTo(-radiusX * 1.4, radiusY * 1.4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      };
+
+      const drawXShape = (ctx, width, height) => {
+        const line = Math.max(7, Math.min(width, height) * 0.24);
+        ctx.save();
+        ctx.strokeStyle = "#050505";
+        ctx.lineWidth = line;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(-width * 0.32, -height * 0.3);
+        ctx.lineTo(width * 0.32, height * 0.3);
+        ctx.moveTo(width * 0.32, -height * 0.3);
+        ctx.lineTo(-width * 0.32, height * 0.3);
+        ctx.stroke();
+        ctx.restore();
+      };
+
+      const drawSpiralShape = (ctx, width, height, time) => {
+        const radius = Math.min(width, height) * 0.44;
+        const phase = time * 0.006;
+        ctx.save();
+        ctx.strokeStyle = "#050505";
+        ctx.lineWidth = Math.max(6, radius * 0.2);
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        for (let index = 0; index < 44; index += 1) {
+          const progress = index / 43;
+          const angle = progress * Math.PI * 2.65 + phase;
+          const localRadius = radius * (0.16 + progress * 0.84);
+          const x = Math.cos(angle) * localRadius;
+          const y = Math.sin(angle) * localRadius;
+          if (index === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+      };
+
+      const getEmotionConfig = (rig, emotion) =>
+        rig.gaze?.emotions?.[emotion] ?? rig.gaze?.emotions?.default ?? {};
+
+      const drawEyes = (ctx, rig, emotion, aim, time) => {
+        const eyes = rig.gaze?.eyes ?? {};
+        const config = getEmotionConfig(rig, emotion);
+        const { width, height } = rig.base.imageSize;
+
+        ctx.fillStyle = "#050505";
+
+        for (const key of ["left", "right"]) {
+          const eye = eyes[key];
+          if (!eye) continue;
+
+          const isAttachedEye = rig.gaze?.mode === "attached-eye-pupils";
+          const offsetBasis = isAttachedEye ? eye.outerRadius * width * 2 : width;
+          const offsetX =
+            clamp(aim.x, -1, 1) * offsetBasis * (rig.gaze?.pupilOffsetScale?.x ?? 0.014) +
+            (config.pupilShiftX ?? 0) * offsetBasis;
+          const offsetY =
+            clamp(aim.y, -1, 1) * offsetBasis * (rig.gaze?.pupilOffsetScale?.y ?? 0.01) +
+            (config.pupilShiftY ?? 0) * offsetBasis;
+          const x = (eye.x - 0.5) * width + offsetX;
+          const y = (eye.y - 0.5) * height + offsetY;
+          const eyeScaleX = (config.eyeScaleX ?? 1) * (config.pupilScale ?? 1);
+          const eyeScaleY = (config.eyeScaleY ?? 1) * (config.pupilScale ?? 1);
+          const attachedPupilDiameter = isAttachedEye
+            ? eye.outerRadius * width * 2 * eye.whiteRatio * eye.pupilRatio
+            : 0;
+          const w = isAttachedEye ? attachedPupilDiameter * eyeScaleX : eye.radiusX * width * eyeScaleX * 2;
+          const h = isAttachedEye ? attachedPupilDiameter * eyeScaleY : eye.radiusY * height * eyeScaleY * 2;
+          const mirrorTilt = key === "left" ? -1 : 1;
+
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate((eye.rotation ?? 0) + (config.eyeTiltAdd ?? 0) * mirrorTilt);
+
+          if (config.shape === "spiral") {
+            drawSpiralShape(ctx, w, h, time);
+          } else if (config.shape === "x") {
+            drawXShape(ctx, w, h);
+          } else if (config.shape === "cut-ellipse") {
+            drawCutEllipseShape(ctx, w, h, config);
+          } else {
+            drawEllipseShape(ctx, w, h);
+          }
+
+          ctx.restore();
+        }
+      };
+
+      const drawShadow = (ctx, rig, air, zoom) => {
+        const shadow = rig.base.shadow ?? { width: 70, height: 14, y: 22 };
+        const alpha = clamp(0.28 - air / 260, 0.08, 0.28);
+        ctx.save();
+        ctx.fillStyle = `rgba(4, 12, 7, ${alpha})`;
+        ctx.beginPath();
+        ctx.ellipse(
+          PREVIEW_ORIGIN.x,
+          PREVIEW_ORIGIN.y + shadow.y + air * 0.42,
+          (shadow.width * zoom) / 2,
+          (shadow.height * zoom) / 2,
+          0,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        ctx.restore();
+      };
+
+      const drawSporeBurstPreview = (ctx, rig, projectileImage, time, zoom) => {
+        const spores = rig.spores ?? rig.projectiles?.spore;
+        if (!spores) return;
+
+        const color = rig.vfx?.sporeTrail?.trailColor ?? "#ff4d54";
+        const width = rig.vfx?.sporeTrail?.trailWidth ?? spores.trailWidth ?? 14;
+        const originY = spores.originOffsetY ?? spores.originOffset?.y ?? -30;
+        const distance = spores.burstDistance ?? 180;
+        const travel = 0.28 + ((time * 0.00042) % 1) * 0.72;
+        const directions = [
+          { x: -0.72, y: -0.7 },
+          { x: 0.72, y: -0.7 },
+          { x: -0.72, y: 0.7 },
+          { x: 0.72, y: 0.7 }
+        ];
+        const origin = {
+          x: PREVIEW_ORIGIN.x,
+          y: PREVIEW_ORIGIN.y + originY * zoom * (rig.base.scale ?? 0.1) * 5.5
+        };
+
+        ctx.save();
+        for (const direction of directions) {
+          const end = {
+            x: origin.x + direction.x * distance * travel * 0.62,
+            y: origin.y + direction.y * distance * travel * 0.48
+          };
+          const tail = {
+            x: end.x - direction.x * width * 3.7 * zoom,
+            y: end.y - direction.y * width * 2.8 * zoom
+          };
+          const gradient = ctx.createLinearGradient(tail.x, tail.y, end.x, end.y);
+          gradient.addColorStop(0, "rgba(255,255,255,0)");
+          gradient.addColorStop(0.4, color);
+          gradient.addColorStop(1, color);
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = Math.max(4, width * zoom * 0.4);
+          ctx.lineCap = "round";
+          ctx.globalAlpha = 0.48;
+          ctx.beginPath();
+          ctx.moveTo(tail.x, tail.y);
+          ctx.lineTo(end.x, end.y);
+          ctx.stroke();
+
+          if (projectileImage) {
+            const size = Math.max(18, (spores.scale ?? 0.047) * 480 * zoom);
+            ctx.globalAlpha = 1;
+            ctx.save();
+            ctx.translate(end.x, end.y);
+            ctx.rotate(Math.atan2(direction.y, direction.x));
+            ctx.drawImage(projectileImage, -size / 2, -size / 2, size, size);
+            ctx.restore();
+          } else {
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(end.x, end.y, Math.max(5, width * zoom * 0.35), 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      };
+
+      const drawVfx = (ctx, character, rig, motion, time, zoom, projectileImage) => {
+        if (motion === "attack" && (rig.spores || rig.projectiles?.spore)) {
+          drawSporeBurstPreview(ctx, rig, projectileImage, time, zoom);
+        }
+
+        if ((character.id === "dart-goober" || character.id === "dart-tri-goober") && motion === "attack") {
+          const pulse = 0.5 + Math.sin(time * 0.011) * 0.5;
+          const attack = rig.attack ?? {};
+          ctx.save();
+          ctx.fillStyle = `rgba(255, 211, 106, ${0.22 + pulse * 0.32})`;
+          ctx.beginPath();
+          ctx.arc(
+            PREVIEW_ORIGIN.x + (attack.muzzleX ?? 27) * zoom,
+            PREVIEW_ORIGIN.y + (attack.muzzleY ?? -20) * zoom,
+            ((attack.muzzleRadius ?? 9) + pulse * 7) * zoom,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+          ctx.restore();
+        }
+
+        if (character.id === "kaboomlet" && motion === "attack") {
+          const pulse = 0.5 + Math.sin(time * 0.009) * 0.5;
+          ctx.save();
+          ctx.strokeStyle = `rgba(255, 110, 69, ${0.32 + pulse * 0.28})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.ellipse(PREVIEW_ORIGIN.x, PREVIEW_ORIGIN.y + 10, 55 + pulse * 18, 34 + pulse * 10, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = "#ffd75d";
+          ctx.beginPath();
+          ctx.arc(PREVIEW_ORIGIN.x + 35, PREVIEW_ORIGIN.y - 64, 4 + pulse * 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        if ((character.id === "slime-parent" || character.id === "slime") && motion === "jump") {
+          ctx.save();
+          ctx.fillStyle = "rgba(180, 244, 108, 0.5)";
+          for (let index = 0; index < 5; index += 1) {
+            const angle = (Math.PI * 2 * index) / 5 + time * 0.001;
+            ctx.beginPath();
+            ctx.arc(
+              PREVIEW_ORIGIN.x + Math.cos(angle) * 48,
+              PREVIEW_ORIGIN.y + 34 + Math.sin(angle) * 10,
+              3.5 * zoom,
+              0,
+              Math.PI * 2
+            );
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        if (character.id === "spooper-gooper" && motion === "attack") {
+          ctx.save();
+          ctx.fillStyle = "rgba(5, 5, 5, 0.9)";
+          for (let index = 0; index < 3; index += 1) {
+            const x = PREVIEW_ORIGIN.x + 72 + index * 22;
+            const y = PREVIEW_ORIGIN.y - 20 + (index - 1) * 20 + Math.sin(time * 0.005 + index) * 3;
+            ctx.beginPath();
+            ctx.arc(x, y, (10 - index) * zoom, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      };
+
+      const drawPreview = (ctx, character, rig, image, projectileImage, controls, time) => {
+        const width = ctx.canvas.width;
+        const height = ctx.canvas.height;
+        const zoom = Number(controls.zoom.value);
+        const motion = controls.motion.value;
+        const emotion = controls.emotion.value;
+        const aim = {
+          x: Number(controls.aimX.value),
+          y: Number(controls.aimY.value)
+        };
+        const motionData = rig.motion ?? {};
+        const bob =
+          (motionData.idleBob ?? motionData.hoverBob ?? 1.5) *
+          Math.sin(time * 0.004 + character.id.length);
+        const jumpAmount = motion === "jump" ? 1 : 0;
+        const attackAmount = motion === "attack" ? 1 : 0;
+        const hitAmount = motion === "hit" ? 1 : 0;
+        const walkAmount = motion === "walk" ? 1 : 0;
+        const air = jumpAmount * (motionData.jumpHeight ?? motionData.hoverBob ?? 28);
+        const baseSquash =
+          Math.sin(time * 0.008) * (motionData.idleSquash ?? motionData.idleWobble ?? 0.018) +
+          jumpAmount * -0.15 +
+          attackAmount * (motionData.armedPulse ?? 0.07) * Math.sin(time * 0.012) +
+          hitAmount * 0.1 +
+          walkAmount * Math.sin(time * 0.01) * (motionData.chaseWobble ?? 0.05);
+        const scaleX = 1 + baseSquash + hitAmount * (motionData.hitScaleX ?? 0.08);
+        const scaleY = 1 - baseSquash - hitAmount * (motionData.hitScaleY ?? 0.05);
+        const opacity = character.id === "spooper-gooper" && motion === "jump"
+          ? 0.66 + Math.sin(time * 0.005) * 0.22
+          : 1;
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = "#122219";
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= width; x += 40) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, height);
+          ctx.stroke();
+        }
+        for (let y = 0; y <= height; y += 40) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(width, y);
+          ctx.stroke();
+        }
+
+        drawShadow(ctx, rig, air, zoom);
+
+        ctx.save();
+        ctx.translate(PREVIEW_ORIGIN.x, PREVIEW_ORIGIN.y + (rig.base.offset?.y ?? 0) + bob - air);
+        ctx.scale((rig.base.scale ?? 0.1) * zoom * scaleX, (rig.base.scale ?? 0.1) * zoom * scaleY);
+        ctx.globalAlpha = opacity;
+        ctx.drawImage(image, -rig.base.imageSize.width / 2, -rig.base.imageSize.height / 2);
+        drawEyes(ctx, rig, emotion, aim, time);
+        ctx.restore();
+
+        if (controls.vfx.value === "on") {
+          drawVfx(ctx, character, rig, motion, time, zoom, projectileImage);
+        }
+
+        ctx.fillStyle = "rgba(5, 10, 7, 0.74)";
+        ctx.fillRect(10, 10, 162, 42);
+        ctx.fillStyle = "#ffd75d";
+        ctx.font = "800 13px system-ui";
+        ctx.fillText(`${emotion} / ${motion}`, 20, 36);
+      };
+
+      const setSelectOptions = (select, options, preferred) => {
+        select.replaceChildren();
+        for (const option of options) {
+          const element = document.createElement("option");
+          element.value = option;
+          element.textContent = option;
+          select.append(element);
+        }
+        select.value = options.includes(preferred) ? preferred : options[0] ?? "default";
+      };
+
+      const loadCharacter = async (character) => {
+        const folder = `${IMAGE_ROOT}${character.id}/`;
+        const [rig, image] = await Promise.all([
+          fetch(`${folder}rig.json`).then((response) => response.json()),
+          loadImage(`${folder}base.png`)
+        ]);
+        const projectileSrc = rig.projectiles?.spore?.image ?? rig.spores?.imageAsset ?? null;
+        const projectileImage = projectileSrc ? await loadImage(`${folder}${projectileSrc}`).catch(() => null) : null;
+        const template = bySelector(document, "#character-template").content.cloneNode(true);
+        const article = bySelector(template, ".character");
+        const canvas = bySelector(template, "canvas");
+        const ctx = canvas.getContext("2d");
+        const controls = {
+          emotion: bySelector(template, '[data-control="emotion"]'),
+          motion: bySelector(template, '[data-control="motion"]'),
+          aimX: bySelector(template, '[data-control="aimX"]'),
+          aimY: bySelector(template, '[data-control="aimY"]'),
+          zoom: bySelector(template, '[data-control="zoom"]'),
+          vfx: bySelector(template, '[data-control="vfx"]')
+        };
+        const emotionKeys = Object.keys(rig.gaze?.emotions ?? { default: {} });
+        setSelectOptions(controls.emotion, [...new Set([...character.states, ...emotionKeys])], "default");
+
+        bySelector(template, "h2").textContent = character.name;
+        bySelector(template, ".status").textContent = rig.status ?? "unknown";
+        bySelector(template, '[data-img="reference"]').src = `${folder}${rig.sourceReferences?.[0] ?? "source/reference-01.png"}`;
+        bySelector(template, '[data-img="base"]').src = `${folder}${rig.base.image}`;
+        const projectileCell = bySelector(template, "[data-projectile-cell]");
+        if (projectileSrc) {
+          bySelector(template, '[data-img="projectile"]').src = `${folder}${projectileSrc}`;
+          projectileCell.hidden = false;
+        }
+        bySelector(template, '[data-img="playtest"]').src = `${folder}${character.playtest}`;
+        bySelector(template, '[data-link="folder"]').href = `${folder}tuning.html`;
+        bySelector(template, '[data-link="game"]').href = `${GAME_ROOT}?encounter=${character.debug}`;
+        const splitLink = bySelector(template, '[data-link="split"]');
+        if (character.splitDebug) {
+          splitLink.href = `${GAME_ROOT}?encounter=${character.splitDebug}`;
+        } else {
+          splitLink.remove();
+        }
+        bySelector(template, '[data-fact="behavior"]').textContent =
+          rig.behavior?.phaseLoop?.join(" -> ") ??
+          rig.behavior?.attackType ??
+          rig.prototype?.system ??
+          rig.prototype?.systemPrecedent ??
+          rig.prototype?.renderer ??
+          "runtime";
+        bySelector(template, '[data-fact="scale"]').textContent = `${rig.base.scale} / ${rig.base.imageSize.width}x${rig.base.imageSize.height}`;
+        bySelector(template, '[data-fact="hitbox"]').textContent = `${rig.base.hitbox?.radius ?? "n/a"}`;
+        bySelector(template, '[data-fact="open"]').textContent = `${rig.openItems?.length ?? 0}`;
+
+        const pre = bySelector(template, "pre");
+        const syncPre = () => {
+          pre.textContent = JSON.stringify(
+            {
+              id: rig.id,
+              status: rig.status,
+              preview: {
+                emotion: controls.emotion.value,
+                motion: controls.motion.value,
+                aimX: Number(controls.aimX.value),
+                aimY: Number(controls.aimY.value),
+                zoom: Number(controls.zoom.value),
+                vfx: controls.vfx.value
+              },
+              rig
+            },
+            null,
+            2
+          );
+        };
+
+        for (const control of Object.values(controls)) {
+          control.addEventListener("input", syncPre);
+          control.addEventListener("change", syncPre);
+        }
+
+        bySelector(template, '[data-action="copy"]').addEventListener("click", async () => {
+          await navigator.clipboard.writeText(JSON.stringify(rig, null, 2));
+        });
+        bySelector(template, '[data-action="copy-preview"]').addEventListener("click", async () => {
+          await navigator.clipboard.writeText(pre.textContent);
+        });
+
+        syncPre();
+        bySelector(document, "#characters").append(article);
+
+        const tick = (time) => {
+          drawPreview(ctx, character, rig, image, projectileImage, controls, time);
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+
+        return { character, controls, rig };
+      };
+
+      const loadedCharacters = (async () => {
+        const loaded = [];
+
+        for (const character of CHARACTERS) {
+          loaded.push(await loadCharacter(character));
+        }
+
+        return loaded;
+      })();
+
+      for (const button of document.querySelectorAll("[data-global-state]")) {
+        button.addEventListener("click", async () => {
+          document.querySelectorAll("[data-global-state]").forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          const state = button.dataset.globalState;
+          for (const item of await loadedCharacters) {
+            if (Array.from(item.controls.emotion.options).some((option) => option.value === state)) {
+              item.controls.emotion.value = state;
+            }
+            if (state === "jump") item.controls.motion.value = "jump";
+            else if (state === "aim") item.controls.motion.value = "attack";
+            else if (state === "attack" || state === "armed") item.controls.motion.value = "attack";
+            else if (state === "hit") item.controls.motion.value = "hit";
+            else item.controls.motion.value = "idle";
+            item.controls.emotion.dispatchEvent(new Event("change"));
+          }
+        });
+      }
+    </script>
+  </body>
+</html>

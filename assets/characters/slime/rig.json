@@ -2,7 +2,7 @@
   "id": "slime",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "rigged",
+  "status": "playtested",
   "sourceReferences": [
     "source/reference-01.png",
     "source/reference-02.png",
@@ -33,7 +33,8 @@
       "width": 74,
       "height": 15,
       "y": 22
-    }
+    },
+    "notes": "base.png now uses the previously closer silhouette with baked black gaze removed; fixed white eye sockets stay in the base and runtime draws the black gaze."
   },
   "attachments": {
     "eyes": {
@@ -46,17 +47,17 @@
     "archetype": "angry-embedded",
     "eyes": {
       "left": {
-        "x": 0.355,
-        "y": 0.455,
-        "radiusX": 0.04,
-        "radiusY": 0.035,
+        "x": 0.36,
+        "y": 0.462,
+        "radiusX": 0.032,
+        "radiusY": 0.036,
         "rotation": -0.12
       },
       "right": {
-        "x": 0.63,
-        "y": 0.455,
-        "radiusX": 0.04,
-        "radiusY": 0.035,
+        "x": 0.642,
+        "y": 0.462,
+        "radiusX": 0.032,
+        "radiusY": 0.036,
         "rotation": 0.12
       }
     },
@@ -140,7 +141,7 @@
     "jump": null
   },
   "openItems": [
-    "Decide whether to rename this folder to slime-child before runtime integration.",
-    "Wire as the child spawned by slime-parent death."
+    "Tune child jump cadence, hitbox, and split-cluster readability during gameplay balancing.",
+    "Decide later whether the folder should be renamed to slime-child; current runtime uses id slime as the child role."
   ]
 }

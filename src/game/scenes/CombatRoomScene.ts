@@ -8,12 +8,20 @@ import { PlayerHealth } from '../PlayerHealth';
 import { DungeonMinimap } from '../../ui/DungeonMinimap';
 import { HeartsHud } from '../../ui/HeartsHud';
 import { TouchInputOverlay } from '../../ui/TouchInputOverlay';
-import { BowbertPlayerModel, type BowbertPlayerEvent } from '../../sim/player';
-import { DartGooberSystem, RedShroomSystem, type ShroomVariant } from '../../sim/enemies';
+import { BowbertPlayerModel, type BowbertPlayerEvent, type SimVector } from '../../sim/player';
+import {
+  DartGooberSystem,
+  KaboomletSystem,
+  RedShroomSystem,
+  SlimeSystem,
+  SpooperGooperSystem,
+  type ShroomVariant
+} from '../../sim/enemies';
 import { ArrowProjectileSystem, EnemyDartProjectileSystem, ShroomSporeProjectileSystem } from '../../sim/projectiles';
 import { CombatSfxDirector, preloadCombatSfx } from '../../audio/CombatSfxDirector';
 import {
   OPPOSITE_DOOR_SIDE,
+  ROOM_THEME_NAMES,
   clearCurrentDungeonRoom,
   createCombatRoomDefinitionForDungeonRoom,
   createInitialDungeonState,
@@ -24,17 +32,24 @@ import {
   startCurrentDungeonRoomCombat,
   type CombatRoomDefinition,
   type DungeonState,
-  type RoomDoorSide
+  type RoomDoorSide,
+  type RoomTheme
 } from '../../sim/rooms';
 import { CombatRoomRenderer, preloadCombatRoomAssets } from '../../render/rooms';
 import { BowbertRenderer, preloadBowbertPlayerAssets } from '../../render/player';
 import {
   DartGooberRenderer,
   DartTriGooberRenderer,
+  KaboomletRenderer,
   RedShroomRenderer,
+  SlimeRenderer,
+  SpooperGooperRenderer,
+  preloadKaboomletAssets,
   preloadDartGooberAssets,
   preloadDartTriGooberAssets,
-  preloadRedShroomAssets
+  preloadRedShroomAssets,
+  preloadSlimeAssets,
+  preloadSpooperGooperAssets
 } from '../../render/enemies';
 import { CombatFeedbackRenderer } from '../../render/feedback';
 import {
@@ -45,9 +60,17 @@ import {
   preloadEnemyDartProjectileAssets,
   preloadShroomSporeProjectileAssets
 } from '../../render/projectiles';
+import { PURPLE_SHROOM_CHARACTER, RED_SHROOM_CHARACTER } from '../../render/characters/layeredCharacterConfig';
 
 type CameraShakeKind = 'arrow-fire' | 'hit' | 'damage' | 'dodge' | 'room-clear';
-type EncounterKind = 'dart-goober' | 'dart-tri-goober' | 'red-shroom';
+type EncounterKind =
+  | 'dart-goober'
+  | 'dart-tri-goober'
+  | 'red-shroom'
+  | 'kaboomlet'
+  | 'slime'
+  | 'slime-parent'
+  | 'spooper-gooper';
 
 const CAMERA_VIEW = GAME_SIZE;
 const PLAYER_START = {
@@ -65,6 +88,15 @@ const CAMERA_SHAKES: Record<CameraShakeKind, { readonly durationMs: number; read
   dodge: { durationMs: 36, intensity: 0.0014 },
   'room-clear': { durationMs: 130, intensity: 0.0018 }
 };
+const DEBUG_ENCOUNTER_THEMES: Partial<Record<EncounterKind, RoomTheme>> = {
+  'dart-goober': 'wood',
+  'dart-tri-goober': 'stone',
+  'red-shroom': 'mushroom',
+  kaboomlet: 'wood',
+  slime: 'stone',
+  'slime-parent': 'stone',
+  'spooper-gooper': 'boss'
+};
 
 export class CombatRoomScene extends Phaser.Scene {
   private readonly inputController = new InputController();
@@ -76,6 +108,9 @@ export class CombatRoomScene extends Phaser.Scene {
   private readonly projectiles = new ArrowProjectileSystem();
   private readonly enemies = new DartGooberSystem();
   private readonly redShrooms = new RedShroomSystem();
+  private readonly kaboomlets = new KaboomletSystem();
+  private readonly slimes = new SlimeSystem();
+  private readonly spooperGoopers = new SpooperGooperSystem();
   private readonly enemyDarts = new EnemyDartProjectileSystem();
   private readonly shroomSpores = new ShroomSporeProjectileSystem();
   private desktopInput?: DesktopInputAdapter;
@@ -88,12 +123,17 @@ export class CombatRoomScene extends Phaser.Scene {
   private enemyRenderer?: DartGooberRenderer;
   private dartTriGooberRenderer?: DartTriGooberRenderer;
   private redShroomRenderer?: RedShroomRenderer;
+  private kaboomletRenderer?: KaboomletRenderer;
+  private slimeRenderer?: SlimeRenderer;
+  private spooperGooperRenderer?: SpooperGooperRenderer;
   private enemyDartRenderer?: EnemyDartProjectileRenderer;
   private shroomSporeRenderer?: ShroomSporeProjectileRenderer;
   private feedbackRenderer?: CombatFeedbackRenderer;
   private sfx?: CombatSfxDirector;
   private dungeonState: DungeonState = createInitialDungeonState();
   private currentRoomDefinition: CombatRoomDefinition = referenceCombatRoom;
+  private debugPlayerDemoElapsedMs = 0;
+  private debugPlayerDemoDodgeCycle = -1;
 
   constructor() {
     super('CombatRoomScene');
@@ -108,6 +148,9 @@ export class CombatRoomScene extends Phaser.Scene {
     preloadDartGooberAssets(this);
     preloadDartTriGooberAssets(this);
     preloadRedShroomAssets(this);
+    preloadKaboomletAssets(this);
+    preloadSlimeAssets(this);
+    preloadSpooperGooperAssets(this);
     preloadCombatSfx(this);
   }
 
@@ -120,6 +163,7 @@ export class CombatRoomScene extends Phaser.Scene {
       this.dungeonState,
       getCurrentDungeonRoom(this.dungeonState)
     );
+    this.applyDebugEncounterFromUrl();
     this.player = new BowbertPlayerModel({
       x: PLAYER_START.x,
       y: PLAYER_START.y
@@ -127,6 +171,9 @@ export class CombatRoomScene extends Phaser.Scene {
     this.projectiles.clear();
     this.enemies.clear();
     this.redShrooms.clear();
+    this.kaboomlets.clear();
+    this.slimes.clear();
+    this.spooperGoopers.clear();
     this.enemyDarts.clear();
     this.shroomSpores.clear();
     this.playerHealth.reset();
@@ -147,12 +194,20 @@ export class CombatRoomScene extends Phaser.Scene {
     this.dartTriGooberRenderer.create();
     this.redShroomRenderer = new RedShroomRenderer(this);
     this.redShroomRenderer.create();
+    this.kaboomletRenderer = new KaboomletRenderer(this);
+    this.kaboomletRenderer.create();
+    this.slimeRenderer = new SlimeRenderer(this);
+    this.slimeRenderer.create();
+    this.spooperGooperRenderer = new SpooperGooperRenderer(this);
+    this.spooperGooperRenderer.create();
     this.playerRenderer = new BowbertRenderer(this);
     this.playerRenderer.create();
     this.playerRenderer.update(0, 0, this.player.state);
     this.feedbackRenderer = new CombatFeedbackRenderer(this);
     this.feedbackRenderer.create();
     this.sfx = new CombatSfxDirector(this);
+    this.bootstrapDebugEncounter();
+    this.bootstrapDebugFeedback();
 
     this.desktopInput = new DesktopInputAdapter(this, this.inputController, () => this.player.state.position);
     this.createHeartsHud();
@@ -168,6 +223,7 @@ export class CombatRoomScene extends Phaser.Scene {
 
   update(time: number, delta: number) {
     this.desktopInput?.update();
+    this.updateDebugPlayerDemo(delta);
 
     const snapshot = this.inputController.consumeSnapshot();
     const playerFrame = this.player.update(snapshot, delta, this.currentRoomDefinition.bounds);
@@ -179,6 +235,7 @@ export class CombatRoomScene extends Phaser.Scene {
 
     const projectileEvents = this.projectiles.update(delta, this.currentRoomDefinition.bounds);
     this.handleProjectileEvents(projectileEvents);
+    const encounterKind = this.getCurrentEncounterKind();
     const enemyFrame = this.enemies.update(
       delta,
       this.currentRoomDefinition.bounds,
@@ -203,6 +260,42 @@ export class CombatRoomScene extends Phaser.Scene {
     }
 
     this.handleRedShroomEvents(redShroomFrame.events);
+    const kaboomletFrame = this.kaboomlets.update(
+      delta,
+      this.currentRoomDefinition.bounds,
+      playerFrame.state.position,
+      this.projectiles.getActiveArrows()
+    );
+
+    for (const arrowId of kaboomletFrame.consumedArrowIds) {
+      this.projectiles.removeArrow(arrowId);
+    }
+
+    this.handleKaboomletEvents(kaboomletFrame.events);
+    const slimeFrame = this.slimes.update(
+      delta,
+      this.currentRoomDefinition.bounds,
+      playerFrame.state.position,
+      this.projectiles.getActiveArrows()
+    );
+
+    for (const arrowId of slimeFrame.consumedArrowIds) {
+      this.projectiles.removeArrow(arrowId);
+    }
+
+    this.handleSlimeEvents(slimeFrame.events);
+    const spooperGooperFrame = this.spooperGoopers.update(
+      delta,
+      this.currentRoomDefinition.bounds,
+      playerFrame.state.position,
+      this.projectiles.getActiveArrows()
+    );
+
+    for (const arrowId of spooperGooperFrame.consumedArrowIds) {
+      this.projectiles.removeArrow(arrowId);
+    }
+
+    this.handleSpooperGooperEvents(spooperGooperFrame.events);
 
     const enemyDartEvents = this.enemyDarts.update(
       delta,
@@ -226,17 +319,25 @@ export class CombatRoomScene extends Phaser.Scene {
       playerFrame.state.dodge.activeMs > 0 || playerFrame.state.dodge.invulnerableMs > 0
     );
 
-    const encounterKind = this.getCurrentEncounterKind();
     const activeDartGoobers = encounterKind === 'dart-goober' ? this.enemies.getActiveEnemies() : [];
     const activeDartTriGoobers = encounterKind === 'dart-tri-goober' ? this.enemies.getActiveEnemies() : [];
+    const activeRedShrooms = encounterKind === 'red-shroom' ? this.redShrooms.getActiveEnemies() : [];
+    const activeKaboomlets = encounterKind === 'kaboomlet' ? this.kaboomlets.getActiveEnemies() : [];
+    const activeSlimes = encounterKind === 'slime' || encounterKind === 'slime-parent'
+      ? this.slimes.getActiveEnemies()
+      : [];
+    const activeSpooperGoopers = encounterKind === 'spooper-gooper' ? this.spooperGoopers.getActiveEnemies() : [];
 
     this.projectileRenderer?.playEvents(projectileEvents);
     if (encounterKind === 'dart-tri-goober') {
       this.dartTriGooberRenderer?.playEvents(enemyFrame.events);
-    } else {
+    } else if (encounterKind === 'dart-goober') {
       this.enemyRenderer?.playEvents(enemyFrame.events);
     }
     this.redShroomRenderer?.playEvents(redShroomFrame.events);
+    this.kaboomletRenderer?.playEvents(kaboomletFrame.events);
+    this.slimeRenderer?.playEvents(slimeFrame.events);
+    this.spooperGooperRenderer?.playEvents(spooperGooperFrame.events);
     this.enemyDartRenderer?.playEvents(enemyDartEvents);
     this.shroomSporeRenderer?.playEvents(shroomSporeEvents);
     this.projectileRenderer?.update(delta, this.projectiles.getActiveArrows());
@@ -244,7 +345,10 @@ export class CombatRoomScene extends Phaser.Scene {
     this.shroomSporeRenderer?.update(delta, this.shroomSpores.getActiveSpores());
     this.enemyRenderer?.update(time, delta, activeDartGoobers);
     this.dartTriGooberRenderer?.update(time, delta, activeDartTriGoobers);
-    this.redShroomRenderer?.update(time, delta, this.redShrooms.getActiveEnemies());
+    this.redShroomRenderer?.update(time, delta, activeRedShrooms);
+    this.kaboomletRenderer?.update(time, delta, activeKaboomlets);
+    this.slimeRenderer?.update(time, delta, activeSlimes);
+    this.spooperGooperRenderer?.update(time, delta, activeSpooperGoopers);
     this.playerRenderer?.update(time, delta, playerFrame.state);
     this.feedbackRenderer?.update(delta);
   }
@@ -373,6 +477,129 @@ export class CombatRoomScene extends Phaser.Scene {
     }
   }
 
+  private handleKaboomletEvents(events: ReturnType<KaboomletSystem['update']>['events']) {
+    for (const event of events) {
+      if (event.type === 'kaboomlet-spawned') {
+        this.feedbackRenderer?.playEnemySpawn(event.position);
+        continue;
+      }
+
+      if (event.type === 'kaboomlet-armed') {
+        this.feedbackRenderer?.playEnemySpawn(event.position);
+        continue;
+      }
+
+      if (event.type === 'kaboomlet-exploded') {
+        this.sfx?.playEnemyDeath(event.position);
+        this.feedbackRenderer?.playEnemyDeath(event.position);
+        this.damagePlayerFromRadius(event.position, event.radius, event.damage);
+        this.shakeCamera('damage');
+        continue;
+      }
+
+      if (event.type === 'kaboomlet-hit') {
+        if (event.hp > 0) {
+          this.sfx?.playEnemyHit(event.position, event.damage);
+          this.feedbackRenderer?.playArrowEnemy(event.position, event.damage);
+          this.shakeCamera('hit');
+        }
+        continue;
+      }
+
+      if (event.type === 'kaboomlet-killed') {
+        this.sfx?.playEnemyDeath(event.position);
+        this.feedbackRenderer?.playEnemyDeath(event.position);
+        this.shakeCamera('hit');
+        continue;
+      }
+
+      this.clearCurrentEncounter();
+    }
+  }
+
+  private handleSlimeEvents(events: ReturnType<SlimeSystem['update']>['events']) {
+    for (const event of events) {
+      if (event.type === 'slime-spawned') {
+        this.feedbackRenderer?.playEnemySpawn(event.position);
+        continue;
+      }
+
+      if (event.type === 'slime-jumped') {
+        continue;
+      }
+
+      if (event.type === 'slime-landed') {
+        continue;
+      }
+
+      if (event.type === 'slime-split') {
+        this.feedbackRenderer?.playEnemySpawn(event.position);
+        continue;
+      }
+
+      if (event.type === 'slime-hit') {
+        if (event.hp > 0) {
+          this.sfx?.playShroomHit(event.position, event.damage);
+          this.feedbackRenderer?.playArrowEnemy(event.position, event.damage);
+          this.shakeCamera('hit');
+        }
+        continue;
+      }
+
+      if (event.type === 'slime-killed') {
+        this.sfx?.playShroomDeath(event.position);
+        this.feedbackRenderer?.playEnemyDeath(event.position);
+        this.shakeCamera('hit');
+        continue;
+      }
+
+      this.clearCurrentEncounter();
+    }
+  }
+
+  private handleSpooperGooperEvents(events: ReturnType<SpooperGooperSystem['update']>['events']) {
+    for (const event of events) {
+      if (event.type === 'spooper-gooper-spawned' || event.type === 'spooper-gooper-appeared') {
+        this.feedbackRenderer?.playEnemySpawn(event.position);
+        continue;
+      }
+
+      if (event.type === 'spooper-gooper-vanished') {
+        continue;
+      }
+
+      if (event.type === 'spooper-gooper-attacked') {
+        this.enemyDarts.fireDart({
+          origin: event.position,
+          direction: event.direction,
+          speed: 92,
+          damage: event.damage,
+          style: 'black-ink',
+          ttlMs: 1800
+        });
+        continue;
+      }
+
+      if (event.type === 'spooper-gooper-hit') {
+        if (event.hp > 0) {
+          this.sfx?.playEnemyHit(event.position, event.damage);
+          this.feedbackRenderer?.playArrowEnemy(event.position, event.damage);
+          this.shakeCamera('hit');
+        }
+        continue;
+      }
+
+      if (event.type === 'spooper-gooper-killed') {
+        this.sfx?.playEnemyDeath(event.position);
+        this.feedbackRenderer?.playEnemyDeath(event.position);
+        this.shakeCamera('hit');
+        continue;
+      }
+
+      this.clearCurrentEncounter();
+    }
+  }
+
   private handleEnemyDartEvents(
     events: ReturnType<EnemyDartProjectileSystem['update']>
   ) {
@@ -445,12 +672,35 @@ export class CombatRoomScene extends Phaser.Scene {
 
   private startCurrentRoomEncounter() {
     const roomState = getCurrentDungeonRoom(this.dungeonState);
+    const encounterKind = this.getCurrentEncounterKind();
 
-    if (this.getCurrentEncounterKind() === 'red-shroom') {
+    if (encounterKind === 'red-shroom') {
       this.redShrooms.startEncounter(this.currentRoomDefinition.spawnPoints, {
         enemyCount: Math.max(4, Math.ceil(roomState.remainingSpawnMarkers * 0.95)),
         waveIndex: roomState.wave,
         variant: this.getCurrentShroomVariant()
+      });
+    } else if (encounterKind === 'kaboomlet') {
+      this.kaboomlets.startEncounter(this.currentRoomDefinition.spawnPoints, {
+        enemyCount: Math.max(2, Math.ceil(roomState.remainingSpawnMarkers * 0.55)),
+        waveIndex: roomState.wave
+      });
+    } else if (encounterKind === 'slime') {
+      this.slimes.startEncounter(this.currentRoomDefinition.spawnPoints, {
+        enemyCount: Math.max(4, Math.ceil(roomState.remainingSpawnMarkers * 1.05)),
+        waveIndex: roomState.wave,
+        role: 'child'
+      });
+    } else if (encounterKind === 'slime-parent') {
+      this.slimes.startEncounter(this.currentRoomDefinition.spawnPoints, {
+        enemyCount: Math.max(1, Math.ceil(roomState.remainingSpawnMarkers * 0.35)),
+        waveIndex: roomState.wave,
+        role: 'parent'
+      });
+    } else if (encounterKind === 'spooper-gooper') {
+      this.spooperGoopers.startEncounter(this.currentRoomDefinition.spawnPoints, {
+        enemyCount: Math.max(2, Math.ceil(roomState.remainingSpawnMarkers * 0.45)),
+        waveIndex: roomState.wave
       });
     } else {
       this.enemies.startEncounter(this.currentRoomDefinition.spawnPoints, {
@@ -470,6 +720,9 @@ export class CombatRoomScene extends Phaser.Scene {
     startCurrentDungeonRoomCombat(this.dungeonState);
     this.enemies.clear();
     this.redShrooms.clear();
+    this.kaboomlets.clear();
+    this.slimes.clear();
+    this.spooperGoopers.clear();
     this.enemyDarts.clear();
     this.shroomSpores.clear();
     this.projectiles.clear();
@@ -477,25 +730,146 @@ export class CombatRoomScene extends Phaser.Scene {
   }
 
   private getCurrentEncounterKind(): EncounterKind {
+    const debugEncounter = this.getDebugEncounterKind();
+
+    if (debugEncounter) {
+      return debugEncounter;
+    }
+
     if (this.currentRoomDefinition.theme === 'mushroom') {
       return 'red-shroom';
     }
 
-    if (this.currentRoomDefinition.theme === 'stone' || this.currentRoomDefinition.theme === 'boss') {
-      return 'dart-tri-goober';
+    if (this.currentRoomDefinition.theme === 'wood') {
+      return 'kaboomlet';
+    }
+
+    if (this.currentRoomDefinition.theme === 'stone') {
+      return 'slime-parent';
+    }
+
+    if (this.currentRoomDefinition.theme === 'boss') {
+      return 'spooper-gooper';
     }
 
     return 'dart-goober';
   }
 
+  private applyDebugEncounterFromUrl() {
+    const debugEncounter = this.getDebugEncounterKind();
+
+    if (!debugEncounter) {
+      return;
+    }
+
+    const theme = DEBUG_ENCOUNTER_THEMES[debugEncounter] ?? 'wood';
+    const roomState = getCurrentDungeonRoom(this.dungeonState);
+
+    roomState.phase = 'combat';
+    roomState.remainingSpawnMarkers = debugEncounter === 'spooper-gooper'
+      ? 5
+      : debugEncounter === 'slime-parent'
+        ? 2
+        : 4;
+    roomState.wave = 2;
+    this.currentRoomDefinition = {
+      ...referenceCombatRoom,
+      id: `debug-${debugEncounter}`,
+      theme,
+      typeName: ROOM_THEME_NAMES[theme],
+      decorSeed: 0.63,
+      doors: []
+    };
+  }
+
+  private getDebugEncounterKind(): EncounterKind | undefined {
+    const value = new URLSearchParams(window.location.search).get('encounter');
+
+    if (
+      value === 'dart-goober' ||
+      value === 'dart-tri-goober' ||
+      value === 'red-shroom' ||
+      value === 'kaboomlet' ||
+      value === 'slime' ||
+      value === 'slime-parent' ||
+      value === 'spooper-gooper'
+    ) {
+      return value;
+    }
+
+    return undefined;
+  }
+
+  private isDebugPlayerDemoEnabled(): boolean {
+    return new URLSearchParams(window.location.search).get('playerDemo') === 'motion';
+  }
+
+  private updateDebugPlayerDemo(deltaMs: number) {
+    if (!this.isDebugPlayerDemoEnabled()) {
+      return;
+    }
+
+    this.debugPlayerDemoElapsedMs += deltaMs;
+    const cycleMs = 4300;
+    const cycleIndex = Math.floor(this.debugPlayerDemoElapsedMs / cycleMs);
+    const cycleTime = this.debugPlayerDemoElapsedMs % cycleMs;
+
+    if (cycleTime < 1050) {
+      this.inputController.setMoveVector({ x: 1, y: 0.22 }, 'desktop');
+      this.inputController.setAimVector({ x: 1, y: -0.12 }, 'desktop');
+      this.inputController.setFiring(false, 'desktop');
+      return;
+    }
+
+    if (cycleTime < 2150) {
+      this.inputController.setMoveVector({ x: -0.55, y: 0.38 }, 'desktop');
+      this.inputController.setAimVector({ x: 1, y: -0.18 }, 'desktop');
+      this.inputController.setFiring(true, 'desktop');
+      return;
+    }
+
+    if (cycleTime < 2850) {
+      this.inputController.setMoveVector({ x: 0.12, y: -1 }, 'desktop');
+      this.inputController.setAimVector({ x: 1, y: 0.15 }, 'desktop');
+      this.inputController.setFiring(true, 'desktop');
+
+      if (cycleTime > 2320 && this.debugPlayerDemoDodgeCycle !== cycleIndex) {
+        this.inputController.emitDodge('desktop');
+        this.debugPlayerDemoDodgeCycle = cycleIndex;
+      }
+      return;
+    }
+
+    if (cycleTime < 3500) {
+      this.inputController.setMoveVector({ x: 0, y: 0 }, 'desktop');
+      this.inputController.releaseAim('desktop');
+      return;
+    }
+
+    this.inputController.setMoveVector({ x: -1, y: -0.12 }, 'desktop');
+    this.inputController.setAimVector({ x: -1, y: -0.1 }, 'desktop');
+    this.inputController.setFiring(false, 'desktop');
+  }
+
   private getCurrentShroomVariant(): ShroomVariant {
+    const debugVariant = new URLSearchParams(window.location.search).get('variant');
+
+    if (debugVariant === 'red' || debugVariant === 'purple') {
+      return debugVariant;
+    }
+
     return (this.currentRoomDefinition.decorSeed ?? 0) > 0.5 ? 'purple' : 'red';
   }
 
   private hasCurrentEncounterStarted(): boolean {
-    return this.getCurrentEncounterKind() === 'red-shroom'
-      ? this.redShrooms.hasEncounterStarted()
-      : this.enemies.hasEncounterStarted();
+    const encounterKind = this.getCurrentEncounterKind();
+
+    if (encounterKind === 'red-shroom') return this.redShrooms.hasEncounterStarted();
+    if (encounterKind === 'kaboomlet') return this.kaboomlets.hasEncounterStarted();
+    if (encounterKind === 'slime' || encounterKind === 'slime-parent') return this.slimes.hasEncounterStarted();
+    if (encounterKind === 'spooper-gooper') return this.spooperGoopers.hasEncounterStarted();
+
+    return this.enemies.hasEncounterStarted();
   }
 
   private applyCurrentRoomState() {
@@ -574,6 +948,9 @@ export class CombatRoomScene extends Phaser.Scene {
   private clearRoomRuntime() {
     this.enemies.clear();
     this.redShrooms.clear();
+    this.kaboomlets.clear();
+    this.slimes.clear();
+    this.spooperGoopers.clear();
     this.projectiles.clear();
     this.enemyDarts.clear();
     this.shroomSpores.clear();
@@ -624,6 +1001,279 @@ export class CombatRoomScene extends Phaser.Scene {
     const shake = CAMERA_SHAKES[kind];
 
     this.cameras.main.shake(shake.durationMs, shake.intensity);
+  }
+
+  private clearCurrentEncounter() {
+    clearCurrentDungeonRoom(this.dungeonState);
+    this.shroomSpores.clear();
+    this.enemyDarts.clear();
+    this.applyCurrentRoomState();
+    this.sfx?.playRoomClear(this.currentRoomDefinition.bounds);
+    this.feedbackRenderer?.playRoomClear(this.currentRoomDefinition.bounds);
+    this.shakeCamera('room-clear');
+  }
+
+  private damagePlayerFromRadius(position: SimVector, radius: number, damage: number) {
+    const playerPosition = this.player.state.position;
+    const distance = Math.hypot(playerPosition.x - position.x, playerPosition.y - position.y);
+
+    if (distance > radius || this.player.state.dodge.invulnerableMs > 0) {
+      return;
+    }
+
+    this.player.markHit();
+    this.playerHealth.damage(damage);
+    this.sfx?.playPlayerDamage(position, damage);
+    this.heartsHud?.update(this.playerHealth.state);
+    this.heartsHud?.flashDamage();
+    this.feedbackRenderer?.playDamage(playerPosition, damage);
+  }
+
+  private bootstrapDebugEncounter() {
+    const debugEncounter = this.getDebugEncounterKind();
+
+    if (!debugEncounter) {
+      return;
+    }
+
+    if (!this.hasCurrentEncounterStarted()) {
+      this.startCurrentRoomEncounter();
+    }
+
+    const stepCount = debugEncounter === 'spooper-gooper' ? 7 : 5;
+
+    for (let step = 0; step < stepCount; step += 1) {
+      this.stepDebugEncounter(debugEncounter, step * 420, 420);
+    }
+
+    if (debugEncounter === 'slime-parent' && this.shouldForceDebugSlimeSplit()) {
+      this.forceDebugSlimeParentSplit();
+      for (let step = 0; step < 3; step += 1) {
+        this.stepDebugEncounter(debugEncounter, 2100 + step * 260, 260);
+      }
+    }
+
+    if (debugEncounter === 'kaboomlet' && this.shouldForceDebugKaboomletExplosion()) {
+      this.forceDebugKaboomletExplosionPreview();
+    }
+
+    if (debugEncounter === 'red-shroom' && this.shouldForceDebugShroomSpore()) {
+      this.forceDebugShroomSporePreview();
+    }
+
+    this.publishDebugEncounterState(debugEncounter);
+  }
+
+  private shouldForceDebugSlimeSplit(): boolean {
+    return new URLSearchParams(window.location.search).get('split') === '1';
+  }
+
+  private shouldForceDebugKaboomletExplosion(): boolean {
+    return new URLSearchParams(window.location.search).get('effect') === 'explosion';
+  }
+
+  private shouldForceDebugShroomSpore(): boolean {
+    return new URLSearchParams(window.location.search).get('effect') === 'spore';
+  }
+
+  private bootstrapDebugFeedback() {
+    if (new URLSearchParams(window.location.search).get('feedback') !== 'combat') {
+      return;
+    }
+
+    const feedback = this.feedbackRenderer;
+
+    if (!feedback) {
+      return;
+    }
+
+    const bounds = this.currentRoomDefinition.bounds;
+    const center = {
+      x: bounds.x + bounds.width / 2,
+      y: bounds.y + bounds.height / 2
+    };
+
+    feedback.playEnemySpawn({ x: center.x - 230, y: center.y - 72 });
+    feedback.playArrowEnemy({ x: center.x - 78, y: center.y - 108 }, 1);
+    feedback.playEnemyDeath({ x: center.x + 98, y: center.y - 78 });
+    feedback.playDodge({ x: center.x - 142, y: center.y + 118 }, { x: 1, y: 0.25 });
+    feedback.playDamage({ x: center.x + 158, y: center.y + 112 }, 0.5);
+    feedback.playRoomClear(bounds);
+
+    for (let step = 0; step < 3; step += 1) {
+      feedback.update(90);
+    }
+  }
+
+  private forceDebugKaboomletExplosionPreview() {
+    const bounds = this.currentRoomDefinition.bounds;
+    const position = {
+      x: bounds.x + bounds.width * 0.46,
+      y: bounds.y + bounds.height * 0.36
+    };
+
+    this.kaboomletRenderer?.playEvents([
+      {
+        type: 'kaboomlet-exploded',
+        id: -1,
+        position,
+        radius: 92,
+        damage: 1
+      }
+    ]);
+    this.kaboomletRenderer?.update(2400, 16, this.kaboomlets.getActiveEnemies());
+  }
+
+  private forceDebugShroomSporePreview() {
+    const variant = this.getCurrentShroomVariant();
+    const character = variant === 'purple' ? PURPLE_SHROOM_CHARACTER : RED_SHROOM_CHARACTER;
+    const bounds = this.currentRoomDefinition.bounds;
+    const shrooms = this.redShrooms.getActiveEnemies();
+    const center = {
+      x: bounds.x + bounds.width * 0.5,
+      y: bounds.y + bounds.height * 0.44
+    };
+    const source = shrooms[0]?.position ?? center;
+    const origin = {
+      x: source.x,
+      y: source.y + character.spores.originOffsetY
+    };
+
+    for (const shroom of shrooms) {
+      shroom.phase = 'recovering';
+      shroom.sporeCharge = 0;
+      shroom.releasePulse = 1;
+      shroom.dizzyMs = 900;
+    }
+
+    this.shroomSpores.fireBurst({
+      variant,
+      origin,
+      distance: character.spores.burstDistance,
+      travelMs: character.spores.travelMs,
+      lingerMs: character.spores.lingerMs,
+      damage: 0.5,
+      radius: 15,
+      color: character.spores.trailColor
+    });
+
+    this.redShroomRenderer?.update(2600, 16, shrooms);
+
+    for (let step = 0; step < 4; step += 1) {
+      const events = this.shroomSpores.update(120, bounds, this.player.state.position, {
+        playerBreaksSpores: false
+      });
+      this.shroomSporeRenderer?.playEvents(events);
+    }
+
+    this.shroomSporeRenderer?.update(120, this.shroomSpores.getActiveSpores());
+  }
+
+  private forceDebugSlimeParentSplit() {
+    const parent = this.slimes.getActiveEnemies().find((enemy) => enemy.role === 'parent');
+
+    if (!parent) {
+      return;
+    }
+
+    const arrow = {
+      id: -9001,
+      previousPosition: { x: parent.position.x - 3, y: parent.position.y },
+      position: { x: parent.position.x + 3, y: parent.position.y },
+      direction: { x: 1, y: 0 },
+      speed: 0,
+      damage: 999,
+      ageMs: 0,
+      ttlMs: 1,
+      trail: []
+    };
+    const frame = this.slimes.update(
+      16,
+      this.currentRoomDefinition.bounds,
+      this.player.state.position,
+      [arrow]
+    );
+
+    this.handleSlimeEvents(frame.events);
+    this.slimeRenderer?.playEvents(frame.events);
+    this.slimeRenderer?.update(2100, 16, this.slimes.getActiveEnemies());
+  }
+
+  private stepDebugEncounter(encounterKind: EncounterKind, timeMs: number, deltaMs: number) {
+    const playerPosition = this.player.state.position;
+
+    if (encounterKind === 'kaboomlet') {
+      const frame = this.kaboomlets.update(deltaMs, this.currentRoomDefinition.bounds, playerPosition, []);
+      this.handleKaboomletEvents(frame.events);
+      this.kaboomletRenderer?.playEvents(frame.events);
+      this.kaboomletRenderer?.update(timeMs, deltaMs, this.kaboomlets.getActiveEnemies());
+      return;
+    }
+
+    if (encounterKind === 'slime' || encounterKind === 'slime-parent') {
+      this.slimes.update(deltaMs, this.currentRoomDefinition.bounds, playerPosition, []);
+      this.slimeRenderer?.update(timeMs, deltaMs, this.slimes.getActiveEnemies());
+      return;
+    }
+
+    if (encounterKind === 'spooper-gooper') {
+      const frame = this.spooperGoopers.update(
+        deltaMs,
+        this.currentRoomDefinition.bounds,
+        playerPosition,
+        []
+      );
+      this.handleSpooperGooperEvents(frame.events);
+      const enemyDartEvents = this.enemyDarts.update(
+        deltaMs,
+        this.currentRoomDefinition.bounds,
+        playerPosition
+      );
+      this.handleEnemyDartEvents(enemyDartEvents);
+      this.spooperGooperRenderer?.playEvents(frame.events);
+      this.enemyDartRenderer?.playEvents(enemyDartEvents);
+      this.enemyDartRenderer?.update(deltaMs, this.enemyDarts.getActiveDarts());
+      this.spooperGooperRenderer?.update(timeMs, deltaMs, this.spooperGoopers.getActiveEnemies());
+      return;
+    }
+
+    if (encounterKind === 'red-shroom') {
+      this.redShrooms.update(deltaMs, this.currentRoomDefinition.bounds, playerPosition, []);
+      this.redShroomRenderer?.update(timeMs, deltaMs, this.redShrooms.getActiveEnemies());
+      return;
+    }
+
+    this.enemies.update(deltaMs, this.currentRoomDefinition.bounds, playerPosition, []);
+    if (encounterKind === 'dart-tri-goober') {
+      this.dartTriGooberRenderer?.update(timeMs, deltaMs, this.enemies.getActiveEnemies());
+    } else {
+      this.enemyRenderer?.update(timeMs, deltaMs, this.enemies.getActiveEnemies());
+    }
+  }
+
+  private publishDebugEncounterState(encounterKind: EncounterKind) {
+    const debugWindow = window as typeof window & {
+      __bowbertDebugState?: {
+        encounterKind: EncounterKind;
+        activeEnemies: number;
+      };
+    };
+
+    const activeEnemies =
+      encounterKind === 'kaboomlet'
+        ? this.kaboomlets.getActiveEnemies().length
+        : encounterKind === 'slime' || encounterKind === 'slime-parent'
+          ? this.slimes.getActiveEnemies().length
+          : encounterKind === 'spooper-gooper'
+            ? this.spooperGoopers.getActiveEnemies().length
+            : encounterKind === 'red-shroom'
+              ? this.redShrooms.getActiveEnemies().length
+              : this.enemies.getActiveEnemies().length;
+
+    debugWindow.__bowbertDebugState = {
+      encounterKind,
+      activeEnemies
+    };
   }
 
   private readonly handleScaleResize = () => {
@@ -680,6 +1330,12 @@ export class CombatRoomScene extends Phaser.Scene {
     this.dartTriGooberRenderer = undefined;
     this.redShroomRenderer?.destroy();
     this.redShroomRenderer = undefined;
+    this.kaboomletRenderer?.destroy();
+    this.kaboomletRenderer = undefined;
+    this.slimeRenderer?.destroy();
+    this.slimeRenderer = undefined;
+    this.spooperGooperRenderer?.destroy();
+    this.spooperGooperRenderer = undefined;
     this.enemyDartRenderer?.destroy();
     this.enemyDartRenderer = undefined;
     this.shroomSporeRenderer?.destroy();
@@ -693,5 +1349,8 @@ export class CombatRoomScene extends Phaser.Scene {
     this.shroomSpores.clear();
     this.enemies.clear();
     this.redShrooms.clear();
+    this.kaboomlets.clear();
+    this.slimes.clear();
+    this.spooperGoopers.clear();
   }
 }

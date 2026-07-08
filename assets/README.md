@@ -11,6 +11,9 @@ assets/
   characters/
     bowbert/
   prototype-video-crops/
+  projectiles/
+    arrow/
+    enemy-dart/
   weapons/
     bow/
   enemies/
@@ -23,8 +26,12 @@ assets/
     spooper_gooper/
   effects/
     particles/
+      combat-feedback/
     explosions/
+      kaboomlet/
   rooms/
+    room-theme-kit.json
+    tuning.html
     forest/
     stone/
     mushroom/
@@ -82,7 +89,15 @@ Keep `audio/sfx/game/manifest.json` and `audio/THIRD_PARTY_LICENSES.md` with the
 
 - Bowbert body + eyes.
 - Bow relaxed / half drawn / fully drawn.
-- Arrow.
+- Arrow projectile.
+- Enemy dart projectile.
+- Black ink projectile.
+- Kaboomlet explosion effect.
+- Shared combat feedback particles.
+- Procedural room theme kit and tuning preview.
+- Hearts HUD runtime SVG rig and tuning preview.
+- Silly Sigils runtime SVG rig and tuning preview.
+- Mobile touch controls runtime rig and tuning preview.
 - Dart Goober.
 - Dart Tri Goober.
 - Red Shroom.

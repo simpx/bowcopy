@@ -1,5 +1,5 @@
 ---
-status: reference-locked
+status: playtested
 kind: enemy
 projectContext: bowbert
 lockedReference: source/reference-01.png
@@ -7,10 +7,8 @@ sourceReferences:
   - source/reference-01.png
   - source/reference-02.jpg
 openItems:
-  - Generate or accept `base.png`.
-  - Generate side-by-side `comparison.png` after base art is accepted.
-  - Tune parent eye positions, jump timing, hitbox, and split spawn count after base art exists.
-  - Integrate parent death splitting into the slime runtime system.
+  - Tune parent jump timing, hitbox, split spawn count, and room density during gameplay balancing.
+  - Select dedicated parent jump/split audio when the enemy set moves beyond MVP.
 ---
 
 # Slime Parent
@@ -31,6 +29,18 @@ Visual target:
 Source:
 - `source/reference-01.png`
 - `source/reference-02.jpg`
+
+Generated candidates:
+- `base.png`: promoted from user-approved `exports/base-v3-candidate.png` as the current runtime base.
+- `base-source.png`: promoted from `exports/base-v3-green.png` as the retained chroma source.
+- `comparison.png`: side-by-side reference/accepted-base review sheet.
+- `exports/base-v3-candidate.png`: user-approved current parent candidate; more doodle-like, with blank side eye whites for runtime gaze.
+- `exports/base-v3-green.png`: chroma-key source for the approved v3 candidate.
+- `exports/base-v4-candidate.png`: extra process candidate, not selected because v3 was accepted.
+- `exports/base-v4-green.png`: chroma-key source for the unselected v4 candidate.
+- `exports/base-v2-candidate.png`: regenerated Bowbert Studio parent base candidate with blank side eye whites for runtime gaze.
+- `exports/base-v2-green.png`: chroma-key source for the regenerated candidate.
+- `exports/base-v1-candidate.png`: rejected first pass; side eyes contained baked black pupil fill.
 
 Decomposition:
 - base.png: fixed parent slime body with stable eye whites/sockets.
@@ -94,3 +104,13 @@ Runtime rig notes:
 Preview notes:
 - `tuning.html` should show the locked reference beside the assembled runtime result.
 - Add controls only for values that are expected to be tuned by hand.
+
+Runtime integration:
+- `src/characters/slimeParentRig.ts`: parent PNG, gaze, shadow, hitbox, and motion constants.
+- `src/sim/enemies/SlimeSystem.ts`: parent role, higher HP/radius, slower jump loop, and death split into child slime instances.
+- `src/render/enemies/SlimeRenderer.ts`: shared slime renderer now selects parent or child rig by runtime role.
+- `src/game/scenes/CombatRoomScene.ts`: `slime-parent` encounter kind, stone-room routing, and debug preview route.
+
+Playtest evidence:
+- `playtest/runtime-encounter.png`: parent slime in a mobile viewport debug encounter.
+- `playtest/runtime-split.png`: forced debug split showing child slime spawn after parent death.

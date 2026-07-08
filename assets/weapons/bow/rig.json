@@ -1,0 +1,85 @@
+{
+  "id": "procedural-branch-bow",
+  "kind": "weapon",
+  "projectContext": "bowbert",
+  "status": "playtested",
+  "sourceReferences": [
+    "source/bow-relaxed-reference.png",
+    "source/bow-full-draw-reference.png",
+    "source/bow-aiming-reference.png",
+    "source/arrow-projectile-reference.png"
+  ],
+  "runtime": {
+    "renderer": "src/render/player/proceduralBranchBow.ts",
+    "textureKey": "bowbert-procedural-branch-bow",
+    "owner": "bowbert",
+    "attachmentRole": "player weapon"
+  },
+  "texture": {
+    "width": 360,
+    "height": 420,
+    "anchorX": 180,
+    "anchorY": 210,
+    "drawScale": 0.58
+  },
+  "placement": {
+    "scale": 0.22,
+    "distance": 50,
+    "yDistance": 40,
+    "offsetX": 0,
+    "offsetY": -15,
+    "rotationOffsetDeg": -7,
+    "drawDistance": 5,
+    "releaseKick": 7,
+    "recoilDistance": 8,
+    "recoilY": 5
+  },
+  "states": {
+    "relaxed": {
+      "draw": 0,
+      "recoil": 0,
+      "showArrow": false,
+      "glow": false
+    },
+    "aiming": {
+      "draw": 0.42,
+      "recoil": 0,
+      "showArrow": true,
+      "glow": true
+    },
+    "fullDraw": {
+      "draw": 1,
+      "recoil": 0,
+      "showArrow": true,
+      "glow": true
+    },
+    "release": {
+      "draw": 0,
+      "recoil": 1,
+      "showArrow": false,
+      "glow": true
+    }
+  },
+  "exports": {
+    "relaxed": "exports/bow-relaxed.png",
+    "aiming": "exports/bow-aiming.png",
+    "fullDraw": "exports/bow-full-draw.png",
+    "comparison": "comparison.png"
+  },
+  "projectiles": {
+    "arrow": {
+      "mode": "runtime-procedural",
+      "assetFolder": "../../projectiles/arrow",
+      "renderer": "src/render/projectiles/ArrowProjectileRenderer.ts",
+      "reference": "source/arrow-projectile-reference.png"
+    }
+  },
+  "audio": {
+    "shoot": "assets/audio/sfx/game/shoot_arrow.ogg",
+    "emptyRelease": "assets/audio/sfx/game/empty_bow_release.wav"
+  },
+  "openItems": [
+    "Bow is runtime procedural; no final baked PNG is required unless the weapon system later switches to bitmap attachments.",
+    "Mobile tuning may still adjust recoil and release feel during gameplay balancing."
+  ]
+}

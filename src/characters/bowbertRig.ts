@@ -4,8 +4,8 @@ export const BOWBERT_RIG = {
   id: 'bowbert',
   base: {
     source: 'fixed-ai-image',
-    textureKey: 'bowbert-base-ai-v2-eye-whites',
-    imageAsset: 'assets/characters/bowbert/bowbert-base-ai-v2-eye-whites.png',
+    textureKey: 'bowbert-base',
+    imageAsset: 'assets/characters/bowbert/base.png',
     imageSize: { width: 854, height: 878 },
     scale: 0.095,
     y: -14,
@@ -113,13 +113,13 @@ export const BOWBERT_RIG = {
     }
   },
   motion: {
-    walkSquash: 0.045,
-    idleSquash: 0.018,
-    hitSquash: 0.1,
-    dodgeStretch: 0.14,
-    walkBob: 2,
-    recoilX: 5,
-    recoilY: 3,
-    tiltVelocity: 0.06
+    walkSquash: 0.074,
+    idleSquash: 0.026,
+    hitSquash: 0.13,
+    dodgeStretch: 0.18,
+    walkBob: 3.4,
+    recoilX: 6,
+    recoilY: 4,
+    tiltVelocity: 0.075
   }
 } as const satisfies BowbertCharacterRig;

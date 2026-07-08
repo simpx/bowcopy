@@ -2,48 +2,110 @@
   "id": "slime-parent",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "reference-locked",
+  "status": "playtested",
   "sourceReferences": [
     "source/reference-01.png",
     "source/reference-02.jpg"
   ],
   "base": {
-    "image": null,
+    "image": "base.png",
     "plannedImage": "base.png",
-    "sourceImage": null,
-    "imageSize": null,
-    "scale": null,
+    "sourceImage": "base-source.png",
+    "imageSize": {
+      "width": 1254,
+      "height": 1254
+    },
+    "scale": 0.118,
     "anchor": {
       "x": 0.5,
       "y": 0.5
     },
-    "hitbox": null,
-    "shadow": null
+    "offset": {
+      "x": 0,
+      "y": -18
+    },
+    "hitbox": {
+      "radius": 43
+    },
+    "shadow": {
+      "width": 92,
+      "height": 16,
+      "y": 24
+    }
   },
   "gaze": {
     "mode": "embedded-eye-pupils",
     "archetype": "round-embedded",
-    "eyes": {},
+    "eyes": {
+      "left": {
+        "x": 0.237,
+        "y": 0.53,
+        "radiusX": 0.052,
+        "radiusY": 0.052,
+        "rotation": 0
+      },
+      "right": {
+        "x": 0.779,
+        "y": 0.532,
+        "radiusX": 0.052,
+        "radiusY": 0.052,
+        "rotation": 0
+      }
+    },
+    "pupilOffsetScale": {
+      "x": 0.018,
+      "y": 0.012
+    },
     "emotions": {
-      "default": null,
-      "jump": null,
-      "hit": null
+      "default": {
+        "shape": "ellipse",
+        "eyeTiltAdd": 0,
+        "eyeScaleX": 1,
+        "eyeScaleY": 1,
+        "pupilScale": 1,
+        "pupilShiftX": 0,
+        "pupilShiftY": 0,
+        "upperLid": 0,
+        "lowerLid": 0
+      },
+      "jump": {
+        "shape": "ellipse",
+        "eyeTiltAdd": 0.02,
+        "eyeScaleX": 0.9,
+        "eyeScaleY": 1.08,
+        "pupilScale": 0.92,
+        "pupilShiftX": 0,
+        "pupilShiftY": -0.006,
+        "upperLid": 0,
+        "lowerLid": 0
+      },
+      "hit": {
+        "shape": "ellipse",
+        "eyeTiltAdd": 0.02,
+        "eyeScaleX": 0.82,
+        "eyeScaleY": 0.56,
+        "pupilScale": 0.72,
+        "pupilShiftX": -0.006,
+        "pupilShiftY": -0.006,
+        "upperLid": 0.28,
+        "lowerLid": 0.14
+      }
     }
   },
   "attachments": {},
   "projectiles": {},
   "vfx": {},
   "motion": {
-    "idleWobble": null,
-    "idleBob": null,
-    "preJumpSquash": null,
-    "airStretch": null,
-    "landingSquash": null,
-    "hitScaleX": null,
-    "hitScaleY": null,
-    "jumpHeight": null,
-    "jumpDurationMs": null,
-    "recoverMs": null
+    "idleWobble": 0.02,
+    "idleBob": 1.35,
+    "preJumpSquash": 0.18,
+    "airStretch": 0.15,
+    "landingSquash": 0.18,
+    "hitScaleX": 0.09,
+    "hitScaleY": 0.07,
+    "jumpHeight": 28,
+    "jumpDurationMs": 880,
+    "recoverMs": 330
   },
   "behavior": {
     "phaseLoop": [
@@ -57,15 +119,15 @@
     "role": "parent",
     "splitOnDeath": true,
     "childId": "slime",
-    "childCount": null,
-    "childSpawnRadius": null,
-    "parentHp": null,
-    "contactDamage": null
+    "childCount": 4,
+    "childSpawnRadius": 42,
+    "parentHp": 4,
+    "contactDamage": 0.5
   },
   "prototype": {
     "system": "SlimeSystem",
     "renderer": "SlimeRenderer",
-    "notes": "Parent hopper uses the slime behavior family but splits into child slime instances on death."
+    "notes": "Parent hopper uses the slime behavior family, renders through SlimeRenderer role selection, and splits into child slime instances on death."
   },
   "audio": {
     "hit": null,
@@ -74,8 +136,7 @@
     "split": null
   },
   "openItems": [
-    "Generate or accept base.png from locked parent slime reference.",
-    "Backfill base image size, scale, shadow, hitbox, eye positions, and motion values after art exists.",
-    "Tune split child count and spawn radius during gameplay integration."
+    "Tune parent jump timing, hitbox, split child count, spawn radius, and room density during gameplay balancing.",
+    "Select dedicated parent jump/split audio when the enemy set moves beyond MVP."
   ]
 }

@@ -1,4 +1,8 @@
 import {
+  ROOM_RUNTIME_THEME_BY_VISUAL_THEME,
+  ROOM_THEME_KIT
+} from '../../data/roomThemeKit';
+import {
   ROOM_THEME_NAMES,
   referenceCombatRoom,
   type CombatRoomDefinition,
@@ -44,48 +48,22 @@ type DungeonBlueprintSelection = {
   readonly start: GridPoint;
 };
 
-const DUNGEON_ROUTE_DSL = [
-  '..B..',
-  '..R..',
-  '.GMM.',
-  '..G..',
-  '.MS..',
-  '.W...'
-] as const;
+const DUNGEON_ROUTE_DSL = ROOM_THEME_KIT.dungeonDsl.rows;
 
 const ROOM_SPEC_BY_SYMBOL: Partial<
   Record<string, { readonly kind: DungeonRoomKind; readonly theme: DungeonRoomTheme }>
-> = {
-  S: { kind: 'start', theme: 'start' },
-  G: { kind: 'normal', theme: 'wood' },
-  M: { kind: 'normal', theme: 'mushroom' },
-  R: { kind: 'normal', theme: 'stone' },
-  W: { kind: 'wizard', theme: 'wizard' },
-  B: { kind: 'boss', theme: 'boss' }
-};
+> = Object.fromEntries(
+  Object.entries(ROOM_THEME_KIT.dungeonDsl.legend).map(([symbol, spec]) => [
+    symbol,
+    {
+      kind: spec.kind,
+      theme: ROOM_RUNTIME_THEME_BY_VISUAL_THEME[spec.theme]
+    }
+  ])
+);
 
-const DOOR_TEMPLATE: Record<RoomDoorSide, Omit<RoomDoor, 'id' | 'side'>> = {
-  north: {
-    center: 640,
-    span: 178,
-    depth: 48
-  },
-  east: {
-    center: 360,
-    span: 152,
-    depth: 48
-  },
-  south: {
-    center: 640,
-    span: 196,
-    depth: 48
-  },
-  west: {
-    center: 360,
-    span: 152,
-    depth: 48
-  }
-};
+const DOOR_TEMPLATE: Record<RoomDoorSide, Omit<RoomDoor, 'id' | 'side'>> =
+  ROOM_THEME_KIT.room.doors;
 
 const SIDE_DELTAS: Record<RoomDoorSide, { readonly x: number; readonly y: number }> = {
   north: { x: 0, y: -1 },

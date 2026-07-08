@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import kaboomletBaseUrl from '../../../assets/characters/kaboomlet/base.png';
 import { KABOOMLET_RIG } from '../../characters/kaboomletRig';
 import type { KaboomletEnemy, KaboomletEvent } from '../../sim/enemies';
 import type { SimVector } from '../../sim/player';
@@ -7,7 +8,9 @@ import type { SimVector } from '../../sim/player';
 interface KaboomletVisual {
   readonly container: Phaser.GameObjects.Container;
   readonly shadow: Phaser.GameObjects.Ellipse;
-  readonly body: Phaser.GameObjects.Graphics;
+  readonly artLayer: Phaser.GameObjects.Container;
+  readonly body: Phaser.GameObjects.Image;
+  readonly eyes: Phaser.GameObjects.Graphics;
 }
 
 interface KaboomletParticle {
@@ -26,11 +29,22 @@ interface ExplosionRing {
   radius: number;
 }
 
+interface ExplosionCloud {
+  position: SimVector;
+  ageMs: number;
+  durationMs: number;
+}
+
 const HIT_FLASH_MS = 170;
 const PARTICLE_DEPTH = 78;
 const SPAWN_COLORS = [0xffcf57, 0x303030, 0xffffff] as const;
 const HIT_COLORS = [0xfff1b5, 0xff6a45] as const;
 const EXPLOSION_COLORS = [0xffcf57, 0xff6a45, 0x111111] as const;
+const WARNING_COLOR = 0xf1283e;
+const BLAST_SHADOW = 0x111111;
+const BLAST_RIM = 0xffcf57;
+const BLAST_FILL = 0xfff3b4;
+const BLAST_CORE = 0xfff8df;
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
@@ -49,22 +63,30 @@ const normalize = (vector: SimVector): SimVector => {
   return { x: vector.x / length, y: vector.y / length };
 };
 
-export const preloadKaboomletAssets = () => undefined;
+export const preloadKaboomletAssets = (scene: Phaser.Scene) => {
+  if (!scene.textures.exists(KABOOMLET_RIG.base.textureKey)) {
+    scene.load.image(KABOOMLET_RIG.base.textureKey, kaboomletBaseUrl);
+  }
+};
 
 export class KaboomletRenderer {
   private readonly visuals = new Map<number, KaboomletVisual>();
   private readonly particles: KaboomletParticle[] = [];
   private readonly explosionRings: ExplosionRing[] = [];
+  private readonly explosionClouds: ExplosionCloud[] = [];
+  private warningGraphics?: Phaser.GameObjects.Graphics;
   private particleGraphics?: Phaser.GameObjects.Graphics;
 
   constructor(private readonly scene: Phaser.Scene) {}
 
   create() {
+    this.warningGraphics = this.scene.add.graphics().setDepth(PARTICLE_DEPTH - 2);
     this.particleGraphics = this.scene.add.graphics().setDepth(PARTICLE_DEPTH);
   }
 
   update(timeMs: number, deltaMs: number, enemies: readonly KaboomletEnemy[]) {
     this.syncEnemies(timeMs, enemies);
+    this.drawWarningRings(timeMs, enemies);
     this.updateParticles(deltaMs);
   }
 
@@ -92,12 +114,18 @@ export class KaboomletRenderer {
           durationMs: 300,
           radius: event.radius
         });
+        this.explosionClouds.push({
+          position: event.position,
+          ageMs: 0,
+          durationMs: 230
+        });
         this.emitBurst(event.position, 36, EXPLOSION_COLORS, 78, 220, 6.2, 420);
       }
     }
   }
 
   destroy() {
+    this.warningGraphics?.destroy();
     this.particleGraphics?.destroy();
     for (const visual of this.visuals.values()) {
       visual.container.destroy();
@@ -105,6 +133,7 @@ export class KaboomletRenderer {
     this.visuals.clear();
     this.particles.length = 0;
     this.explosionRings.length = 0;
+    this.explosionClouds.length = 0;
   }
 
   private syncEnemies(timeMs: number, enemies: readonly KaboomletEnemy[]) {
@@ -133,9 +162,11 @@ export class KaboomletRenderer {
       0x07120d,
       0.32
     );
-    const body = this.scene.add.graphics();
-    const container = this.scene.add.container(0, 0, [shadow, body]);
-    const visual = { container, shadow, body };
+    const body = this.scene.add.image(0, 0, KABOOMLET_RIG.base.textureKey).setOrigin(0.5);
+    const eyes = this.scene.add.graphics();
+    const artLayer = this.scene.add.container(0, KABOOMLET_RIG.base.y, [body, eyes]);
+    const container = this.scene.add.container(0, 0, [shadow, artLayer]);
+    const visual = { container, shadow, artLayer, body, eyes };
 
     this.visuals.set(id, visual);
 
@@ -145,6 +176,7 @@ export class KaboomletRenderer {
   private updateVisual(timeMs: number, enemy: KaboomletEnemy, visual: KaboomletVisual) {
     const hitFlash = clamp01(enemy.hitFlashMs / HIT_FLASH_MS);
     const spawnEase = 1 - (1 - clamp01(enemy.spawnProgress)) ** 3;
+    const idleBob = Math.sin(timeMs * 0.004 + enemy.id) * KABOOMLET_RIG.motion.idleBob;
     const wobble = Math.sin(enemy.wobblePhase) * (enemy.phase === 'chasing' ? KABOOMLET_RIG.motion.chaseWobble : KABOOMLET_RIG.motion.idleSquash);
     const armedPulse = enemy.phase === 'armed'
       ? Math.sin(timeMs * 0.035) * KABOOMLET_RIG.motion.armedPulse * (0.35 + enemy.armedProgress * 0.65)
@@ -164,47 +196,36 @@ export class KaboomletRenderer {
     visual.shadow.setScale(0.82 + spawnEase * 0.18 + enemy.moveAmount * 0.08, 1);
     visual.shadow.setAlpha(0.14 + spawnEase * 0.2);
 
-    visual.body.setScale(scaleX, scaleY);
-    this.drawKaboomlet(visual.body, normalize(enemy.facing), enemy.armedProgress, hitFlash, timeMs);
+    visual.artLayer.setPosition(0, KABOOMLET_RIG.base.y + idleBob);
+    visual.artLayer.setScale(KABOOMLET_RIG.base.scale * scaleX, KABOOMLET_RIG.base.scale * scaleY);
+    visual.body.setTint(hitFlash > 0 ? 0xfff1d0 : 0xffffff);
+    this.drawKaboomletEyes(visual.eyes, normalize(enemy.facing), enemy.armedProgress);
   }
 
-  private drawKaboomlet(
+  private drawKaboomletEyes(
     graphics: Phaser.GameObjects.Graphics,
     facing: SimVector,
-    armedProgress: number,
-    hitFlash: number,
-    timeMs: number
+    armedProgress: number
   ) {
-    const flash = armedProgress > 0 && Math.sin(timeMs * 0.035) > 0.25;
-    const bodyColor = hitFlash > 0 ? 0xfff1d0 : flash ? 0xff6a45 : 0x303030;
+    const { width, height } = KABOOMLET_RIG.base.imageSize;
+    const offsetX = Phaser.Math.Clamp(facing.x, -1, 1) * width * KABOOMLET_RIG.gaze.pupilOffsetScale.x;
+    const offsetY = Phaser.Math.Clamp(facing.y, -1, 1) * height * KABOOMLET_RIG.gaze.pupilOffsetScale.y;
 
     graphics.clear();
-    graphics.lineStyle(7, 0x050505, 1);
-    graphics.fillStyle(bodyColor, 1);
-    graphics.fillCircle(0, 0, 31);
-    graphics.strokeCircle(0, 0, 31);
-
-    graphics.lineStyle(5, 0x050505, 1);
-    graphics.lineBetween(-8, -29, 0, -43);
-    graphics.lineStyle(4, flash ? 0xffcf57 : 0xb06a30, 1);
-    graphics.lineBetween(0, -43, 12 + armedProgress * 5, -51);
+    graphics.fillStyle(0x050505, 1);
 
     for (const name of ['left', 'right'] as const) {
       const eye = KABOOMLET_RIG.gaze.eyes[name];
-      const pupilX = eye.x + Phaser.Math.Clamp(facing.x, -1, 1) * KABOOMLET_RIG.gaze.pupilOffsetScale.x;
-      const pupilY = eye.y + Phaser.Math.Clamp(facing.y, -1, 1) * KABOOMLET_RIG.gaze.pupilOffsetScale.y;
+      const x = (eye.x - 0.5) * width + offsetX;
+      const y = (eye.y - 0.5) * height + offsetY;
+      const pupilWidth = eye.radiusX * width * (1.2 + armedProgress * 0.28);
+      const pupilHeight = eye.radiusY * height * (1.14 + armedProgress * 0.2);
 
       graphics.save();
-      graphics.translateCanvas(eye.x, eye.y);
+      graphics.translateCanvas(x, y);
       graphics.rotateCanvas(eye.rotation);
-      graphics.lineStyle(4, 0x050505, 1);
-      graphics.fillStyle(0xffffff, 1);
-      graphics.fillEllipse(0, 0, eye.radiusX * 3, eye.radiusY * 2.8);
-      graphics.strokeEllipse(0, 0, eye.radiusX * 3, eye.radiusY * 2.8);
+      graphics.fillEllipse(0, 0, pupilWidth, pupilHeight);
       graphics.restore();
-
-      graphics.fillStyle(0x050505, 1);
-      graphics.fillEllipse(pupilX, pupilY, eye.radiusX * (1.25 + armedProgress * 0.35), eye.radiusY * (1.2 + armedProgress * 0.28));
     }
   }
 
@@ -231,6 +252,49 @@ export class KaboomletRenderer {
     }
   }
 
+  private drawWarningRings(timeMs: number, enemies: readonly KaboomletEnemy[]) {
+    const graphics = this.warningGraphics;
+
+    if (!graphics) {
+      return;
+    }
+
+    graphics.clear();
+
+    for (const enemy of enemies) {
+      if (enemy.phase !== 'armed') {
+        continue;
+      }
+
+      const pulse = (Math.sin(timeMs * 0.016) + 1) / 2;
+      const alpha = 0.34 + enemy.armedProgress * 0.34 + pulse * 0.2;
+      const radius = KABOOMLET_RIG.explosion.radius * (0.86 + enemy.armedProgress * 0.14);
+
+      this.strokeDashedCircle(graphics, enemy.position.x, enemy.position.y, radius, WARNING_COLOR, alpha);
+    }
+  }
+
+  private strokeDashedCircle(
+    graphics: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    radius: number,
+    color: number,
+    alpha: number
+  ) {
+    const dashAngle = 0.18;
+    const gapAngle = 0.12;
+
+    graphics.lineStyle(5, color, alpha);
+
+    for (let angle = 0; angle < Math.PI * 2; angle += dashAngle + gapAngle) {
+      const end = Math.min(Math.PI * 2, angle + dashAngle);
+      graphics.beginPath();
+      graphics.arc(x, y, radius, angle, end, false);
+      graphics.strokePath();
+    }
+  }
+
   private updateParticles(deltaMs: number) {
     const graphics = this.particleGraphics;
 
@@ -240,6 +304,19 @@ export class KaboomletRenderer {
 
     const deltaSeconds = deltaMs / 1000;
     graphics.clear();
+
+    for (let index = this.explosionClouds.length - 1; index >= 0; index -= 1) {
+      const cloud = this.explosionClouds[index];
+      cloud.ageMs += deltaMs;
+
+      if (cloud.ageMs >= cloud.durationMs) {
+        this.explosionClouds.splice(index, 1);
+        continue;
+      }
+
+      const progress = cloud.ageMs / cloud.durationMs;
+      this.drawExplosionCloud(graphics, cloud.position, progress);
+    }
 
     for (let index = this.explosionRings.length - 1; index >= 0; index -= 1) {
       const ring = this.explosionRings[index];
@@ -271,5 +348,51 @@ export class KaboomletRenderer {
       graphics.fillStyle(particle.color, (1 - progress) * 0.82);
       graphics.fillCircle(particle.position.x, particle.position.y, particle.radius * (1 - progress * 0.45));
     }
+  }
+
+  private drawExplosionCloud(
+    graphics: Phaser.GameObjects.Graphics,
+    position: SimVector,
+    progress: number
+  ) {
+    const alpha = 1 - Math.max(0, progress - 0.72) / 0.28;
+    const radius = 42 + progress * 30;
+    const cloud = [
+      { x: 0, y: 0, scale: 1 },
+      { x: -0.42, y: 0.08, scale: 0.68 },
+      { x: 0.38, y: -0.2, scale: 0.62 },
+      { x: 0.26, y: 0.42, scale: 0.55 },
+      { x: -0.08, y: -0.44, scale: 0.48 }
+    ];
+
+    graphics.fillStyle(BLAST_SHADOW, alpha * 0.72);
+    for (const item of cloud) {
+      graphics.fillCircle(
+        position.x + item.x * radius + 4,
+        position.y + item.y * radius + 5,
+        radius * item.scale * 0.62
+      );
+    }
+
+    graphics.fillStyle(BLAST_RIM, alpha);
+    for (const item of cloud) {
+      graphics.fillCircle(
+        position.x + item.x * radius,
+        position.y + item.y * radius,
+        radius * item.scale * 0.58
+      );
+    }
+
+    graphics.fillStyle(BLAST_FILL, alpha);
+    for (const item of cloud) {
+      graphics.fillCircle(
+        position.x + item.x * radius * 0.78,
+        position.y + item.y * radius * 0.78,
+        radius * item.scale * 0.46
+      );
+    }
+
+    graphics.fillStyle(BLAST_CORE, alpha);
+    graphics.fillCircle(position.x - radius * 0.12, position.y + radius * 0.04, radius * 0.36);
   }
 }

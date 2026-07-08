@@ -3,13 +3,13 @@ import { DART_GOOBER_RIG } from '../../characters/dartGooberRig';
 import { DART_TRI_GOOBER_RIG } from '../../characters/dartTriGooberRig';
 import { PURPLE_SHROOM_RIG } from '../../characters/purpleShroomRig';
 import { RED_SHROOM_RIG } from '../../characters/redShroomRig';
-import dartGooberBaseUrl from '../../../assets/characters/dart-goober/dart-goober-base-ai-v1-trimmed.png';
+import dartGooberBaseUrl from '../../../assets/characters/dart-goober/base.png';
 import dartTriGooberBaseUrl from '../../../assets/characters/dart-tri-goober/base.png';
-import bowbertBaseUrl from '../../../assets/characters/bowbert/bowbert-base-ai-v2-eye-whites.png';
-import purpleShroomBaseUrl from '../../../assets/enemies/purple_shroom/purple-shroom-ai-v1-base.png';
-import purpleShroomSporeUrl from '../../../assets/enemies/purple_shroom/purple-spore-ai-v1.png';
-import redShroomBaseUrl from '../../../assets/enemies/red_shroom/red-shroom-ai-v2-base.png';
-import redShroomSporeUrl from '../../../assets/enemies/red_shroom/red-spore-ai-v3.png';
+import bowbertBaseUrl from '../../../assets/characters/bowbert/base.png';
+import purpleShroomBaseUrl from '../../../assets/characters/purple-shroom/base.png';
+import purpleShroomSporeUrl from '../../../assets/characters/purple-shroom/projectiles/spore.png';
+import redShroomBaseUrl from '../../../assets/characters/red-shroom/base.png';
+import redShroomSporeUrl from '../../../assets/characters/red-shroom/projectiles/spore.png';
 
 export type {
   AttachedEyeTuning,

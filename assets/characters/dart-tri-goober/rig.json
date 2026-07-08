@@ -2,7 +2,7 @@
   "id": "dart-tri-goober",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "runtime-integrated",
+  "status": "playtested",
   "sourceReferences": [
     "source/reference-01.png"
   ],
@@ -70,7 +70,7 @@
         "eyeScaleX": 1.02,
         "eyeScaleY": 1.255,
         "pupilScale": 1.12,
-        "pupilShiftX": 0.002,
+        "pupilShiftX": 0,
         "pupilShiftY": -0.006,
         "cutSlope": 2.6,
         "cutOffset": -0.675,
@@ -143,7 +143,14 @@
     "systemPrecedent": "DartGooberSystem",
     "notes": "Uses Dart Goober ranged behavior with accepted base.png art and the same runtime cut-ellipse gaze language in stone/boss rooms."
   },
-  "projectiles": {},
+  "projectiles": {
+    "enemyDart": {
+      "mode": "runtime-procedural",
+      "assetFolder": "../../projectiles/enemy-dart",
+      "renderer": "src/render/projectiles/EnemyDartProjectileRenderer.ts",
+      "system": "src/sim/projectiles/EnemyDartProjectileSystem.ts"
+    }
+  },
   "vfx": {},
   "audio": {
     "hit": null,
@@ -151,6 +158,6 @@
     "attack": null
   },
   "openItems": [
-    "Tune combat balance in stone/boss rooms after playtest."
+    "Tune combat balance and room placement after gameplay balancing."
   ]
 }

@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kaboomlet Explosion Tuning</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07110c;
+        --panel: #101c14;
+        --line: #2e4a37;
+        --text: #f7f1d0;
+        --muted: #b8c8ae;
+        --accent: #ffd75d;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(rgba(255,255,255,.034) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,.034) 1px, transparent 1px),
+          var(--bg);
+        background-size: 44px 44px;
+        color: var(--text);
+      }
+      main { width: min(1280px, calc(100vw - 24px)); margin: 0 auto; padding: 22px 0 38px; }
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 18px;
+        margin-bottom: 14px;
+      }
+      h1 { margin: 0; font-size: clamp(28px, 3vw, 44px); line-height: 1; letter-spacing: 0; }
+      a { color: var(--accent); font-weight: 850; text-decoration: none; }
+      .summary { color: var(--muted); max-width: 640px; text-align: right; line-height: 1.46; font-size: 14px; }
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(360px, 1.15fr) minmax(320px, .85fr);
+        gap: 14px;
+      }
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--panel) 94%, black);
+        overflow: hidden;
+      }
+      .images {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+        gap: 1px;
+        background: var(--line);
+      }
+      .image-cell {
+        min-height: 158px;
+        display: grid;
+        place-items: center;
+        position: relative;
+        overflow: hidden;
+        background: #0a1510;
+      }
+      .image-cell img {
+        max-width: 94%;
+        max-height: 136px;
+        object-fit: contain;
+        filter: drop-shadow(0 7px 0 rgba(0,0,0,.16));
+      }
+      .label {
+        position: absolute;
+        left: 8px;
+        top: 7px;
+        padding: 3px 7px;
+        border-radius: 4px;
+        color: var(--accent);
+        background: rgba(3,8,5,.78);
+        font-size: 11px;
+        font-weight: 900;
+      }
+      .canvas-wrap {
+        display: grid;
+        place-items: center;
+        min-height: 430px;
+        padding: 14px;
+        background: radial-gradient(circle at center, rgba(255,215,93,.08), transparent 48%), #0a1610;
+      }
+      canvas {
+        width: min(100%, 660px);
+        max-height: 390px;
+        border: 1px solid #223828;
+        border-radius: 6px;
+        background: #314f39;
+      }
+      .toolbar, .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px;
+        border-top: 1px solid var(--line);
+      }
+      button, select, input[type="range"] { font: inherit; }
+      button, select {
+        min-height: 36px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #112017;
+        color: var(--text);
+      }
+      button { padding: 0 12px; cursor: pointer; font-weight: 800; }
+      button.active { border-color: var(--accent); color: #10140b; background: var(--accent); }
+      label {
+        display: grid;
+        gap: 5px;
+        min-width: 140px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      input[type="range"] { width: 100%; accent-color: var(--accent); }
+      pre {
+        margin: 0;
+        padding: 12px;
+        min-height: 560px;
+        max-height: 700px;
+        overflow: auto;
+        color: #dfe8d6;
+        background: #08110c;
+        font-size: 11px;
+        line-height: 1.45;
+      }
+      @media (max-width: 920px) {
+        header, .layout { grid-template-columns: 1fr; }
+        .summary { text-align: left; }
+      }
+      .capture { background: transparent; }
+      .capture main { width: 720px; padding: 0; }
+      .capture header,
+      .capture .images,
+      .capture aside,
+      .capture .toolbar,
+      .capture .controls { display: none; }
+      .capture .layout { display: block; }
+      .capture .panel { border: 0; border-radius: 0; background: transparent; }
+      .capture .canvas-wrap { min-height: 420px; padding: 0; background: transparent; }
+      .capture canvas { width: 720px; height: 420px; max-height: none; border: 0; border-radius: 0; }
+    </style>
+  </head>
+  <body>
+    <script>
+      const loadRig = () => fetch("./rig.json").then((response) => response.json());
+      const hexToRgba = (hex, alpha) => {
+        const normalized = hex.replace("#", "");
+        const value = Number.parseInt(normalized.length === 3
+          ? normalized.split("").map((item) => item + item).join("")
+          : normalized, 16);
+        const r = (value >> 16) & 255;
+        const g = (value >> 8) & 255;
+        const b = value & 255;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      };
+      const stableNoise = (seed) => {
+        const value = Math.sin(seed * 12.9898) * 43758.5453;
+        return value - Math.floor(value);
+      };
+      const drawGrid = (ctx) => {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.fillStyle = "#314f39";
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.strokeStyle = "rgba(7,18,13,.14)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(38, 42, ctx.canvas.width - 76, ctx.canvas.height - 84);
+        ctx.strokeStyle = "rgba(7,18,13,.12)";
+        ctx.lineWidth = 1;
+        for (let x = 72; x < ctx.canvas.width; x += 62) {
+          ctx.beginPath();
+          ctx.moveTo(x - 5, 64);
+          ctx.lineTo(x, 74);
+          ctx.lineTo(x + 5, 64);
+          ctx.stroke();
+        }
+        for (let y = 94; y < ctx.canvas.height - 50; y += 68) {
+          ctx.beginPath();
+          ctx.moveTo(76, y);
+          ctx.lineTo(86, y + 10);
+          ctx.lineTo(96, y);
+          ctx.stroke();
+        }
+      };
+      const drawDashedCircle = (ctx, rig, x, y, pulse) => {
+        const warning = rig.warningRadius;
+        ctx.save();
+        ctx.setLineDash(warning.dash ?? [16, 12]);
+        ctx.lineCap = "round";
+        ctx.lineWidth = warning.lineWidth ?? 5;
+        ctx.strokeStyle = hexToRgba(
+          warning.color,
+          (warning.alphaMin ?? 0.34) + pulse * ((warning.alphaMax ?? 0.88) - (warning.alphaMin ?? 0.34))
+        );
+        ctx.beginPath();
+        ctx.arc(x, y, warning.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      };
+      const drawBlastCloud = (ctx, rig, x, y, progress) => {
+        const cloud = rig.blastCloud;
+        const radius = cloud.radius * (0.58 + progress * 0.52);
+        const alpha = 1 - Math.max(0, progress - 0.72) / 0.28;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = hexToRgba(cloud.shadow, 0.72);
+        for (const item of cloud.clouds) {
+          ctx.beginPath();
+          ctx.arc(x + item.x * radius + 4, y + item.y * radius + 5, radius * item.scale * 0.62, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = cloud.rim;
+        for (const item of cloud.clouds) {
+          ctx.beginPath();
+          ctx.arc(x + item.x * radius, y + item.y * radius, radius * item.scale * 0.58, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = cloud.fill;
+        for (const item of cloud.clouds) {
+          ctx.beginPath();
+          ctx.arc(x + item.x * radius * 0.78, y + item.y * radius * 0.78, radius * item.scale * 0.46, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = cloud.core;
+        ctx.beginPath();
+        ctx.arc(x - radius * 0.12, y + radius * 0.04, radius * 0.36, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      };
+      const drawRing = (ctx, rig, x, y, progress) => {
+        const ring = rig.ring;
+        ctx.save();
+        ctx.lineWidth = ring.lineWidth * (1 - progress);
+        ctx.strokeStyle = hexToRgba(ring.color, ring.alpha * (1 - progress));
+        ctx.beginPath();
+        ctx.arc(x, y, ring.radius * progress, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      };
+      const drawDebris = (ctx, rig, x, y, progress) => {
+        const debris = rig.debris;
+        for (let index = 0; index < debris.count; index += 1) {
+          const angle = stableNoise(index + 2) * Math.PI * 2;
+          const speed = debris.minSpeed + stableNoise(index + 9) * (debris.maxSpeed - debris.minSpeed);
+          const distance = speed * 0.0042 * progress * 100;
+          const color = debris.colors[index % debris.colors.length];
+          const radius = debris.radius * (0.55 + stableNoise(index + 17) * 0.45) * (1 - progress * 0.45);
+          ctx.fillStyle = hexToRgba(color, (1 - progress) * 0.86);
+          ctx.beginPath();
+          ctx.arc(
+            x + Math.cos(angle) * distance,
+            y - 12 + Math.sin(angle) * distance - (1 - progress) * 10,
+            radius,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        }
+      };
+      const drawPreview = (ctx, rig, controls, time) => {
+        const mode = controls.mode.value;
+        const progress = controls.progress.value === "auto"
+          ? (Math.sin(time * 0.002) + 1) / 2
+          : Number(controls.progress.value);
+        const x = ctx.canvas.width / 2;
+        const y = ctx.canvas.height / 2 + 12;
+        drawGrid(ctx);
+        if (mode === "warning" || mode === "sequence") drawDashedCircle(ctx, rig, x, y, progress);
+        if (mode === "blast" || mode === "sequence") {
+          drawRing(ctx, rig, x, y, progress);
+          drawDebris(ctx, rig, x, y, progress);
+          drawBlastCloud(ctx, rig, x, y, progress);
+        }
+        ctx.fillStyle = "rgba(5,10,7,.74)";
+        ctx.fillRect(10, 10, 210, 42);
+        ctx.fillStyle = "#ffd75d";
+        ctx.font = "800 13px system-ui";
+        ctx.fillText(`${mode} / ${Math.round(progress * 100)}%`, 20, 36);
+      };
+      const createImageCell = (label, src, alt) => {
+        const cell = document.createElement("div");
+        cell.className = "image-cell";
+        cell.innerHTML = `<span class="label"></span><img alt="">`;
+        cell.querySelector(".label").textContent = label;
+        const image = cell.querySelector("img");
+        image.src = src;
+        image.alt = alt;
+        return cell;
+      };
+      const renderPage = async () => {
+        const rig = await loadRig();
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("capture") === "1") document.body.classList.add("capture");
+        document.title = "Kaboomlet Explosion Tuning";
+        document.body.innerHTML = `
+          <main>
+            <header>
+              <h1>Kaboomlet Explosion</h1>
+              <div class="summary">Previews Kaboomlet warning radius, blast cloud, ring, and debris from this folder's rig.json.<br><a href="../../../">effects</a> / <a href="../../../../">game debug</a></div>
+            </header>
+            <div class="layout">
+              <section class="panel">
+                <div class="images" id="images"></div>
+                <div class="canvas-wrap"><canvas width="720" height="420"></canvas></div>
+                <div class="toolbar">
+                  <button type="button" data-mode="warning" class="active">warning</button>
+                  <button type="button" data-mode="blast">blast</button>
+                  <button type="button" data-mode="sequence">sequence</button>
+                </div>
+                <div class="controls">
+                  <label>progress<select data-control="progress">
+                    <option value="auto">auto</option>
+                    <option value="0.18">18%</option>
+                    <option value="0.52">52%</option>
+                    <option value="0.86">86%</option>
+                  </select></label>
+                  <label>mode<select data-control="mode">
+                    <option value="warning">warning</option>
+                    <option value="blast">blast</option>
+                    <option value="sequence">sequence</option>
+                  </select></label>
+                </div>
+              </section>
+              <aside class="panel">
+                <div class="toolbar" style="border-top:0">
+                  <button type="button" data-action="copy-rig">copy rig</button>
+                  <button type="button" data-action="copy-preview">copy preview</button>
+                </div>
+                <pre></pre>
+              </aside>
+            </div>
+          </main>
+        `;
+        const images = document.querySelector("#images");
+        for (const [index, source] of (rig.sourceReferences ?? []).entries()) {
+          images.append(createImageCell(index === 0 ? "AoE Reference" : "Radius Reference", source, source));
+        }
+        for (const [label, src] of Object.entries(rig.exports ?? {})) {
+          if (label === "comparison") continue;
+          images.append(createImageCell(label, src, label));
+        }
+        const controls = {
+          progress: document.querySelector('[data-control="progress"]'),
+          mode: document.querySelector('[data-control="mode"]')
+        };
+        const captureMode = params.get("mode");
+        if (captureMode && Array.from(controls.mode.options).some((option) => option.value === captureMode)) {
+          controls.mode.value = captureMode;
+        }
+        const captureProgress = params.get("progress");
+        if (captureProgress) controls.progress.value = captureProgress;
+        const pre = document.querySelector("pre");
+        const syncPre = () => {
+          pre.textContent = JSON.stringify({
+            id: rig.id,
+            preview: {
+              mode: controls.mode.value,
+              progress: controls.progress.value
+            },
+            rig
+          }, null, 2);
+        };
+        for (const control of Object.values(controls)) {
+          control.addEventListener("input", syncPre);
+          control.addEventListener("change", syncPre);
+        }
+        for (const button of document.querySelectorAll("[data-mode]")) {
+          button.addEventListener("click", () => {
+            document.querySelectorAll("[data-mode]").forEach((item) => item.classList.remove("active"));
+            button.classList.add("active");
+            controls.mode.value = button.dataset.mode;
+            syncPre();
+          });
+        }
+        document.querySelector('[data-action="copy-rig"]').addEventListener("click", async () => {
+          await navigator.clipboard.writeText(JSON.stringify(rig, null, 2));
+        });
+        document.querySelector('[data-action="copy-preview"]').addEventListener("click", async () => {
+          await navigator.clipboard.writeText(pre.textContent);
+        });
+        syncPre();
+        const ctx = document.querySelector("canvas").getContext("2d");
+        const tick = (time) => {
+          drawPreview(ctx, rig, controls, time);
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      };
+      renderPage().catch((error) => {
+        document.body.innerHTML = `<main><h1>Tuning failed</h1><pre>${String(error.stack ?? error)}</pre></main>`;
+      });
+    </script>
+  </body>
+</html>

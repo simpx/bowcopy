@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bowbert Touch Controls Tuning</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07110c;
+        --panel: #102016;
+        --line: #2c4935;
+        --text: #fff6c8;
+        --muted: #b9caa5;
+        --accent: #e9cf6f;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body { overflow-x: hidden; }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: end;
+        padding: 20px clamp(14px, 4vw, 32px) 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(22px, 4vw, 34px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .sub {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .page {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 16px;
+        padding: 16px clamp(14px, 4vw, 32px) 32px;
+      }
+
+      .stage,
+      .panel,
+      .phone {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .stage {
+        display: grid;
+        gap: 16px;
+        padding: 16px;
+      }
+
+      .phone {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        background:
+          linear-gradient(rgb(3 8 6 / 54%), rgb(3 8 6 / 54%)),
+          repeating-linear-gradient(0deg, transparent 0 49px, rgb(255 255 255 / 5%) 50px 51px),
+          repeating-linear-gradient(90deg, transparent 0 63px, rgb(255 255 255 / 5%) 64px 65px),
+          #3f694b;
+      }
+
+      .phone.landscape {
+        aspect-ratio: 16 / 9;
+      }
+
+      .phone.portrait {
+        width: min(420px, 100%);
+        aspect-ratio: 9 / 16;
+        justify-self: center;
+      }
+
+      .phone-title {
+        position: absolute;
+        top: 12px;
+        left: 14px;
+        z-index: 1;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 900;
+        pointer-events: none;
+      }
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+      }
+
+      .joystick {
+        position: absolute;
+        width: var(--joystick-width);
+        aspect-ratio: 1;
+        border-radius: 50%;
+      }
+
+      .joystick.left {
+        left: var(--joystick-left);
+        bottom: var(--joystick-bottom);
+      }
+
+      .right-cluster {
+        position: absolute;
+        right: var(--right-cluster-right);
+        bottom: var(--right-cluster-bottom);
+        display: flex;
+        align-items: end;
+        gap: var(--right-cluster-gap);
+      }
+
+      .right-cluster .joystick {
+        position: relative;
+        width: var(--joystick-width);
+      }
+
+      .aim-zone {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: var(--aim-zone-width);
+        background: linear-gradient(90deg, transparent, rgb(233 207 111 / 8%));
+        border-left: 1px dashed rgb(233 207 111 / 24%);
+      }
+
+      .ring {
+        position: absolute;
+        inset: 0;
+        border: var(--ring-border);
+        border-radius: inherit;
+        background: var(--ring-background);
+        box-shadow: var(--ring-shadow);
+      }
+
+      .stick {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: var(--stick-width);
+        aspect-ratio: 1;
+        border: var(--stick-border);
+        border-radius: 50%;
+        background: var(--stick-background);
+        box-shadow: var(--stick-shadow);
+        translate: -50% -50%;
+        transform: translate3d(var(--stick-x), var(--stick-y), 0);
+      }
+
+      .dodge {
+        width: var(--dodge-width);
+        aspect-ratio: 1;
+        border: var(--dodge-border);
+        border-radius: 50%;
+        color: var(--dodge-text);
+        background: var(--dodge-background);
+        box-shadow: var(--dodge-shadow);
+        font: var(--dodge-font);
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .panel {
+        padding: 14px;
+      }
+
+      .controls {
+        display: grid;
+        gap: 14px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      input[type="range"],
+      button,
+      textarea {
+        min-width: 0;
+        width: 100%;
+      }
+
+      button {
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #13291c;
+        color: var(--text);
+        cursor: pointer;
+        font: inherit;
+        font-weight: 850;
+      }
+
+      input[type="range"] { accent-color: var(--accent); }
+
+      textarea {
+        min-height: 240px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #07110c;
+        color: var(--text);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 11px;
+        line-height: 1.45;
+        padding: 10px;
+      }
+
+      .capture header,
+      .capture .panel {
+        display: none;
+      }
+
+      .capture .page {
+        display: block;
+      }
+
+      @media (max-width: 880px) {
+        header,
+        .page {
+          grid-template-columns: 1fr;
+        }
+
+        header button { width: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Bowbert Touch Controls</h1>
+        <div class="sub">Runtime mobile controls from assets/ui/touch-controls/rig.json</div>
+      </div>
+      <button id="copyButton" type="button">Copy Params</button>
+    </header>
+
+    <main class="page">
+      <section class="stage">
+        <div class="phone landscape">
+          <div class="phone-title">Landscape Combat</div>
+          <div class="overlay" id="landscapeOverlay"></div>
+        </div>
+        <div class="phone portrait">
+          <div class="phone-title">Portrait Stress Test</div>
+          <div class="overlay" id="portraitOverlay"></div>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="controls">
+          <label>
+            Joystick Size
+            <input id="joystickInput" type="range" min="88" max="150" step="1" value="124" />
+          </label>
+          <label>
+            Stick Size
+            <input id="stickInput" type="range" min="34" max="68" step="1" value="52" />
+          </label>
+          <label>
+            Dodge Size
+            <input id="dodgeInput" type="range" min="54" max="92" step="1" value="72" />
+          </label>
+          <label>
+            Aim Zone
+            <input id="aimInput" type="range" min="44" max="72" step="1" value="58" />
+          </label>
+          <label>
+            Thumb Offset
+            <input id="thumbInput" type="range" min="0" max="34" step="1" value="22" />
+          </label>
+          <label>
+            Dead Zone
+            <input id="deadZoneInput" type="range" min="0.04" max="0.24" step="0.01" value="0.12" />
+          </label>
+          <label>
+            Params
+            <textarea id="paramsOutput" spellcheck="false"></textarea>
+          </label>
+        </div>
+      </aside>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let rig;
+
+      const createJoystick = (kind, x, y, scale) => {
+        const joystick = document.createElement("div");
+        joystick.className = `joystick ${kind}`;
+        joystick.innerHTML = `
+          <div class="ring"></div>
+          <div class="stick" style="--stick-x:${x * scale}px; --stick-y:${y * scale}px"></div>
+        `;
+        return joystick;
+      };
+
+      const getMockScale = (overlay, isPortrait) => {
+        const phone = overlay.parentElement;
+        const referenceWidth = isPortrait ? 390 : 760;
+        return Math.max(0.48, Math.min(1, phone.clientWidth / referenceWidth));
+      };
+
+      const applyMockVars = (overlay, isPortrait, scale) => {
+        const thumbOffset = Number($("thumbInput").value) * scale;
+        overlay.style.setProperty("--joystick-width", `${Number($("joystickInput").value) * scale}px`);
+        overlay.style.setProperty("--stick-width", `${Number($("stickInput").value) * scale}px`);
+        overlay.style.setProperty("--dodge-width", `${Number($("dodgeInput").value) * scale}px`);
+        overlay.style.setProperty("--joystick-left", `${thumbOffset}px`);
+        overlay.style.setProperty("--joystick-bottom", `${thumbOffset}px`);
+        overlay.style.setProperty("--right-cluster-right", `${thumbOffset}px`);
+        overlay.style.setProperty("--right-cluster-bottom", `${thumbOffset}px`);
+        overlay.style.setProperty("--right-cluster-gap", `clamp(${8 * scale}px, ${16 * scale}px, ${20 * scale}px)`);
+        overlay.style.setProperty("--aim-zone-width", `${isPortrait ? Math.max(64, Number($("aimInput").value)) : $("aimInput").value}%`);
+      };
+
+      const createOverlay = (isPortrait, scale) => {
+        const wrap = document.createDocumentFragment();
+        const aim = document.createElement("div");
+        aim.className = "aim-zone";
+        const cluster = document.createElement("div");
+        cluster.className = "right-cluster";
+        const dodge = document.createElement("button");
+        dodge.className = "dodge";
+        dodge.type = "button";
+        dodge.textContent = rig.copy.dodge;
+        cluster.append(dodge, createJoystick("right", -18, -10, scale));
+        wrap.append(aim, createJoystick("left", 20, -16, scale), cluster);
+        return wrap;
+      };
+
+      const applyVars = () => {
+        const root = document.documentElement;
+        root.style.setProperty("--joystick-width", `${$("joystickInput").value}px`);
+        root.style.setProperty("--stick-width", `${$("stickInput").value}px`);
+        root.style.setProperty("--dodge-width", `${$("dodgeInput").value}px`);
+        root.style.setProperty("--joystick-left", `${$("thumbInput").value}px`);
+        root.style.setProperty("--joystick-bottom", `${$("thumbInput").value}px`);
+        root.style.setProperty("--right-cluster-right", `${$("thumbInput").value}px`);
+        root.style.setProperty("--right-cluster-bottom", `${$("thumbInput").value}px`);
+        root.style.setProperty("--right-cluster-gap", rig.layout.rightClusterGap);
+        root.style.setProperty("--ring-border", rig.style.ringBorder);
+        root.style.setProperty("--ring-background", rig.style.ringBackground);
+        root.style.setProperty("--ring-shadow", rig.style.ringShadow);
+        root.style.setProperty("--stick-border", rig.style.stickBorder);
+        root.style.setProperty("--stick-background", rig.style.stickBackground);
+        root.style.setProperty("--stick-shadow", rig.style.stickShadow);
+        root.style.setProperty("--dodge-border", rig.style.dodgeBorder);
+        root.style.setProperty("--dodge-text", rig.style.dodgeText);
+        root.style.setProperty("--dodge-background", rig.style.dodgeBackground);
+        root.style.setProperty("--dodge-shadow", rig.style.dodgeShadow);
+        root.style.setProperty("--dodge-font", rig.style.dodgeFont);
+      };
+
+      const render = () => {
+        applyVars();
+        const landscapeOverlay = $("landscapeOverlay");
+        const portraitOverlay = $("portraitOverlay");
+        const landscapeScale = getMockScale(landscapeOverlay, false);
+        const portraitScale = getMockScale(portraitOverlay, true);
+        applyMockVars(landscapeOverlay, false, landscapeScale);
+        applyMockVars(portraitOverlay, true, portraitScale);
+        landscapeOverlay.replaceChildren(createOverlay(false, landscapeScale));
+        portraitOverlay.replaceChildren(createOverlay(true, portraitScale));
+        $("paramsOutput").value = JSON.stringify({
+          id: "BOWBERT_TOUCH_CONTROLS_TUNING",
+          joystickPx: Number($("joystickInput").value),
+          stickPx: Number($("stickInput").value),
+          dodgePx: Number($("dodgeInput").value),
+          aimZonePercent: Number($("aimInput").value),
+          thumbOffsetPx: Number($("thumbInput").value),
+          directionDeadZone: Number($("deadZoneInput").value),
+          rig
+        }, null, 2);
+      };
+
+      const init = async () => {
+        rig = await (await fetch("./rig.json")).json();
+        $("deadZoneInput").value = rig.input.directionDeadZone;
+        render();
+      };
+
+      ["joystickInput", "stickInput", "dodgeInput", "aimInput", "thumbInput", "deadZoneInput"].forEach((id) => {
+        $(id).addEventListener("input", render);
+      });
+
+      $("copyButton").addEventListener("click", async () => {
+        $("paramsOutput").select();
+        await navigator.clipboard.writeText($("paramsOutput").value);
+      });
+
+      init();
+    </script>
+  </body>
+</html>

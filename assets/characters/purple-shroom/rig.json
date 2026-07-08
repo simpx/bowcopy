@@ -1,0 +1,236 @@
+{
+  "id": "purple-shroom",
+  "kind": "enemy",
+  "projectContext": "bowbert",
+  "status": "playtested",
+  "sourceReferences": [
+    "source/reference-01.png",
+    "source/reference-01-source.png"
+  ],
+  "base": {
+    "source": "fixed-ai-image",
+    "textureKey": "purple-shroom-ai-v1-base",
+    "image": "base.png",
+    "sourceImage": "base-source.png",
+    "imageSize": {
+      "width": 856,
+      "height": 905
+    },
+    "scale": 0.089,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.5
+    },
+    "offset": {
+      "x": 0,
+      "y": -30
+    },
+    "hitbox": {
+      "radius": 40
+    },
+    "shadow": {
+      "width": 72,
+      "height": 16,
+      "y": 18
+    }
+  },
+  "attachments": {
+    "eyes": {
+      "source": "runtime-shape",
+      "role": "runtime pupils and spiral expressions over baked white eye sockets"
+    },
+    "spores": {
+      "source": "fixed-ai-image",
+      "role": "purple spore projectile base with runtime comet trail"
+    }
+  },
+  "runtimeLayers": {
+    "gaze": {
+      "source": "runtime-shape",
+      "role": "black pupils, cut-ellipse anger, and dizzy spiral over fixed eye whites"
+    },
+    "sporeTrail": {
+      "source": "runtime-vfx",
+      "role": "purple comet trail while spores move"
+    }
+  },
+  "gaze": {
+    "mode": "embedded-eye-pupils",
+    "archetype": "angry-embedded",
+    "eyes": {
+      "left": {
+        "x": 0.161,
+        "y": 0.552,
+        "radiusX": 0.063,
+        "radiusY": 0.058,
+        "rotation": -0.03
+      },
+      "right": {
+        "x": 0.842,
+        "y": 0.552,
+        "radiusX": 0.063,
+        "radiusY": 0.058,
+        "rotation": 0.03
+      }
+    },
+    "pupilOffsetScale": {
+      "x": 0.025,
+      "y": 0.017
+    },
+    "emotions": {
+      "default": {
+        "shape": "cut-ellipse",
+        "eyeTiltAdd": 0.025,
+        "eyeScaleX": 1.22,
+        "eyeScaleY": 1.02,
+        "pupilScale": 1.1,
+        "pupilShiftX": 0,
+        "pupilShiftY": -0.002,
+        "cutSlope": 1.38,
+        "cutOffset": -0.42,
+        "upperLid": 0,
+        "lowerLid": 0
+      },
+      "angry": {
+        "shape": "cut-ellipse",
+        "eyeTiltAdd": 0.075,
+        "eyeScaleX": 1.34,
+        "eyeScaleY": 1.08,
+        "pupilScale": 1.14,
+        "pupilShiftX": 0,
+        "pupilShiftY": -0.001,
+        "cutSlope": 1.48,
+        "cutOffset": -0.44,
+        "upperLid": 0,
+        "lowerLid": 0
+      },
+      "alert": {
+        "shape": "ellipse",
+        "eyeTiltAdd": 0,
+        "eyeScaleX": 0.72,
+        "eyeScaleY": 0.72,
+        "pupilScale": 0.64,
+        "pupilShiftX": 0,
+        "pupilShiftY": -0.006,
+        "upperLid": 0,
+        "lowerLid": 0
+      },
+      "aim": {
+        "shape": "cut-ellipse",
+        "eyeTiltAdd": 0.045,
+        "eyeScaleX": 1.22,
+        "eyeScaleY": 1.02,
+        "pupilScale": 1.06,
+        "pupilShiftX": 0,
+        "pupilShiftY": -0.004,
+        "cutSlope": 1.48,
+        "cutOffset": -0.43,
+        "upperLid": 0,
+        "lowerLid": 0
+      },
+      "hit": {
+        "shape": "ellipse",
+        "eyeTiltAdd": 0,
+        "eyeScaleX": 0.82,
+        "eyeScaleY": 0.54,
+        "pupilScale": 0.76,
+        "pupilShiftX": -0.004,
+        "pupilShiftY": -0.006,
+        "upperLid": 0.28,
+        "lowerLid": 0.12
+      },
+      "dizzy": {
+        "shape": "spiral",
+        "eyeTiltAdd": 0.12,
+        "eyeScaleX": 1.28,
+        "eyeScaleY": 1.28,
+        "pupilScale": 1.12,
+        "pupilShiftX": 0,
+        "pupilShiftY": 0,
+        "upperLid": 0,
+        "lowerLid": 0
+      }
+    }
+  },
+  "motion": {
+    "idleBob": 2.6,
+    "idleSquash": 0.018,
+    "chargeSquash": 0.1,
+    "releaseSquash": 0.14,
+    "hitScaleX": 0.08,
+    "hitScaleY": 0.05
+  },
+  "projectiles": {
+    "spore": {
+      "image": "projectiles/spore.png",
+      "sourceImage": "projectiles/spore-source.png",
+      "textureKey": "purple-spore-ai-v1",
+      "imageSize": {
+        "width": 596,
+        "height": 607
+      },
+      "scale": 0.046,
+      "originOffset": {
+        "x": 0,
+        "y": -33
+      },
+      "burstPattern": "four-way-outward",
+      "burstDistance": 178,
+      "travelMs": 610,
+      "lingerMs": 820,
+      "damage": 0.5
+    }
+  },
+  "spores": {
+    "textureKey": "purple-spore-ai-v1",
+    "imageAsset": "projectiles/spore.png",
+    "imageSize": {
+      "width": 596,
+      "height": 607
+    },
+    "scale": 0.046,
+    "originOffsetY": -33,
+    "burstDistance": 178,
+    "travelMs": 610,
+    "lingerMs": 820,
+    "trailLength": 22,
+    "trailWidth": 13,
+    "trailColor": 9270783
+  },
+  "vfx": {
+    "sporeTrail": {
+      "mode": "comet-trail",
+      "trailLength": 22,
+      "trailWidth": 13,
+      "trailColor": "#8d75ff",
+      "fadeAfterArrivalMs": 140
+    }
+  },
+  "behavior": {
+    "phaseLoop": [
+      "spawning",
+      "moving",
+      "charging",
+      "recovering"
+    ],
+    "attackType": "four-way-spore-burst",
+    "contactDamage": 0,
+    "sporeDamage": 0.5,
+    "hp": 4
+  },
+  "prototype": {
+    "system": "RedShroomSystem",
+    "renderer": "RedShroomRenderer",
+    "projectileSystem": "ShroomSporeProjectileSystem",
+    "notes": "Purple variant of the shared shroom enemy. Variant selection can be forced with ?encounter=red-shroom&variant=purple."
+  },
+  "audio": {
+    "hit": null,
+    "death": null,
+    "attack": null
+  },
+  "openItems": [
+    "Audio remains selected in the shared combat SFX layer rather than this character folder.",
+    "Fine tune purple spore cadence and room placement during later gameplay passes."
+  ]
+}

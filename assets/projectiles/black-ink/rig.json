@@ -1,0 +1,119 @@
+{
+  "id": "black-ink",
+  "kind": "projectile",
+  "projectContext": "bowbert",
+  "status": "playtested",
+  "sourceReferences": [
+    "source/reference-01.jpg",
+    "source/reference-02.jpg"
+  ],
+  "runtime": {
+    "renderer": "src/render/projectiles/EnemyDartProjectileRenderer.ts",
+    "system": "src/sim/projectiles/EnemyDartProjectileSystem.ts",
+    "owner": "spooper-gooper",
+    "style": "black-ink",
+    "preload": false
+  },
+  "physics": {
+    "speed": 92,
+    "damage": 0.5,
+    "ttlMs": 1800,
+    "trailPoints": 8,
+    "boundsMargin": 34,
+    "playerHitRadius": 29,
+    "originOffset": {
+      "x": 0,
+      "y": -10
+    }
+  },
+  "visual": {
+    "kind": "blob",
+    "localForward": "+x",
+    "rotation": false,
+    "fill": "#070706",
+    "outline": "#000000",
+    "outlineWidth": 2.5,
+    "blobs": [
+      {
+        "x": 0,
+        "y": 0,
+        "radiusX": 10,
+        "radiusY": 8
+      },
+      {
+        "x": -7,
+        "y": 4,
+        "radiusX": 7,
+        "radiusY": 5
+      },
+      {
+        "x": 6,
+        "y": -3,
+        "radiusX": 6,
+        "radiusY": 5
+      },
+      {
+        "x": 5,
+        "y": 5,
+        "radiusX": 5,
+        "radiusY": 4
+      }
+    ],
+    "highlight": {
+      "x": -3,
+      "y": -4,
+      "radius": 1.6,
+      "color": "#2d2b28",
+      "alpha": 0.58
+    }
+  },
+  "trail": {
+    "mode": "speck",
+    "points": 8,
+    "widthBase": 6,
+    "color": "#050504",
+    "alphaMin": 0.1,
+    "alphaMax": 0.42,
+    "specksPerPoint": 4,
+    "scatter": 11
+  },
+  "impacts": {
+    "wall": {
+      "mode": "cloud",
+      "durationMs": 260,
+      "color": "#050504",
+      "radiusStart": 8,
+      "radiusEnd": 28,
+      "strokeWidth": 0,
+      "strokeAlpha": 0,
+      "fillAlpha": 0.74,
+      "speckColor": "#ffffff",
+      "speckAlpha": 0.42
+    },
+    "player": {
+      "mode": "cloud",
+      "durationMs": 260,
+      "color": "#050504",
+      "radiusStart": 8,
+      "radiusEnd": 30,
+      "strokeWidth": 0,
+      "strokeAlpha": 0,
+      "fillAlpha": 0.78,
+      "speckColor": "#ffd0a1",
+      "speckAlpha": 0.34
+    }
+  },
+  "exports": {
+    "flight": "exports/black-ink-flight.png",
+    "trail": "exports/black-ink-trail.png",
+    "impact": "exports/black-ink-impact.png",
+    "comparison": "comparison.png"
+  },
+  "audio": {
+    "playerImpact": "assets/audio/sfx/game/player_damage_soft.wav",
+    "wallImpact": null
+  },
+  "openItems": [
+    "Tune opacity, cloud radius, and speck scatter after mobile playtest."
+  ]
+}

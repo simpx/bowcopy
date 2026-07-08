@@ -3,6 +3,7 @@ import type { RoomBounds } from '../rooms';
 
 export interface EnemyDartProjectile {
   readonly id: number;
+  readonly style: EnemyProjectileStyle;
   position: SimVector;
   previousPosition: SimVector;
   direction: SimVector;
@@ -13,28 +14,35 @@ export interface EnemyDartProjectile {
   trail: SimVector[];
 }
 
+export type EnemyProjectileStyle = 'goober-dart' | 'black-ink';
+
 export interface EnemyDartFireRequest {
   readonly origin: SimVector;
   readonly direction: SimVector;
   readonly speed: number;
   readonly damage: number;
+  readonly style?: EnemyProjectileStyle;
+  readonly ttlMs?: number;
 }
 
 export type EnemyDartProjectileEvent =
   | {
       type: 'enemy-dart-hit-player';
       id: number;
+      style: EnemyProjectileStyle;
       position: SimVector;
       damage: number;
     }
   | {
       type: 'enemy-dart-hit-boundary';
       id: number;
+      style: EnemyProjectileStyle;
       position: SimVector;
     }
   | {
       type: 'enemy-dart-expired';
       id: number;
+      style: EnemyProjectileStyle;
       position: SimVector;
     };
 
@@ -107,13 +115,14 @@ export class EnemyDartProjectileSystem {
     const direction = normalize(request.direction);
     const dart: EnemyDartProjectile = {
       id: this.nextId,
+      style: request.style ?? 'goober-dart',
       position: copyVector(request.origin),
       previousPosition: copyVector(request.origin),
       direction,
       speed: request.speed,
       damage: request.damage,
       ageMs: 0,
-      ttlMs: DART_TTL_MS,
+      ttlMs: request.ttlMs ?? DART_TTL_MS,
       trail: [copyVector(request.origin)]
     };
 
@@ -152,6 +161,7 @@ export class EnemyDartProjectileSystem {
         events.push({
           type: 'enemy-dart-hit-player',
           id: dart.id,
+          style: dart.style,
           position: copyVector(dart.position),
           damage: dart.damage
         });
@@ -163,6 +173,7 @@ export class EnemyDartProjectileSystem {
         events.push({
           type: 'enemy-dart-hit-boundary',
           id: dart.id,
+          style: dart.style,
           position: copyVector(dart.position)
         });
         this.darts.delete(dart.id);
@@ -173,6 +184,7 @@ export class EnemyDartProjectileSystem {
         events.push({
           type: 'enemy-dart-expired',
           id: dart.id,
+          style: dart.style,
           position: copyVector(dart.position)
         });
         this.darts.delete(dart.id);

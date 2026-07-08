@@ -1,0 +1,92 @@
+{
+  "id": "hearts-hud",
+  "kind": "hud-widget",
+  "projectContext": "bowbert",
+  "status": "runtime-integrated",
+  "sourceReferences": [
+    "../../prototype-video-crops/ui/heart-full.png",
+    "../../prototype-video-crops/ui/heart-row-five.png"
+  ],
+  "shape": {
+    "viewBox": "0 0 44 40",
+    "heartPath": "M22 36.5C17.3 32.9 12.4 29.2 8.9 25.3C5.4 21.4 3.8 17.3 4.6 13.1C5.4 8 9.5 4.3 14.5 4.5C18.3 4.6 20.6 6.3 22 9.1C23.8 6.2 26.8 4.3 30.7 4.5C36.4 4.8 40.4 8.9 40.2 14.4C40 23.1 30.8 30.2 22 36.5Z",
+    "highlightPath": "M11.2 11.1C12.7 8.8 15.9 7.6 18.4 8.9",
+    "aspectRatio": "44 / 40",
+    "peg": {
+      "width": "4px",
+      "height": "9px",
+      "bottom": "-4px",
+      "rotationDeg": 4
+    }
+  },
+  "layout": {
+    "top": "max(9px, env(safe-area-inset-top))",
+    "left": "max(11px, env(safe-area-inset-left))",
+    "rowGap": "clamp(5px, 0.85vmin, 9px)",
+    "rowHeight": "clamp(28px, 5.1vmin, 40px)",
+    "heartWidth": "clamp(27px, 4.9vmin, 38px)",
+    "zIndex": 6,
+    "compactLandscape": {
+      "maxHeightPx": 430,
+      "top": "max(10px, env(safe-area-inset-top))",
+      "left": "max(10px, env(safe-area-inset-left))",
+      "rowGap": "5px",
+      "rowHeight": "clamp(20px, 5.4vh, 26px)",
+      "heartWidth": "clamp(20px, 5.2vh, 26px)"
+    }
+  },
+  "colors": {
+    "shell": "#4a3538",
+    "fill": "#ff3f68",
+    "highlight": "#fff3ee",
+    "outline": "#030604",
+    "peg": "#050805",
+    "shadow": "#050805",
+    "flash": "rgb(255 240 212 / 82%)"
+  },
+  "style": {
+    "outlineWidth": 5.1,
+    "highlightWidth": 3.5,
+    "shellOpacity": 0.72,
+    "highlightOpacity": 0.86,
+    "emptyOpacity": 0.64,
+    "emptyScale": 0.94,
+    "baseTiltDeg": -3,
+    "alternateTiltDeg": 2,
+    "alternateYOffsetPx": 1,
+    "emptyYOffsetPx": 2,
+    "dropShadow": "drop-shadow(0 2px 0 #050805) drop-shadow(0 4px 3px rgb(0 0 0 / 34%))",
+    "flashShadow": "drop-shadow(0 0 8px rgb(255 240 212 / 82%)) drop-shadow(0 2px 0 #050805) drop-shadow(0 4px 3px rgb(0 0 0 / 28%))"
+  },
+  "states": {
+    "full": {
+      "clipPath": "inset(0 0 0 0)"
+    },
+    "half": {
+      "clipPath": "inset(0 50% 0 0)"
+    },
+    "empty": {
+      "clipPath": "inset(0 100% 0 0)"
+    }
+  },
+  "motion": {
+    "transitionMs": 140,
+    "damageClassMs": 360,
+    "wiggleMs": 320,
+    "flashMs": 320,
+    "wiggleKeyframes": [
+      { "percent": 0, "x": 0 },
+      { "percent": 18, "x": -4 },
+      { "percent": 36, "x": 5 },
+      { "percent": 58, "x": -3 },
+      { "percent": 78, "x": 2 },
+      { "percent": 100, "x": 0 }
+    ]
+  },
+  "runtimeReferences": [
+    "../../../src/data/uiHudKit.ts",
+    "../../../src/ui/HeartsHud.ts",
+    "../../../src/game/PlayerHealth.ts"
+  ],
+  "openItems": []
+}

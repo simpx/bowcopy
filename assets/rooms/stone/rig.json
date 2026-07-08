@@ -1,0 +1,22 @@
+{
+  "id": "stone",
+  "kind": "combat-room-theme",
+  "projectContext": "bowbert",
+  "status": "runtime-integrated",
+  "runtimeTheme": "stone",
+  "sharedKit": "../room-theme-kit.json",
+  "theme": {
+    "floorColor": "#405c4e",
+    "decorSeed": 0.42,
+    "extraProps": [
+      { "kind": "stone", "x": 330, "y": 202, "scale": 0.48, "rotation": 0.12 },
+      { "kind": "stone", "x": 944, "y": 448, "scale": 0.62, "rotation": -0.04 },
+      { "kind": "stone", "x": 768, "y": 572, "scale": 0.54, "rotation": 0.05 }
+    ]
+  },
+  "encounter": {
+    "kind": "normal",
+    "preferredEnemies": ["dart-tri-goober", "slime-parent", "slime"]
+  },
+  "openItems": []
+}

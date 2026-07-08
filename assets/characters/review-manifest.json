@@ -1,0 +1,249 @@
+{
+  "project": "Bowbert",
+  "title": "Bowbert Character Review",
+  "roles": [
+    {
+      "id": "bowbert",
+      "name": "Bowbert",
+      "kind": "player",
+      "status": "playtested",
+      "source": "bowbert/rig.json",
+      "brief": "bowbert/brief.md",
+      "tuning": "bowbert/tuning.html",
+      "liveDemos": [
+        {
+          "id": "motion",
+          "label": "Live motion / bow / dodge",
+          "url": "../../?playerDemo=motion"
+        }
+      ],
+      "media": [
+        { "id": "comparison", "label": "Comparison", "image": "bowbert/comparison.png" },
+        { "id": "base", "label": "Base", "image": "bowbert/base.png" },
+        { "id": "runtime", "label": "Runtime", "image": "bowbert/playtest/runtime-encounter.png" },
+        { "id": "motion", "label": "Motion Runtime", "image": "bowbert/playtest/runtime-motion-demo.png" }
+      ],
+      "openItems": [
+        "Tune player motion and bow feel during gameplay balancing."
+      ]
+    },
+    {
+      "id": "dart-goober",
+      "name": "Dart Goober",
+      "kind": "enemy",
+      "status": "playtested",
+      "source": "dart-goober/rig.json",
+      "brief": "dart-goober/brief.md",
+      "tuning": "dart-goober/tuning.html",
+      "liveDemos": [
+        {
+          "id": "encounter",
+          "label": "Live encounter",
+          "url": "../../?encounter=dart-goober"
+        }
+      ],
+      "media": [
+        { "id": "comparison", "label": "Comparison", "image": "dart-goober/comparison.png" },
+        { "id": "base", "label": "Base", "image": "dart-goober/base.png" },
+        { "id": "runtime", "label": "Runtime", "image": "dart-goober/playtest/runtime-encounter.png" }
+      ],
+      "openItems": [
+        "Audio remains selected in the shared combat SFX layer rather than this character folder.",
+        "Balance for dart cadence and encounter density remains a gameplay tuning item."
+      ]
+    },
+    {
+      "id": "dart-tri-goober",
+      "name": "Dart Tri Goober",
+      "kind": "enemy",
+      "status": "playtested",
+      "source": "dart-tri-goober/rig.json",
+      "brief": "dart-tri-goober/brief.md",
+      "tuning": "dart-tri-goober/tuning.html",
+      "liveDemos": [
+        {
+          "id": "encounter",
+          "label": "Live encounter / dart attack",
+          "url": "../../?encounter=dart-tri-goober"
+        }
+      ],
+      "media": [
+        { "id": "comparison", "label": "Comparison", "image": "dart-tri-goober/comparison.png" },
+        { "id": "base", "label": "Base", "image": "dart-tri-goober/base.png" },
+        { "id": "runtime", "label": "Runtime", "image": "dart-tri-goober/playtest/runtime-encounter.png" }
+      ],
+      "openItems": [
+        "Tune combat balance and room placement after gameplay balancing."
+      ]
+    },
+    {
+      "id": "kaboomlet",
+      "name": "Kaboomlet",
+      "kind": "enemy",
+      "status": "playtested",
+      "source": "kaboomlet/rig.json",
+      "brief": "kaboomlet/brief.md",
+      "tuning": "kaboomlet/tuning.html",
+      "liveDemos": [
+        {
+          "id": "encounter",
+          "label": "Live chase / countdown",
+          "url": "../../?encounter=kaboomlet"
+        },
+        {
+          "id": "explosion",
+          "label": "Live explosion effect",
+          "url": "../../?encounter=kaboomlet&effect=explosion"
+        }
+      ],
+      "media": [
+        { "id": "comparison", "label": "Comparison", "image": "kaboomlet/comparison.png" },
+        { "id": "base", "label": "Base", "image": "kaboomlet/base.png" },
+        { "id": "runtime", "label": "Runtime", "image": "kaboomlet/playtest/runtime-encounter.png" },
+        { "id": "explosion", "label": "Explosion Runtime", "image": "kaboomlet/playtest/runtime-explosion-demo.png" }
+      ],
+      "openItems": [
+        "Tune explosion radius, countdown timing, and player damage during gameplay balancing.",
+        "Select fuse/explosion sounds after gameplay timing is stable."
+      ]
+    },
+    {
+      "id": "purple-shroom",
+      "name": "Purple Shroom",
+      "kind": "enemy",
+      "status": "playtested",
+      "source": "purple-shroom/rig.json",
+      "brief": "purple-shroom/brief.md",
+      "tuning": "purple-shroom/tuning.html",
+      "liveDemos": [
+        {
+          "id": "encounter",
+          "label": "Live purple encounter",
+          "url": "../../?encounter=red-shroom&variant=purple"
+        },
+        {
+          "id": "spore-burst",
+          "label": "Forced purple spore burst",
+          "url": "../../?encounter=red-shroom&variant=purple&effect=spore"
+        }
+      ],
+      "media": [
+        { "id": "comparison", "label": "Comparison", "image": "purple-shroom/comparison.png" },
+        { "id": "base", "label": "Base", "image": "purple-shroom/base.png" },
+        { "id": "runtime", "label": "Runtime", "image": "purple-shroom/playtest/runtime-encounter.png" },
+        { "id": "spore-burst", "label": "Spore Burst Runtime", "image": "purple-shroom/playtest/runtime-spore-burst-moving.png" }
+      ],
+      "openItems": [
+        "Audio remains selected in the shared combat SFX layer rather than this character folder.",
+        "Fine tune purple spore cadence and room placement during later gameplay passes."
+      ]
+    },
+    {
+      "id": "red-shroom",
+      "name": "Red Shroom",
+      "kind": "enemy",
+      "status": "playtested",
+      "source": "red-shroom/rig.json",
+      "brief": "red-shroom/brief.md",
+      "tuning": "red-shroom/tuning.html",
+      "liveDemos": [
+        {
+          "id": "encounter",
+          "label": "Live red encounter",
+          "url": "../../?encounter=red-shroom&variant=red"
+        },
+        {
+          "id": "spore-burst",
+          "label": "Forced red spore burst",
+          "url": "../../?encounter=red-shroom&variant=red&effect=spore"
+        }
+      ],
+      "media": [
+        { "id": "comparison", "label": "Comparison", "image": "red-shroom/comparison.png" },
+        { "id": "base", "label": "Base", "image": "red-shroom/base.png" },
+        { "id": "runtime", "label": "Runtime", "image": "red-shroom/playtest/runtime-encounter.png" },
+        { "id": "spore-burst", "label": "Spore Burst Runtime", "image": "red-shroom/playtest/runtime-spore-burst-moving.png" }
+      ],
+      "openItems": [
+        "Audio remains selected in the shared combat SFX layer rather than this character folder.",
+        "Fine tune encounter balance and spore cadence during later gameplay passes."
+      ]
+    },
+    {
+      "id": "slime-parent",
+      "name": "Slime Parent",
+      "kind": "enemy",
+      "status": "playtested",
+      "source": "slime-parent/rig.json",
+      "brief": "slime-parent/brief.md",
+      "tuning": "slime-parent/tuning.html",
+      "liveDemos": [
+        {
+          "id": "split",
+          "label": "Live split into children",
+          "url": "../../?encounter=slime-parent&split=1"
+        }
+      ],
+      "media": [
+        { "id": "comparison", "label": "Comparison", "image": "slime-parent/comparison.png" },
+        { "id": "base", "label": "Base", "image": "slime-parent/base.png" },
+        { "id": "runtime", "label": "Runtime", "image": "slime-parent/playtest/runtime-encounter.png" },
+        { "id": "split", "label": "Split Runtime", "image": "slime-parent/playtest/runtime-split.png" }
+      ],
+      "openItems": [
+        "Tune parent jump timing, hitbox, split child count, spawn radius, and room density during gameplay balancing.",
+        "Select dedicated parent jump/split audio when the enemy set moves beyond MVP."
+      ]
+    },
+    {
+      "id": "slime",
+      "name": "Slime Child",
+      "kind": "enemy",
+      "status": "playtested",
+      "source": "slime/rig.json",
+      "brief": "slime/brief.md",
+      "tuning": "slime/tuning.html",
+      "liveDemos": [
+        {
+          "id": "hopper",
+          "label": "Live child hopper",
+          "url": "../../?encounter=slime"
+        }
+      ],
+      "media": [
+        { "id": "comparison", "label": "Comparison", "image": "slime/comparison.png" },
+        { "id": "base", "label": "Base", "image": "slime/base.png" },
+        { "id": "runtime", "label": "Runtime", "image": "slime/playtest/runtime-encounter.png" }
+      ],
+      "openItems": [
+        "Tune child jump cadence, hitbox, and split-cluster readability during gameplay balancing.",
+        "Decide later whether the folder should be renamed to slime-child; current runtime uses id slime as the child role."
+      ]
+    },
+    {
+      "id": "spooper-gooper",
+      "name": "Spooper Gooper",
+      "kind": "enemy",
+      "status": "playtested",
+      "source": "spooper-gooper/rig.json",
+      "brief": "spooper-gooper/brief.md",
+      "tuning": "spooper-gooper/tuning.html",
+      "liveDemos": [
+        {
+          "id": "phase-attack",
+          "label": "Live appear / attack / vanish",
+          "url": "../../?encounter=spooper-gooper"
+        }
+      ],
+      "media": [
+        { "id": "comparison", "label": "Comparison", "image": "spooper-gooper/comparison.png" },
+        { "id": "base", "label": "Base", "image": "spooper-gooper/base.png" },
+        { "id": "runtime", "label": "Runtime", "image": "spooper-gooper/playtest/runtime-encounter.png" },
+        { "id": "phase-attack", "label": "Phase Attack Runtime", "image": "spooper-gooper/playtest/runtime-phase-attack-demo.png" }
+      ],
+      "openItems": [
+        "Tune opacity, appear/disappear timing, projectile speed, projectile count, and trail density against gameplay."
+      ]
+    }
+  ]
+}

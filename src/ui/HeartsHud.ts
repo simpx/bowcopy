@@ -1,16 +1,16 @@
 import type { PlayerHealthState } from '../game/PlayerHealth';
+import { HEARTS_HUD_RIG } from '../data/uiHudKit';
 
 const HEARTS_HUD_STYLE_ID = 'bowbert-hearts-hud-styles';
-const DAMAGE_CLASS_MS = 360;
-const HEART_PATH =
-  'M22 36.5C17.3 32.9 12.4 29.2 8.9 25.3C5.4 21.4 3.8 17.3 4.6 13.1C5.4 8 9.5 4.3 14.5 4.5C18.3 4.6 20.6 6.3 22 9.1C23.8 6.2 26.8 4.3 30.7 4.5C36.4 4.8 40.4 8.9 40.2 14.4C40 23.1 30.8 30.2 22 36.5Z';
-const HEART_HIGHLIGHT_PATH = 'M11.2 11.1C12.7 8.8 15.9 7.6 18.4 8.9';
+const DAMAGE_CLASS_MS = HEARTS_HUD_RIG.motion.damageClassMs;
+const HEART_PATH = HEARTS_HUD_RIG.shape.heartPath;
+const HEART_HIGHLIGHT_PATH = HEARTS_HUD_RIG.shape.highlightPath;
 const HEARTS_HUD_STYLES = `
 .hearts-hud {
   position: absolute;
-  top: max(9px, env(safe-area-inset-top));
-  left: max(11px, env(safe-area-inset-left));
-  z-index: 6;
+  top: ${HEARTS_HUD_RIG.layout.top};
+  left: ${HEARTS_HUD_RIG.layout.left};
+  z-index: ${HEARTS_HUD_RIG.layout.zIndex};
   display: flex;
   align-items: center;
   gap: 8px;
@@ -20,37 +20,35 @@ const HEARTS_HUD_STYLES = `
 .hearts-hud-row {
   display: flex;
   align-items: center;
-  gap: clamp(5px, 0.85vmin, 9px);
-  height: clamp(28px, 5.1vmin, 40px);
+  gap: ${HEARTS_HUD_RIG.layout.rowGap};
+  height: ${HEARTS_HUD_RIG.layout.rowHeight};
 }
 
 .hearts-hud-heart {
   position: relative;
-  width: clamp(27px, 4.9vmin, 38px);
-  aspect-ratio: 44 / 40;
-  transform: translateY(0) rotate(-3deg);
-  filter:
-    drop-shadow(0 2px 0 #050805)
-    drop-shadow(0 4px 3px rgb(0 0 0 / 34%));
+  width: ${HEARTS_HUD_RIG.layout.heartWidth};
+  aspect-ratio: ${HEARTS_HUD_RIG.shape.aspectRatio};
+  transform: translateY(0) rotate(${HEARTS_HUD_RIG.style.baseTiltDeg}deg);
+  filter: ${HEARTS_HUD_RIG.style.dropShadow};
   transition:
-    opacity 140ms ease,
-    transform 140ms ease;
+    opacity ${HEARTS_HUD_RIG.motion.transitionMs}ms ease,
+    transform ${HEARTS_HUD_RIG.motion.transitionMs}ms ease;
 }
 
 .hearts-hud-heart:nth-child(2n) {
-  transform: translateY(1px) rotate(2deg);
+  transform: translateY(${HEARTS_HUD_RIG.style.alternateYOffsetPx}px) rotate(${HEARTS_HUD_RIG.style.alternateTiltDeg}deg);
 }
 
 .hearts-hud-heart::after {
   position: absolute;
   left: 50%;
-  bottom: -4px;
-  width: 4px;
-  height: 9px;
+  bottom: ${HEARTS_HUD_RIG.shape.peg.bottom};
+  width: ${HEARTS_HUD_RIG.shape.peg.width};
+  height: ${HEARTS_HUD_RIG.shape.peg.height};
   border-radius: 999px;
-  background: #050805;
+  background: ${HEARTS_HUD_RIG.colors.peg};
   content: "";
-  transform: translateX(-50%) rotate(4deg);
+  transform: translateX(-50%) rotate(${HEARTS_HUD_RIG.shape.peg.rotationDeg}deg);
   z-index: -1;
 }
 
@@ -62,57 +60,57 @@ const HEARTS_HUD_STYLES = `
 }
 
 .hearts-hud-heart-shell {
-  fill: #4a3538;
-  opacity: 0.72;
+  fill: ${HEARTS_HUD_RIG.colors.shell};
+  opacity: ${HEARTS_HUD_RIG.style.shellOpacity};
 }
 
 .hearts-hud-heart-fill {
-  fill: #ff3f68;
-  clip-path: inset(0 100% 0 0);
-  transition: clip-path 140ms ease;
+  fill: ${HEARTS_HUD_RIG.colors.fill};
+  clip-path: ${HEARTS_HUD_RIG.states.empty.clipPath};
+  transition: clip-path ${HEARTS_HUD_RIG.motion.transitionMs}ms ease;
 }
 
 .hearts-hud-heart-highlight {
   fill: none;
-  stroke: #fff3ee;
-  stroke-width: 3.5;
+  stroke: ${HEARTS_HUD_RIG.colors.highlight};
+  stroke-width: ${HEARTS_HUD_RIG.style.highlightWidth};
   stroke-linecap: round;
   opacity: 0;
 }
 
 .hearts-hud-heart-outline {
   fill: none;
-  stroke: #030604;
-  stroke-width: 5.1;
+  stroke: ${HEARTS_HUD_RIG.colors.outline};
+  stroke-width: ${HEARTS_HUD_RIG.style.outlineWidth};
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 
 .hearts-hud-heart.is-full .hearts-hud-heart-fill {
-  clip-path: inset(0 0 0 0);
+  clip-path: ${HEARTS_HUD_RIG.states.full.clipPath};
 }
 
 .hearts-hud-heart.is-half .hearts-hud-heart-fill {
-  clip-path: inset(0 50% 0 0);
+  clip-path: ${HEARTS_HUD_RIG.states.half.clipPath};
 }
 
 .hearts-hud-heart.is-full .hearts-hud-heart-highlight,
 .hearts-hud-heart.is-half .hearts-hud-heart-highlight {
-  opacity: 0.86;
+  opacity: ${HEARTS_HUD_RIG.style.highlightOpacity};
 }
 
 .hearts-hud-heart.is-empty {
-  opacity: 0.64;
-  transform: translateY(2px) scale(0.94) rotate(-3deg);
+  opacity: ${HEARTS_HUD_RIG.style.emptyOpacity};
+  transform: translateY(${HEARTS_HUD_RIG.style.emptyYOffsetPx}px) scale(${HEARTS_HUD_RIG.style.emptyScale}) rotate(${HEARTS_HUD_RIG.style.baseTiltDeg}deg);
 }
 
 .hearts-hud.is-damaged {
-  animation: hearts-hud-wiggle 320ms ease-out;
+  animation: hearts-hud-wiggle ${HEARTS_HUD_RIG.motion.wiggleMs}ms ease-out;
 }
 
 .hearts-hud.is-damaged .hearts-hud-heart.is-full,
 .hearts-hud.is-damaged .hearts-hud-heart.is-half {
-  animation: hearts-hud-flash 320ms ease-out;
+  animation: hearts-hud-flash ${HEARTS_HUD_RIG.motion.flashMs}ms ease-out;
 }
 
 @keyframes hearts-hud-wiggle {
@@ -141,40 +139,36 @@ const HEARTS_HUD_STYLES = `
 @keyframes hearts-hud-flash {
   0%,
   100% {
-    filter:
-      drop-shadow(0 2px 0 #050805)
-      drop-shadow(0 4px 3px rgb(0 0 0 / 34%));
+    filter: ${HEARTS_HUD_RIG.style.dropShadow};
   }
 
   35% {
-    filter:
-      drop-shadow(0 0 8px rgb(255 240 212 / 82%))
-      drop-shadow(0 2px 0 #050805)
-      drop-shadow(0 4px 3px rgb(0 0 0 / 28%));
+    filter: ${HEARTS_HUD_RIG.style.flashShadow};
   }
 }
 
-@media (max-height: 430px) and (orientation: landscape) {
+@media (max-height: ${HEARTS_HUD_RIG.layout.compactLandscape.maxHeightPx}px) and (orientation: landscape) {
   .hearts-hud {
-    top: max(10px, env(safe-area-inset-top));
-    left: max(10px, env(safe-area-inset-left));
+    top: ${HEARTS_HUD_RIG.layout.compactLandscape.top};
+    left: ${HEARTS_HUD_RIG.layout.compactLandscape.left};
     gap: 5px;
   }
 
   .hearts-hud-row {
-    gap: 5px;
-    height: clamp(20px, 5.4vh, 26px);
+    gap: ${HEARTS_HUD_RIG.layout.compactLandscape.rowGap};
+    height: ${HEARTS_HUD_RIG.layout.compactLandscape.rowHeight};
   }
 
   .hearts-hud-heart {
-    width: clamp(20px, 5.2vh, 26px);
+    width: ${HEARTS_HUD_RIG.layout.compactLandscape.heartWidth};
   }
 
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hearts-hud.is-damaged,
-  .hearts-hud.is-damaged .hearts-hud-heart.is-full {
+  .hearts-hud.is-damaged .hearts-hud-heart.is-full,
+  .hearts-hud.is-damaged .hearts-hud-heart.is-half {
     animation: none;
   }
 }
@@ -184,7 +178,7 @@ const formatHealth = (value: number): string =>
   Number.isInteger(value) ? String(value) : value.toFixed(1);
 
 const createHeartMarkup = (): string => `
-<svg viewBox="0 0 44 40" aria-hidden="true" focusable="false">
+<svg viewBox="${HEARTS_HUD_RIG.shape.viewBox}" aria-hidden="true" focusable="false">
   <path class="hearts-hud-heart-shell" d="${HEART_PATH}" />
   <path class="hearts-hud-heart-fill" d="${HEART_PATH}" />
   <path class="hearts-hud-heart-highlight" d="${HEART_HIGHLIGHT_PATH}" />

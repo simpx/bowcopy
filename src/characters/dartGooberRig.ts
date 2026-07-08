@@ -5,7 +5,7 @@ export const DART_GOOBER_RIG = {
   base: {
     source: 'fixed-ai-image',
     textureKey: 'dart-goober-base-ai-v1-trimmed',
-    imageAsset: 'assets/characters/dart-goober/dart-goober-base-ai-v1-trimmed.png',
+    imageAsset: 'assets/characters/dart-goober/base.png',
     imageSize: { width: 901, height: 957 },
     scale: 0.095,
     y: -19,

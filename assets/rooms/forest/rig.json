@@ -1,0 +1,22 @@
+{
+  "id": "forest",
+  "kind": "combat-room-theme",
+  "projectContext": "bowbert",
+  "status": "runtime-integrated",
+  "runtimeTheme": "wood",
+  "sharedKit": "../room-theme-kit.json",
+  "theme": {
+    "floorColor": "#3f694b",
+    "decorSeed": 0,
+    "extraProps": [
+      { "kind": "stump", "x": 330, "y": 202, "scale": 0.52, "rotation": 0.12 },
+      { "kind": "stump", "x": 944, "y": 448, "scale": 0.66, "rotation": -0.04 },
+      { "kind": "stone", "x": 768, "y": 572, "scale": 0.4, "rotation": 0.1 }
+    ]
+  },
+  "encounter": {
+    "kind": "normal",
+    "preferredEnemies": ["dart-goober", "kaboomlet"]
+  },
+  "openItems": []
+}

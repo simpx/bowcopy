@@ -1,14 +1,21 @@
 import Phaser from 'phaser';
 
-import type { EnemyDartProjectile, EnemyDartProjectileEvent } from '../../sim/projectiles';
+import type {
+  EnemyDartProjectile,
+  EnemyDartProjectileEvent,
+  EnemyProjectileStyle
+} from '../../sim/projectiles';
 import type { SimVector } from '../../sim/player';
 
 interface DartVisual {
   readonly container: Phaser.GameObjects.Container;
+  readonly style: EnemyProjectileStyle;
 }
 
 interface DartImpactVisual {
   readonly position: SimVector;
+  readonly style: EnemyProjectileStyle;
+  readonly hitPlayer: boolean;
   readonly color: number;
   ageMs: number;
   durationMs: number;
@@ -22,6 +29,9 @@ const TRAIL_COLOR = 0xc2f26d;
 const WALL_IMPACT_COLOR = 0xd7ffa7;
 const PLAYER_IMPACT_COLOR = 0xffd0a1;
 const IMPACT_DURATION_MS = 190;
+const INK_BODY_COLOR = 0x050504;
+const INK_HIGHLIGHT_COLOR = 0x2d2b28;
+const INK_IMPACT_DURATION_MS = 260;
 
 export const preloadEnemyDartProjectileAssets = (_scene: Phaser.Scene) => {};
 
@@ -46,15 +56,22 @@ export class EnemyDartProjectileRenderer {
 
   playEvents(events: readonly EnemyDartProjectileEvent[]) {
     for (const event of events) {
-      if (event.type === 'enemy-dart-expired') {
+      if (event.type === 'enemy-dart-expired' && event.style !== 'black-ink') {
         continue;
       }
 
       this.impacts.push({
         position: event.position,
-        color: event.type === 'enemy-dart-hit-player' ? PLAYER_IMPACT_COLOR : WALL_IMPACT_COLOR,
+        style: event.style,
+        hitPlayer: event.type === 'enemy-dart-hit-player',
+        color:
+          event.style === 'black-ink'
+            ? INK_BODY_COLOR
+            : event.type === 'enemy-dart-hit-player'
+              ? PLAYER_IMPACT_COLOR
+              : WALL_IMPACT_COLOR,
         ageMs: 0,
-        durationMs: IMPACT_DURATION_MS
+        durationMs: event.style === 'black-ink' ? INK_IMPACT_DURATION_MS : IMPACT_DURATION_MS
       });
     }
   }
@@ -85,6 +102,11 @@ export class EnemyDartProjectileRenderer {
         continue;
       }
 
+      if (dart.style === 'black-ink') {
+        this.drawInkTrail(graphics, dart);
+        continue;
+      }
+
       for (let index = 1; index < dart.trail.length; index += 1) {
         const previous = dart.trail[index - 1];
         const point = dart.trail[index];
@@ -96,17 +118,41 @@ export class EnemyDartProjectileRenderer {
     }
   }
 
+  private drawInkTrail(graphics: Phaser.GameObjects.Graphics, dart: EnemyDartProjectile) {
+    for (let index = 1; index < dart.trail.length; index += 1) {
+      const point = dart.trail[index];
+      const progress = index / Math.max(1, dart.trail.length - 1);
+      const speckCount = 3 + Math.round(progress * 3);
+
+      for (let speck = 0; speck < speckCount; speck += 1) {
+        const seed = dart.id * 37 + index * 11 + speck * 17;
+        const offsetX = (this.stableNoise(seed) - 0.5) * 18;
+        const offsetY = (this.stableNoise(seed + 7) - 0.5) * 14;
+        const radius = 1.1 + this.stableNoise(seed + 13) * (1.8 + progress * 2.4);
+
+        graphics.fillStyle(INK_BODY_COLOR, 0.08 + progress * 0.32);
+        graphics.fillCircle(point.x + offsetX, point.y + offsetY, radius);
+      }
+    }
+  }
+
   private syncDarts(darts: readonly EnemyDartProjectile[]) {
     const activeIds = new Set<number>();
 
     for (const dart of darts) {
       activeIds.add(dart.id);
 
-      const visual = this.darts.get(dart.id) ?? this.createDartVisual(dart.id);
+      let visual = this.darts.get(dart.id);
+      if (visual && visual.style !== dart.style) {
+        visual.container.destroy();
+        this.darts.delete(dart.id);
+        visual = undefined;
+      }
+      visual ??= this.createDartVisual(dart.id, dart.style);
       const angle = Math.atan2(dart.direction.y, dart.direction.x);
 
       visual.container.setPosition(dart.position.x, dart.position.y);
-      visual.container.setRotation(angle);
+      visual.container.setRotation(dart.style === 'black-ink' ? angle * 0.18 : angle);
       visual.container.setDepth(57 + dart.position.y / 1000);
     }
 
@@ -118,14 +164,52 @@ export class EnemyDartProjectileRenderer {
     }
   }
 
-  private createDartVisual(id: number): DartVisual {
+  private createDartVisual(id: number, style: EnemyProjectileStyle): DartVisual {
+    if (style === 'black-ink') {
+      return this.createInkVisual(id);
+    }
+
     const shaft = this.scene.add.rectangle(-8, 0, 26, 4, SHAFT_COLOR, 1).setOrigin(0.5);
     const highlight = this.scene.add.rectangle(-7, -1.1, 18, 1.2, SHAFT_HIGHLIGHT, 0.66);
     const tip = this.scene.add.triangle(12, 0, -6, -6, 8, 0, -6, 6, TIP_COLOR, 1);
     const fletching = this.scene.add.triangle(-23, 0, 5, -5, -4, 0, 5, 5, FLETCHING_COLOR, 0.95);
     const container = this.scene.add.container(0, 0, [shaft, highlight, tip, fletching]);
     const visual = {
-      container
+      container,
+      style
+    };
+
+    this.darts.set(id, visual);
+
+    return visual;
+  }
+
+  private createInkVisual(id: number): DartVisual {
+    const ink = this.scene.add.graphics();
+    const blobs = [
+      { x: 0, y: 0, width: 22, height: 18 },
+      { x: -8, y: 5, width: 15, height: 11 },
+      { x: 7, y: -4, width: 13, height: 10 },
+      { x: 6, y: 6, width: 11, height: 8 }
+    ];
+
+    ink.fillStyle(0x000000, 1);
+    for (const blob of blobs) {
+      ink.fillEllipse(blob.x, blob.y, blob.width + 5, blob.height + 5);
+    }
+
+    ink.fillStyle(INK_BODY_COLOR, 1);
+    for (const blob of blobs) {
+      ink.fillEllipse(blob.x, blob.y, blob.width, blob.height);
+    }
+
+    ink.fillStyle(INK_HIGHLIGHT_COLOR, 0.58);
+    ink.fillCircle(-3, -5, 1.8);
+
+    const container = this.scene.add.container(0, 0, [ink]);
+    const visual = {
+      container,
+      style: 'black-ink' as const
     };
 
     this.darts.set(id, visual);
@@ -154,6 +238,12 @@ export class EnemyDartProjectileRenderer {
 
       const progress = impact.ageMs / impact.durationMs;
       const alpha = 1 - progress;
+
+      if (impact.style === 'black-ink') {
+        this.drawInkImpact(graphics, impact, progress, alpha);
+        continue;
+      }
+
       const radius = 3 + progress * 13;
 
       graphics.lineStyle(2, impact.color, alpha * 0.75);
@@ -161,5 +251,48 @@ export class EnemyDartProjectileRenderer {
       graphics.fillStyle(impact.color, alpha * 0.58);
       graphics.fillCircle(impact.position.x, impact.position.y, 2.1);
     }
+  }
+
+  private drawInkImpact(
+    graphics: Phaser.GameObjects.Graphics,
+    impact: DartImpactVisual,
+    progress: number,
+    alpha: number
+  ) {
+    const radius = 8 + progress * (impact.hitPlayer ? 22 : 20);
+    const cloud = [
+      { x: 0, y: 0, scale: 1 },
+      { x: -0.5, y: 0.12, scale: 0.66 },
+      { x: 0.42, y: -0.24, scale: 0.58 },
+      { x: 0.24, y: 0.48, scale: 0.5 },
+      { x: -0.18, y: -0.44, scale: 0.44 }
+    ];
+
+    graphics.fillStyle(impact.color, alpha * 0.74);
+    for (const puff of cloud) {
+      graphics.fillCircle(
+        impact.position.x + puff.x * radius,
+        impact.position.y + puff.y * radius,
+        radius * puff.scale
+      );
+    }
+
+    const speckColor = impact.hitPlayer ? PLAYER_IMPACT_COLOR : 0xffffff;
+    graphics.fillStyle(speckColor, alpha * (impact.hitPlayer ? 0.32 : 0.42));
+    for (let index = 0; index < 18; index += 1) {
+      const theta = this.stableNoise(index + 4) * Math.PI * 2;
+      const distance = radius * (0.25 + this.stableNoise(index + 11) * 1.08);
+      graphics.fillCircle(
+        impact.position.x + Math.cos(theta) * distance,
+        impact.position.y + Math.sin(theta) * distance,
+        1 + this.stableNoise(index + 21) * 1.8
+      );
+    }
+  }
+
+  private stableNoise(seed: number): number {
+    const value = Math.sin(seed * 12.9898) * 43758.5453;
+
+    return value - Math.floor(value);
   }
 }

@@ -1,12 +1,12 @@
 ---
-status: runtime-integrated
+status: playtested
 kind: enemy
 projectContext: bowbert
 lockedReference: source/reference-01.png
 sourceReferences:
   - source/reference-01.png
 openItems:
-  - Tune combat balance in stone/boss rooms after playtest.
+  - Tune combat balance and room placement after gameplay balancing.
 ---
 
 # Dart Tri Goober
@@ -90,3 +90,9 @@ Runtime rig notes:
 Preview notes:
 - `tuning.html` should show the locked reference beside the assembled runtime result.
 - Add controls only for values that are expected to be tuned by hand.
+
+Runtime evidence:
+- `src/characters/dartTriGooberRig.ts`: points to `assets/characters/dart-tri-goober/base.png` and stores accepted embedded eye placement.
+- `src/render/enemies/DartTriGooberRenderer.ts`: renders the accepted PNG base with runtime black cut-ellipse gaze.
+- `src/game/scenes/CombatRoomScene.ts`: supports `?encounter=dart-tri-goober` debug previews.
+- `playtest/runtime-encounter.png`: browser screenshot proof that the accepted runtime renderer appears in the game scene.

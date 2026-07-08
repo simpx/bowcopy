@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bowbert Base Regeneration Review</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1610;
+        --panel: #111f16;
+        --line: #2b4333;
+        --text: #f6f1cf;
+        --muted: #b9c8ad;
+        --accent: #ffd85a;
+        --ok: #89e56f;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          var(--bg);
+        background-size: 42px 42px;
+        color: var(--text);
+      }
+
+      main {
+        width: min(1500px, calc(100vw - 28px));
+        margin: 0 auto;
+        padding: 24px 0 42px;
+      }
+
+      header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 16px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(27px, 3vw, 42px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .summary {
+        color: var(--muted);
+        max-width: 650px;
+        text-align: right;
+        line-height: 1.5;
+        font-size: 14px;
+      }
+
+      .summary a {
+        color: var(--accent);
+        font-weight: 850;
+        text-decoration: none;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--panel) 92%, black);
+        overflow: hidden;
+        margin-bottom: 14px;
+      }
+
+      .title {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 16px 10px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .title h2 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: 0;
+      }
+
+      .status {
+        color: var(--accent);
+        font-weight: 800;
+        font-size: 13px;
+      }
+
+      .compare {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1px;
+        background: var(--line);
+      }
+
+      .slot {
+        min-height: 330px;
+        background:
+          radial-gradient(circle at 50% 75%, rgba(255, 216, 90, 0.08), transparent 44%),
+          #0d1711;
+        display: grid;
+        place-items: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .slot img {
+        display: block;
+        width: min(78%, 320px);
+        max-height: 305px;
+        object-fit: contain;
+        filter: drop-shadow(0 11px 0 rgba(0, 0, 0, 0.16));
+      }
+
+      .slot .wide {
+        width: min(90%, 380px);
+      }
+
+      .label {
+        position: absolute;
+        left: 10px;
+        top: 9px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: rgba(6, 12, 9, 0.8);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .notes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 14px 16px 16px;
+        font-size: 14px;
+        line-height: 1.52;
+      }
+
+      .note {
+        border-left: 3px solid var(--accent);
+        padding-left: 10px;
+      }
+
+      .note strong {
+        color: var(--ok);
+      }
+
+      @media (max-width: 900px) {
+        header {
+          align-items: start;
+          flex-direction: column;
+        }
+
+        .summary {
+          text-align: left;
+        }
+
+        .compare,
+        .notes {
+          grid-template-columns: 1fr;
+        }
+
+        .slot {
+          min-height: 260px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Base Regeneration Review</h1>
+        <div class="summary">
+          按 Bowbert Studio 重新生成并提升为正式 base 的四个素材。Slime 被拆成 parent + child；旧 base 保留在各角色的 exports/base-before-regeneration.png。
+          <br />
+          <a href="./runtime-character-tuning.html">打开 runtime tuning 总览</a>
+        </div>
+      </header>
+
+      <article class="card">
+        <div class="title">
+          <h2>Kaboomlet</h2>
+          <div class="status">promoted: base.png from exports/base-v2-candidate.png</div>
+        </div>
+        <div class="compare">
+          <div class="slot">
+            <span class="label">Reference</span>
+            <img src="../assets/characters/kaboomlet/source/reference-01.png" alt="Kaboomlet reference" />
+          </div>
+          <div class="slot">
+            <span class="label">Previous Base</span>
+            <img src="../assets/characters/kaboomlet/exports/base-before-regeneration.png" alt="Kaboomlet previous base" />
+          </div>
+          <div class="slot">
+            <span class="label">Accepted Base</span>
+            <img src="../assets/characters/kaboomlet/base.png" alt="Kaboomlet accepted base" />
+          </div>
+        </div>
+        <div class="notes">
+          <div class="note"><strong>保留：</strong>圆形炸弹身体、星星引线、白色怒纹、大边缘眼白。</div>
+          <div class="note"><strong>已提升：</strong>新图作为 runtime base；黑色眼神已留给 runtime。</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="title">
+          <h2>Slime Parent</h2>
+          <div class="status">promoted: base.png from exports/base-v3-candidate.png</div>
+        </div>
+        <div class="compare">
+          <div class="slot">
+            <span class="label">Reference</span>
+            <img class="wide" src="../assets/characters/slime-parent/source/reference-01.png" alt="Slime Parent reference" />
+          </div>
+          <div class="slot">
+            <span class="label">Child Base</span>
+            <img src="../assets/characters/slime/base.png" alt="Slime child base" />
+          </div>
+          <div class="slot">
+            <span class="label">Accepted Parent</span>
+            <img class="wide" src="../assets/characters/slime-parent/base.png" alt="Slime Parent accepted base" />
+          </div>
+        </div>
+        <div class="notes">
+          <div class="note"><strong>保留：</strong>大母体比例、青色横向身体、三角触角/眼、侧边空白眼白、小脚。</div>
+          <div class="note"><strong>已确认：</strong>v3 作为母体候选；当前 slime 继续作为 child，死亡分裂时生成。</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="title">
+          <h2>Slime Child</h2>
+          <div class="status">promoted: base.png from exports/base-v4-candidate.png</div>
+        </div>
+        <div class="compare">
+          <div class="slot">
+            <span class="label">Reference</span>
+            <img src="../assets/characters/slime/source/reference-02.png" alt="Slime child reference" />
+          </div>
+          <div class="slot">
+            <span class="label">Previous Base</span>
+            <img src="../assets/characters/slime/exports/base-before-regeneration.png" alt="Slime child previous base" />
+          </div>
+          <div class="slot">
+            <span class="label">Accepted Base</span>
+            <img src="../assets/characters/slime/base.png" alt="Slime child accepted base" />
+          </div>
+        </div>
+        <div class="notes">
+          <div class="note"><strong>保留：</strong>小怪体型、蓝色软体、顶部凸起、侧边空白眼白、小脚。</div>
+          <div class="note"><strong>已提升：</strong>v4 补上了头顶一圈白色凸起；黑色眼神、跳跃变形和死亡粒子后续由 runtime 加。</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="title">
+          <h2>Spooper Gooper</h2>
+          <div class="status">promoted: base.png from exports/base-v2-candidate.png</div>
+        </div>
+        <div class="compare">
+          <div class="slot">
+            <span class="label">Reference</span>
+            <img src="../assets/characters/spooper-gooper/source/reference-01.png" alt="Spooper Gooper reference" />
+          </div>
+          <div class="slot">
+            <span class="label">Previous Base</span>
+            <img src="../assets/characters/spooper-gooper/exports/base-before-regeneration.png" alt="Spooper Gooper previous base" />
+          </div>
+          <div class="slot">
+            <span class="label">Accepted Base</span>
+            <img src="../assets/characters/spooper-gooper/base.png" alt="Spooper Gooper accepted base" />
+          </div>
+        </div>
+        <div class="notes">
+          <div class="note"><strong>保留：</strong>黑色幽灵身体、斜白眼、锯齿下缘、两侧下垂线条。</div>
+          <div class="note"><strong>已提升：</strong>黑色墨滴弹幕和烟云没有烘进 base，后续由 runtime VFX 生成。</div>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,112 @@
+{
+  "id": "enemy-dart",
+  "kind": "projectile",
+  "projectContext": "bowbert",
+  "status": "playtested",
+  "sourceReferences": [
+    "source/dart-goober-reference.png"
+  ],
+  "runtime": {
+    "renderer": "src/render/projectiles/EnemyDartProjectileRenderer.ts",
+    "system": "src/sim/projectiles/EnemyDartProjectileSystem.ts",
+    "owners": [
+      "dart-goober",
+      "dart-tri-goober"
+    ],
+    "preload": false
+  },
+  "physics": {
+    "speed": 248,
+    "damage": 1,
+    "ttlMs": 2800,
+    "trailPoints": 8,
+    "boundsMargin": 34,
+    "playerHitRadius": 29,
+    "muzzleDistance": 32,
+    "aimOffset": 0.08
+  },
+  "visual": {
+    "localForward": "+x",
+    "shaft": {
+      "x": -8,
+      "y": 0,
+      "width": 26,
+      "height": 4,
+      "color": "#2f5331",
+      "alpha": 1
+    },
+    "highlight": {
+      "x": -7,
+      "y": -1.1,
+      "width": 18,
+      "height": 1.2,
+      "color": "#c9f19c",
+      "alpha": 0.66
+    },
+    "tip": {
+      "x": 12,
+      "y": 0,
+      "points": [
+        [-6, -6],
+        [8, 0],
+        [-6, 6]
+      ],
+      "color": "#f36b4e",
+      "alpha": 1
+    },
+    "fletching": {
+      "x": -23,
+      "y": 0,
+      "points": [
+        [5, -5],
+        [-4, 0],
+        [5, 5]
+      ],
+      "color": "#9fe071",
+      "alpha": 0.95
+    }
+  },
+  "trail": {
+    "points": 8,
+    "widthBase": 5,
+    "color": "#c2f26d",
+    "alphaMin": 0.05,
+    "alphaMax": 0.25
+  },
+  "impacts": {
+    "wall": {
+      "durationMs": 190,
+      "color": "#d7ffa7",
+      "radiusStart": 3,
+      "radiusEnd": 16,
+      "strokeWidth": 2,
+      "strokeAlpha": 0.75,
+      "fillAlpha": 0.58,
+      "dotRadius": 2.1
+    },
+    "player": {
+      "durationMs": 190,
+      "color": "#ffd0a1",
+      "radiusStart": 3,
+      "radiusEnd": 16,
+      "strokeWidth": 2,
+      "strokeAlpha": 0.75,
+      "fillAlpha": 0.58,
+      "dotRadius": 2.1
+    }
+  },
+  "exports": {
+    "flight": "exports/enemy-dart-flight.png",
+    "trail": "exports/enemy-dart-trail.png",
+    "impact": "exports/enemy-dart-impact.png",
+    "comparison": "comparison.png"
+  },
+  "audio": {
+    "wallImpact": "assets/audio/sfx/game/hit_sand_or_rock.ogg",
+    "playerImpact": "assets/audio/sfx/game/player_damage_soft.wav"
+  },
+  "openItems": [
+    "Runtime enemy dart remains procedural; no bitmap projectile base is required yet.",
+    "If a future video crop isolates the dart projectile, add it under source/ and compare against this runtime shape."
+  ]
+}

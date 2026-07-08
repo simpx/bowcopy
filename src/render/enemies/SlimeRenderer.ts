@@ -1,13 +1,19 @@
 import Phaser from 'phaser';
 
+import slimeParentBaseUrl from '../../../assets/characters/slime-parent/base.png';
+import slimeBaseUrl from '../../../assets/characters/slime/base.png';
+import { SLIME_PARENT_RIG } from '../../characters/slimeParentRig';
 import { SLIME_RIG } from '../../characters/slimeRig';
 import type { SimVector } from '../../sim/player';
-import type { SlimeEnemy, SlimeEvent } from '../../sim/enemies';
+import type { SlimeEnemy, SlimeEvent, SlimeRole } from '../../sim/enemies';
 
 interface SlimeVisual {
+  readonly role: SlimeRole;
   readonly container: Phaser.GameObjects.Container;
   readonly shadow: Phaser.GameObjects.Ellipse;
-  readonly body: Phaser.GameObjects.Graphics;
+  readonly artLayer: Phaser.GameObjects.Container;
+  readonly body: Phaser.GameObjects.Image;
+  readonly eyes: Phaser.GameObjects.Graphics;
 }
 
 interface SlimeParticle {
@@ -26,6 +32,8 @@ const HIT_COLORS = [0xfff1b5, 0xb3f46c] as const;
 const LAND_COLORS = [0x83d558, 0x486f3e] as const;
 const DEATH_COLORS = [0xb3f46c, 0x64ba4a, 0x111111] as const;
 
+type SlimeRig = typeof SLIME_RIG | typeof SLIME_PARENT_RIG;
+
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
 const randomRange = (min: number, max: number): number => min + Math.random() * (max - min);
@@ -43,7 +51,15 @@ const normalize = (vector: SimVector): SimVector => {
   return { x: vector.x / length, y: vector.y / length };
 };
 
-export const preloadSlimeAssets = () => undefined;
+export const preloadSlimeAssets = (scene: Phaser.Scene) => {
+  if (!scene.textures.exists(SLIME_RIG.base.textureKey)) {
+    scene.load.image(SLIME_RIG.base.textureKey, slimeBaseUrl);
+  }
+
+  if (!scene.textures.exists(SLIME_PARENT_RIG.base.textureKey)) {
+    scene.load.image(SLIME_PARENT_RIG.base.textureKey, slimeParentBaseUrl);
+  }
+};
 
 export class SlimeRenderer {
   private readonly visuals = new Map<number, SlimeVisual>();
@@ -98,7 +114,15 @@ export class SlimeRenderer {
 
     for (const enemy of enemies) {
       activeIds.add(enemy.id);
-      const visual = this.visuals.get(enemy.id) ?? this.createVisual(enemy.id);
+      let visual = this.visuals.get(enemy.id);
+
+      if (visual && visual.role !== enemy.role) {
+        visual.container.destroy();
+        this.visuals.delete(enemy.id);
+        visual = undefined;
+      }
+
+      visual ??= this.createVisual(enemy.id, enemy.role);
       this.updateVisual(timeMs, enemy, visual);
     }
 
@@ -110,18 +134,21 @@ export class SlimeRenderer {
     }
   }
 
-  private createVisual(id: number): SlimeVisual {
+  private createVisual(id: number, role: SlimeRole): SlimeVisual {
+    const rig = this.getRig(role);
     const shadow = this.scene.add.ellipse(
       0,
-      SLIME_RIG.base.shadow.y,
-      SLIME_RIG.base.shadow.width,
-      SLIME_RIG.base.shadow.height,
+      rig.base.shadow.y,
+      rig.base.shadow.width,
+      rig.base.shadow.height,
       0x07120d,
       0.3
     );
-    const body = this.scene.add.graphics();
-    const container = this.scene.add.container(0, 0, [shadow, body]);
-    const visual = { container, shadow, body };
+    const body = this.scene.add.image(0, 0, rig.base.textureKey).setOrigin(0.5);
+    const eyes = this.scene.add.graphics();
+    const artLayer = this.scene.add.container(0, rig.base.y, [body, eyes]);
+    const container = this.scene.add.container(0, 0, [shadow, artLayer]);
+    const visual = { role, container, shadow, artLayer, body, eyes };
 
     this.visuals.set(id, visual);
 
@@ -129,53 +156,64 @@ export class SlimeRenderer {
   }
 
   private updateVisual(timeMs: number, enemy: SlimeEnemy, visual: SlimeVisual) {
+    const rig = this.getRig(enemy.role);
     const hitFlash = clamp01(enemy.hitFlashMs / HIT_FLASH_MS);
     const spawnEase = 1 - (1 - clamp01(enemy.spawnProgress)) ** 3;
     const idleWave = Math.sin(timeMs * 0.004 + enemy.id);
-    const squash = enemy.squash + idleWave * SLIME_RIG.motion.idleWobble;
-    const scaleX = 1 + squash + hitFlash * SLIME_RIG.motion.hitScaleX;
-    const scaleY = 1 - squash - hitFlash * SLIME_RIG.motion.hitScaleY;
+    const squash = enemy.squash + idleWave * rig.motion.idleWobble;
+    const scaleX = 1 + squash + hitFlash * rig.motion.hitScaleX;
+    const scaleY = 1 - squash - hitFlash * rig.motion.hitScaleY;
 
     visual.container.setPosition(enemy.position.x, enemy.position.y - enemy.airHeight);
     visual.container.setDepth(68 + enemy.position.y / 1000);
     visual.container.setScale(Math.max(0.05, spawnEase + Math.sin(enemy.spawnProgress * Math.PI) * 0.12));
     visual.container.setAlpha(0.18 + spawnEase * 0.82);
 
-    visual.shadow.setPosition(0, SLIME_RIG.base.shadow.y + enemy.airHeight);
+    visual.shadow.setPosition(0, rig.base.shadow.y + enemy.airHeight);
     visual.shadow.setScale(0.82 + spawnEase * 0.18 + enemy.moveAmount * 0.12, 1);
     visual.shadow.setAlpha((0.14 + spawnEase * 0.18) * (1 - clamp01(enemy.airHeight / 90) * 0.38));
 
-    visual.body.setScale(scaleX, scaleY);
-    this.drawSlime(visual.body, normalize(enemy.facing), hitFlash, enemy.phase === 'jumping');
+    visual.artLayer.setPosition(
+      0,
+      rig.base.y +
+        idleWave * rig.motion.idleBob +
+        Math.sin(enemy.walkPhase) * enemy.moveAmount * 2.2
+    );
+    visual.artLayer.setScale(rig.base.scale * scaleX, rig.base.scale * scaleY);
+    visual.body.setTint(hitFlash > 0 ? 0xf5ffd5 : 0xffffff);
+    this.drawSlimeEyes(visual.eyes, rig, normalize(enemy.facing), enemy.phase === 'jumping');
   }
 
-  private drawSlime(
+  private drawSlimeEyes(
     graphics: Phaser.GameObjects.Graphics,
+    rig: SlimeRig,
     facing: SimVector,
-    hitFlash: number,
     jumping: boolean
   ) {
-    graphics.clear();
-    graphics.lineStyle(7, 0x050505, 1);
-    graphics.fillStyle(hitFlash > 0 ? 0xf5ffd5 : 0x78c948, 1);
-    graphics.fillEllipse(0, -2, 68, 48);
-    graphics.strokeEllipse(0, -2, 68, 48);
+    const { width, height } = rig.base.imageSize;
+    const offsetX = Phaser.Math.Clamp(facing.x, -1, 1) * width * rig.gaze.pupilOffsetScale.x;
+    const offsetY =
+      Phaser.Math.Clamp(facing.y, -1, 1) * height * rig.gaze.pupilOffsetScale.y -
+      (jumping ? height * 0.004 : 0);
 
-    graphics.fillStyle(0x9aea5d, 1);
-    graphics.fillEllipse(-10, -15, 28, 13);
+    graphics.clear();
+    graphics.fillStyle(0x050505, 1);
 
     for (const name of ['left', 'right'] as const) {
-      const eye = SLIME_RIG.gaze.eyes[name];
-      const pupilX = eye.x + Phaser.Math.Clamp(facing.x, -1, 1) * SLIME_RIG.gaze.pupilOffsetScale.x;
-      const pupilY = eye.y + Phaser.Math.Clamp(facing.y, -1, 1) * SLIME_RIG.gaze.pupilOffsetScale.y - (jumping ? 1.5 : 0);
+      const eye = rig.gaze.eyes[name];
+      const x = (eye.x - 0.5) * width + offsetX;
+      const y = (eye.y - 0.5) * height + offsetY;
 
-      graphics.lineStyle(4, 0x050505, 1);
-      graphics.fillStyle(0xffffff, 1);
-      graphics.fillEllipse(eye.x, eye.y, eye.radiusX * 3.1, eye.radiusY * 2.9);
-      graphics.strokeEllipse(eye.x, eye.y, eye.radiusX * 3.1, eye.radiusY * 2.9);
-      graphics.fillStyle(0x050505, 1);
-      graphics.fillEllipse(pupilX, pupilY, eye.radiusX * 1.35, eye.radiusY * 1.28);
+      graphics.save();
+      graphics.translateCanvas(x, y);
+      graphics.rotateCanvas(eye.rotation);
+      graphics.fillEllipse(0, 0, eye.radiusX * width * 1.05, eye.radiusY * height * 1.0);
+      graphics.restore();
     }
+  }
+
+  private getRig(role: SlimeRole): SlimeRig {
+    return role === 'parent' ? SLIME_PARENT_RIG : SLIME_RIG;
   }
 
   private emitBurst(

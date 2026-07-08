@@ -1,0 +1,108 @@
+{
+  "id": "kaboomlet-explosion",
+  "kind": "effect",
+  "projectContext": "bowbert",
+  "status": "playtested",
+  "sourceReferences": [
+    "source/reference-aoe.jpg",
+    "source/reference-radius.jpg"
+  ],
+  "runtime": {
+    "renderer": "src/render/enemies/KaboomletRenderer.ts",
+    "system": "src/sim/enemies/KaboomletSystem.ts",
+    "owner": "kaboomlet",
+    "preload": false
+  },
+  "timing": {
+    "armedCountdownMs": 760,
+    "explosionDurationMs": 260,
+    "ringDurationMs": 300,
+    "debrisDurationMs": 420
+  },
+  "damage": {
+    "radius": 92,
+    "playerDamage": 1,
+    "enemyDamage": "lethal"
+  },
+  "warningRadius": {
+    "mode": "runtime-dashed-circle",
+    "radius": 92,
+    "color": "#f1283e",
+    "lineWidth": 5,
+    "dash": [
+      16,
+      12
+    ],
+    "alphaMin": 0.34,
+    "alphaMax": 0.88
+  },
+  "blastCloud": {
+    "mode": "runtime-overlapping-cloud",
+    "radius": 76,
+    "fill": "#fff3b4",
+    "core": "#fff8df",
+    "rim": "#ffcf57",
+    "shadow": "#111111",
+    "clouds": [
+      {
+        "x": 0,
+        "y": 0,
+        "scale": 1
+      },
+      {
+        "x": -0.42,
+        "y": 0.08,
+        "scale": 0.68
+      },
+      {
+        "x": 0.38,
+        "y": -0.2,
+        "scale": 0.62
+      },
+      {
+        "x": 0.26,
+        "y": 0.42,
+        "scale": 0.55
+      },
+      {
+        "x": -0.08,
+        "y": -0.44,
+        "scale": 0.48
+      }
+    ]
+  },
+  "ring": {
+    "mode": "runtime-expanding-ring",
+    "radius": 92,
+    "color": "#ffcf57",
+    "lineWidth": 7,
+    "alpha": 0.55
+  },
+  "debris": {
+    "mode": "runtime-particles",
+    "count": 36,
+    "colors": [
+      "#ffcf57",
+      "#ff6a45",
+      "#111111"
+    ],
+    "minSpeed": 78,
+    "maxSpeed": 220,
+    "radius": 6.2,
+    "durationMs": 420
+  },
+  "exports": {
+    "warning": "exports/kaboomlet-warning.png",
+    "blast": "exports/kaboomlet-blast.png",
+    "sequence": "exports/kaboomlet-sequence.png",
+    "comparison": "comparison.png"
+  },
+  "audio": {
+    "fuse": null,
+    "explosion": null
+  },
+  "openItems": [
+    "Tune warning ring timing, blast radius, and debris density after combat balance pass.",
+    "Select final explosion/fuse sounds after timing is stable."
+  ]
+}

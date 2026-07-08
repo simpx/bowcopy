@@ -1,5 +1,5 @@
 ---
-status: rigged
+status: playtested
 kind: enemy
 projectContext: bowbert
 lockedReference: source/reference-01.png
@@ -9,8 +9,8 @@ sourceReferences:
   - source/video-child-gameplay-reference.jpg
   - source/video-parent-swarm-reference.jpg
 openItems:
-  - Confirm whether this folder should be renamed to `slime-child` after runtime integration.
-  - Integrate as the child spawned by `slime-parent` death.
+  - Tune child jump cadence, hitbox, and split-cluster readability during gameplay balancing.
+  - Decide later whether this folder should be renamed to `slime-child`; current runtime uses id `slime` as the child role.
 ---
 
 # Slime
@@ -31,6 +31,23 @@ Source:
 - `source/reference-02.png`
 - `source/video-child-gameplay-reference.jpg`
 - `source/video-parent-swarm-reference.jpg`
+
+Generated candidates:
+- `base.png`: promoted from `exports/base-v4-candidate.png` as the current runtime base.
+- `base-source.png`: promoted from `exports/base-v4-green.png` as the retained chroma source.
+- `exports/base-before-regeneration.png`: previous runtime base kept for rollback/comparison.
+- `exports/base-v4-candidate.png`: current review candidate; wider child silhouette with a visible top row of white bumps and blank side eye whites.
+- `exports/base-v4-green.png`: chroma-key source for the current v4 candidate.
+- `exports/base-v3-candidate.png`: previous child pass with clearer top white bumps but taller, more regular proportions.
+- `exports/base-v3-green.png`: chroma-key source for the v3 candidate.
+- `exports/base-v2-candidate.png`: regenerated Bowbert Studio child base candidate with blank eye whites for runtime gaze.
+- `exports/base-v2-green.png`: chroma-key source for the regenerated candidate.
+
+Runtime evidence:
+- `src/characters/slimeRig.ts`: points to `assets/characters/slime/base.png` and stores normalized eye placement.
+- `src/render/enemies/SlimeRenderer.ts`: loads the accepted PNG base and overlays runtime black gaze.
+- `src/game/scenes/CombatRoomScene.ts`: maps stone rooms and `?encounter=slime` debug previews to Slime.
+- `playtest/runtime-encounter.png`: browser screenshot proof that the accepted PNG base renders in the game scene.
 
 Decomposition:
 - base.png: generated fixed child slime body.

@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bowbert Room Theme Tuning</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #08130d;
+        --panel: #102016;
+        --panel-2: #14281c;
+        --line: #2c4935;
+        --text: #f4f3d0;
+        --muted: #aabc9b;
+        --accent: #e9cf6f;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: end;
+        padding: 20px clamp(14px, 4vw, 32px) 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(22px, 4vw, 34px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .sub {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .page {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 16px;
+        padding: 16px clamp(14px, 4vw, 32px) 32px;
+      }
+
+      .stage,
+      .panel,
+      .mini,
+      .refs {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .stage {
+        overflow: hidden;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: #030806;
+      }
+
+      .panel {
+        padding: 14px;
+      }
+
+      .controls {
+        display: grid;
+        gap: 14px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      select,
+      input[type="range"],
+      button,
+      textarea {
+        width: 100%;
+      }
+
+      select,
+      button {
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel-2);
+        color: var(--text);
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+        font-weight: 850;
+      }
+
+      button:hover {
+        border-color: var(--accent);
+      }
+
+      input[type="range"] {
+        accent-color: var(--accent);
+      }
+
+      .check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text);
+        font-size: 14px;
+        text-transform: none;
+      }
+
+      .check input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent);
+      }
+
+      textarea {
+        min-height: 170px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #07110c;
+        color: var(--text);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 11px;
+        line-height: 1.45;
+        padding: 10px;
+      }
+
+      .mini-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .mini {
+        overflow: hidden;
+      }
+
+      .mini-title {
+        padding: 8px 10px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .refs {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        padding: 8px;
+        margin-top: 16px;
+      }
+
+      .refs img {
+        width: 100%;
+        height: 108px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid #28402f;
+        background: #07110c;
+      }
+
+      .capture .page {
+        display: block;
+      }
+
+      .capture .panel,
+      .capture header {
+        display: none;
+      }
+
+      .capture .stage {
+        border: 0;
+        border-radius: 0;
+      }
+
+      .capture .mini-grid,
+      .capture .refs {
+        display: none;
+      }
+
+      @media (max-width: 880px) {
+        header,
+        .page {
+          grid-template-columns: 1fr;
+        }
+
+        .panel {
+          order: -1;
+        }
+
+        textarea {
+          min-height: 120px;
+        }
+
+        .mini-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .refs {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Bowbert Room Theme Tuning</h1>
+        <div class="sub">Procedural room chunks from assets/rooms/room-theme-kit.json</div>
+      </div>
+      <button id="copyButton" type="button">Copy Params</button>
+    </header>
+
+    <main class="page">
+      <section>
+        <div class="stage">
+          <canvas id="roomCanvas" width="1280" height="720"></canvas>
+        </div>
+        <div class="mini-grid" id="miniGrid"></div>
+        <div class="refs" id="refs"></div>
+      </section>
+
+      <aside class="panel">
+        <div class="controls">
+          <label>
+            Theme
+            <select id="themeSelect"></select>
+          </label>
+          <label>
+            Room State
+            <select id="phaseSelect">
+              <option value="open">Open</option>
+              <option value="combat">Combat</option>
+              <option value="cleared">Cleared</option>
+            </select>
+          </label>
+          <label>
+            Door Layout
+            <select id="doorModeSelect">
+              <option value="route">Route DSL</option>
+              <option value="all">All Doors</option>
+              <option value="single">Single Exit</option>
+            </select>
+          </label>
+          <label>
+            Decor Seed
+            <input id="decorSeedInput" type="range" min="0" max="1" step="0.01" value="0" />
+          </label>
+          <label>
+            Detail Density
+            <input id="detailDensityInput" type="range" min="0.3" max="1.4" step="0.01" value="1" />
+          </label>
+          <label>
+            Prop Density
+            <input id="propDensityInput" type="range" min="0" max="1.5" step="0.01" value="1" />
+          </label>
+          <label class="check">
+            <input id="markersInput" type="checkbox" checked />
+            Spawn and trigger markers
+          </label>
+          <label class="check">
+            <input id="refsInput" type="checkbox" checked />
+            Reference crops
+          </label>
+          <label>
+            Params
+            <textarea id="paramsOutput" spellcheck="false"></textarea>
+          </label>
+        </div>
+      </aside>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const SIDE_ORDER = ["north", "east", "south", "west"];
+      const SIDE_DELTA = {
+        north: { x: 0, y: -1 },
+        east: { x: 1, y: 0 },
+        south: { x: 0, y: 1 },
+        west: { x: -1, y: 0 }
+      };
+
+      const oppositeSide = {
+        north: "south",
+        east: "west",
+        south: "north",
+        west: "east"
+      };
+
+      let kit;
+
+      const hex = (value, alpha = 1) => {
+        const clean = value.replace("#", "");
+        const bigint = Number.parseInt(clean, 16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      };
+
+      const roundedRect = (ctx, x, y, width, height, radius) => {
+        const r = Math.min(radius, width / 2, height / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + width, y, x + width, y + height, r);
+        ctx.arcTo(x + width, y + height, x, y + height, r);
+        ctx.arcTo(x, y + height, x, y, r);
+        ctx.arcTo(x, y, x + width, y, r);
+        ctx.closePath();
+      };
+
+      const ellipse = (ctx, x, y, width, height, fill, stroke, lineWidth = 1) => {
+        ctx.beginPath();
+        ctx.ellipse(x, y, Math.abs(width) / 2, Math.abs(height) / 2, 0, 0, Math.PI * 2);
+        if (fill) {
+          ctx.fillStyle = fill;
+          ctx.fill();
+        }
+        if (stroke) {
+          ctx.lineWidth = lineWidth;
+          ctx.strokeStyle = stroke;
+          ctx.stroke();
+        }
+      };
+
+      const line = (ctx, x1, y1, x2, y2, color, width = 1) => {
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.lineCap = "round";
+        ctx.stroke();
+      };
+
+      const seedAt = (x, y, decorSeed) => {
+        const offset = decorSeed * 1031.17;
+        const value = Math.sin(x * 12.9898 + y * 78.233 + offset) * 43758.5453;
+        return value - Math.floor(value);
+      };
+
+      const getInnerFloor = () => {
+        const b = kit.room.bounds;
+        return {
+          x: b.x + b.border,
+          y: b.y + b.border,
+          width: b.width - b.border * 2,
+          height: b.height - b.border * 2
+        };
+      };
+
+      const doorGap = (door) => {
+        const b = kit.room.bounds;
+        const min = door.side === "north" || door.side === "south" ? b.x : b.y;
+        const max = door.side === "north" || door.side === "south" ? b.x + b.width : b.y + b.height;
+        return [
+          Math.max(min, door.center - door.span / 2),
+          Math.min(max, door.center + door.span / 2)
+        ];
+      };
+
+      const doorRect = (door) => {
+        const b = kit.room.bounds;
+        const [start, end] = doorGap(door);
+        const span = end - start;
+
+        if (door.side === "east") {
+          return { x: b.x + b.width - b.border, y: start, width: b.border + door.depth, height: span };
+        }
+        if (door.side === "west") {
+          return { x: b.x - door.depth, y: start, width: b.border + door.depth, height: span };
+        }
+        if (door.side === "south") {
+          return { x: start, y: b.y + b.height - b.border, width: span, height: b.border + door.depth };
+        }
+        return { x: start, y: b.y - door.depth, width: span, height: b.border + door.depth };
+      };
+
+      const doorBase = (door) => {
+        const b = kit.room.bounds;
+        if (door.side === "north") return { x: door.center, y: b.y + b.border + 26 };
+        if (door.side === "south") return { x: door.center, y: b.y + b.height - b.border - 26 };
+        if (door.side === "west") return { x: b.x + b.border + 26, y: door.center };
+        return { x: b.x + b.width - b.border - 26, y: door.center };
+      };
+
+      const inward = (side) => {
+        if (side === "north") return { x: 0, y: 1 };
+        if (side === "south") return { x: 0, y: -1 };
+        if (side === "west") return { x: 1, y: 0 };
+        return { x: -1, y: 0 };
+      };
+
+      const lateral = (side) => (side === "north" || side === "south" ? { x: 1, y: 0 } : { x: 0, y: 1 });
+
+      const getRouteCellForTheme = (themeId) => {
+        const rows = kit.dungeonDsl.rows;
+        const legend = kit.dungeonDsl.legend;
+
+        for (let y = 0; y < rows.length; y += 1) {
+          for (let x = 0; x < rows[y].length; x += 1) {
+            const spec = legend[rows[y][x]];
+            if (spec && spec.theme === themeId) return { x, y };
+          }
+        }
+        return null;
+      };
+
+      const getRouteDoors = (themeId) => {
+        const cell = getRouteCellForTheme(themeId);
+        if (!cell) return getAllDoors(themeId);
+
+        const rows = kit.dungeonDsl.rows;
+        const legend = kit.dungeonDsl.legend;
+        const doors = [];
+
+        for (const side of SIDE_ORDER) {
+          const delta = SIDE_DELTA[side];
+          const y = cell.y + delta.y;
+          const x = cell.x + delta.x;
+          const char = rows[y]?.[x];
+          const spec = char ? legend[char] : null;
+          if (!spec) continue;
+          doors.push(makeDoor(side, spec.theme));
+        }
+
+        return doors.length > 0 ? doors : getAllDoors(themeId);
+      };
+
+      const makeDoor = (side, targetTheme) => ({
+        id: `${side}-${targetTheme}`,
+        side,
+        targetTheme,
+        ...kit.room.doors[side]
+      });
+
+      const getAllDoors = (themeId) => [
+        makeDoor("north", "stone"),
+        makeDoor("east", "mushroom"),
+        makeDoor("south", themeId === "forest" ? "start" : "forest"),
+        makeDoor("west", "wizard")
+      ];
+
+      const getDoors = (themeId, mode) => {
+        if (mode === "route") return getRouteDoors(themeId);
+        if (mode === "single") return [makeDoor("east", "mushroom")];
+        return getAllDoors(themeId);
+      };
+
+      const drawRoom = (ctx, settings, scale = 1) => {
+        const palette = kit.palette;
+        const theme = kit.themes[settings.themeId] || kit.themes.forest;
+        const room = kit.room;
+        const b = room.bounds;
+        const floor = getInnerFloor();
+        const doors = getDoors(settings.themeId, settings.doorMode);
+
+        ctx.save();
+        ctx.scale(scale, scale);
+        ctx.clearRect(0, 0, 1280, 720);
+        ctx.fillStyle = hex(palette.outsideDeep);
+        ctx.fillRect(0, 0, 1280, 720);
+        ctx.fillStyle = hex(palette.outside);
+        ctx.fillRect(b.x - 20, b.y - 20, b.width + 40, b.height + 40);
+        ctx.fillStyle = theme.floorColor;
+        ctx.fillRect(floor.x, floor.y, floor.width, floor.height);
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = hex(palette.wallEdge, 0.78);
+        ctx.strokeRect(b.x, b.y, b.width, b.height);
+
+        drawFloorDetails(ctx, theme, settings);
+        drawFloorMarks(ctx, settings);
+        drawWalls(ctx, doors);
+        drawDoorState(ctx, doors, settings.phase);
+        if (settings.showMarkers) drawMarkers(ctx, settings.phase);
+        ctx.restore();
+      };
+
+      const drawFloorDetails = (ctx, theme, settings) => {
+        const floor = getInnerFloor();
+        const p = kit.palette;
+        const rules = kit.floorDetails;
+        const left = floor.x + rules.padding.x;
+        const right = floor.x + floor.width - rules.padding.x;
+        const top = floor.y + rules.padding.y;
+        const bottom = floor.y + floor.height - rules.padding.y;
+        const decorSeed = Number(settings.decorSeed);
+        const skipThreshold = 1 - (1 - rules.skipBelowSeed) * settings.detailDensity;
+
+        for (let y = top; y <= bottom; y += rules.gridStep.y) {
+          for (let x = left; x <= right; x += rules.gridStep.x) {
+            const seed = seedAt(x, y, decorSeed);
+            if (seed < skipThreshold) continue;
+
+            const detailX = x + (seed - 0.5) * 52;
+            const detailY = y + (seedAt(y, x, decorSeed) - 0.5) * 38;
+            const shapeSeed = seedAt(x - 43, y + 71, decorSeed);
+            const shape = rules.shapeMix.find((item) => shapeSeed < item.maxSeed)?.shape || "tiny-dash";
+            const detailScale = 0.78 + seedAt(x + 31, y - 17, decorSeed) * 0.54;
+
+            if (shape === "v-grass") drawVGrass(ctx, detailX, detailY, detailScale, p);
+            else if (shape === "w-grass") drawWGrass(ctx, detailX, detailY, detailScale, p);
+            else if (shape === "split-grass") drawSplitGrass(ctx, detailX, detailY, detailScale, p);
+            else drawTinyDash(ctx, detailX, detailY, detailScale, p);
+
+            if (seed > rules.pebbleSeed) drawPebble(ctx, detailX + 26, detailY + 7, detailScale, p);
+            if (seed > rules.scuffSeed) drawScuff(ctx, detailX - 22, detailY + 16, detailScale, p);
+          }
+        }
+
+        drawFloorProps(ctx, theme, settings);
+      };
+
+      const drawVGrass = (ctx, x, y, scale, p) => {
+        const height = 10 * scale;
+        const spread = 7 * scale;
+        line(ctx, x, y, x - spread, y - height, hex(p.floorGrass, 0.24), Math.max(1, Math.round(2 * scale)));
+        line(ctx, x + scale, y, x + spread, y - height * 0.92, hex(p.floorGrass, 0.24), Math.max(1, Math.round(2 * scale)));
+        if (scale > 0.9) line(ctx, x, y - 1, x, y - height * 1.18, hex(p.floorGrassSoft, 0.14), 1);
+      };
+
+      const drawWGrass = (ctx, x, y, scale, p) => {
+        const height = 8 * scale;
+        const spread = 6 * scale;
+        const c = hex(p.floorGrass, 0.22);
+        const w = Math.max(1, Math.round(2 * scale));
+        line(ctx, x - spread * 1.4, y - height * 0.82, x - spread * 0.55, y, c, w);
+        line(ctx, x - spread * 0.55, y, x, y - height, c, w);
+        line(ctx, x, y - height, x + spread * 0.55, y, c, w);
+        line(ctx, x + spread * 0.55, y, x + spread * 1.38, y - height * 0.82, c, w);
+      };
+
+      const drawSplitGrass = (ctx, x, y, scale, p) => {
+        const height = 12 * scale;
+        const spread = 7 * scale;
+        const c = hex(p.floorGrass, 0.2);
+        const w = Math.max(1, Math.round(2 * scale));
+        line(ctx, x, y, x, y - height, c, w);
+        line(ctx, x, y - height * 0.5, x - spread, y - height * 0.95, c, w);
+        line(ctx, x, y - height * 0.48, x + spread, y - height * 0.9, c, w);
+      };
+
+      const drawTinyDash = (ctx, x, y, scale, p) => {
+        line(ctx, x - 5 * scale, y, x + 6 * scale, y - scale, hex(p.floorGrass, 0.16), 1);
+        line(ctx, x + 10 * scale, y + 2 * scale, x + 14 * scale, y + 2 * scale, hex(p.floorGrass, 0.16), 1);
+      };
+
+      const drawPebble = (ctx, x, y, scale, p) => {
+        ellipse(ctx, x, y, 8 * scale, 4 * scale, hex(p.floorStone, 0.2));
+        ellipse(ctx, x + 9 * scale, y + 3 * scale, 5 * scale, 3 * scale, hex(p.floorStone, 0.2));
+      };
+
+      const drawScuff = (ctx, x, y, scale, p) => {
+        ellipse(ctx, x, y, 18 * scale, 4 * scale, hex(p.floorScuff, 0.18));
+        ellipse(ctx, x + 16 * scale, y - 2 * scale, 10 * scale, 3 * scale, hex(p.floorScuff, 0.18));
+      };
+
+      const drawFloorProps = (ctx, theme, settings) => {
+        const props = [...kit.baseProps, ...theme.extraProps];
+        const max = Math.round(props.length * settings.propDensity);
+        props.slice(0, max).forEach((prop, index) => drawJitteredProp(ctx, prop, index, settings.decorSeed));
+      };
+
+      const drawJitteredProp = (ctx, prop, index, decorSeed) => {
+        const seedX = seedAt(prop.x + index * 19, prop.y - index * 11, decorSeed);
+        const seedY = seedAt(prop.y + index * 23, prop.x - index * 7, decorSeed);
+        const jittered = {
+          ...prop,
+          x: prop.x + (seedX - 0.5) * 34,
+          y: prop.y + (seedY - 0.5) * 24,
+          rotation: prop.rotation + (seedX - 0.5) * 0.16,
+          scale: prop.scale * (0.92 + seedY * 0.18)
+        };
+
+        if (prop.kind === "stump") drawStump(ctx, jittered);
+        else if (prop.kind === "stone") drawStoneCluster(ctx, jittered);
+        else drawMushrooms(ctx, jittered);
+      };
+
+      const transformPoint = (prop, ox, oy) => {
+        const cos = Math.cos(prop.rotation);
+        const sin = Math.sin(prop.rotation);
+        return {
+          x: prop.x + (ox * cos - oy * sin) * prop.scale,
+          y: prop.y + (ox * sin + oy * cos) * prop.scale
+        };
+      };
+
+      const drawStump = (ctx, prop) => {
+        const p = kit.palette;
+        const top = transformPoint(prop, 0, -6);
+        const body = transformPoint(prop, 0, 5);
+        ellipse(ctx, body.x, body.y, 34 * prop.scale, 24 * prop.scale, hex(p.floorWoodDark, 0.56));
+        ellipse(ctx, top.x, top.y, 32 * prop.scale, 18 * prop.scale, hex(p.floorWood, 0.82), hex(p.floorWoodDark, 0.46), Math.max(1, Math.round(2 * prop.scale)));
+        ellipse(ctx, top.x, top.y, 16 * prop.scale, 8 * prop.scale, null, hex(p.floorWoodDark, 0.34), 1);
+        line(ctx, top.x - 3 * prop.scale, top.y, top.x + 5 * prop.scale, top.y - 3 * prop.scale, hex(p.floorWoodDark, 0.34), 1);
+      };
+
+      const drawStoneCluster = (ctx, prop) => {
+        const p = kit.palette;
+        ellipse(ctx, prop.x, prop.y, 22 * prop.scale, 12 * prop.scale, hex(p.floorStone, 0.28));
+        ellipse(
+          ctx,
+          prop.x + Math.cos(prop.rotation) * 18 * prop.scale,
+          prop.y + Math.sin(prop.rotation) * 8 * prop.scale,
+          12 * prop.scale,
+          7 * prop.scale,
+          hex(p.floorStone, 0.28)
+        );
+        ellipse(ctx, prop.x + prop.scale, prop.y + 4 * prop.scale, 24 * prop.scale, 6 * prop.scale, hex(p.floorShadow, 0.12));
+      };
+
+      const drawMushrooms = (ctx, prop) => {
+        const p = kit.palette;
+        const lean = Math.sin(prop.rotation) * 4 * prop.scale;
+        ctx.fillStyle = hex(p.floorMushroomStem, 0.72);
+        roundedRect(ctx, prop.x - 3 * prop.scale + lean, prop.y - 3 * prop.scale, 6 * prop.scale, 12 * prop.scale, 2 * prop.scale);
+        ctx.fill();
+        roundedRect(ctx, prop.x + 9 * prop.scale + lean, prop.y, 4 * prop.scale, 9 * prop.scale, 2 * prop.scale);
+        ctx.fill();
+        ellipse(ctx, prop.x + lean, prop.y - 5 * prop.scale, 18 * prop.scale, 11 * prop.scale, hex(p.floorMushroomCap, 0.82));
+        ellipse(ctx, prop.x + 11 * prop.scale + lean, prop.y - prop.scale, 12 * prop.scale, 8 * prop.scale, hex(p.floorMushroomCap, 0.82));
+        ellipse(ctx, prop.x + lean, prop.y - 3 * prop.scale, 5 * prop.scale, 3 * prop.scale, hex(p.floorWoodDark, 0.24));
+      };
+
+      const drawFloorMarks = (ctx, settings) => {
+        for (const mark of kit.room.floorMarks) {
+          const seed = seedAt(mark.x, mark.y, settings.decorSeed);
+          ctx.save();
+          ctx.translate(mark.x + (seed - 0.5) * 26, mark.y + (seedAt(mark.y, mark.x, settings.decorSeed) - 0.5) * 18);
+          ctx.rotate(mark.rotation + (seed - 0.5) * 0.18);
+          ctx.fillStyle = hex(kit.palette.floorShadow, mark.alpha * (0.82 + seed * 0.5));
+          ctx.fillRect(-mark.width / 2, -mark.height / 2, mark.width, mark.height);
+          ctx.restore();
+        }
+      };
+
+      const drawWalls = (ctx, doors) => {
+        const p = kit.palette;
+        const b = kit.room.bounds;
+        ctx.fillStyle = hex(p.wallDark);
+        ctx.fillRect(b.x - 6, b.y - 6, b.width + 12, 6);
+        ctx.fillRect(b.x - 6, b.y + b.height, b.width + 12, 6);
+        ctx.fillRect(b.x - 6, b.y, 6, b.height);
+        ctx.fillRect(b.x + b.width, b.y, 6, b.height);
+        drawCornerCaps(ctx);
+        doors.forEach((door) => drawDoorTunnel(ctx, door));
+        SIDE_ORDER.forEach((side) => drawWallSide(ctx, side, doors));
+        doors.forEach((door) => drawDoorDecorations(ctx, door));
+      };
+
+      const drawCornerCaps = (ctx) => {
+        const p = kit.palette;
+        const b = kit.room.bounds;
+        const corners = [
+          [b.x, b.y],
+          [b.x + b.width - b.border, b.y],
+          [b.x, b.y + b.height - b.border],
+          [b.x + b.width - b.border, b.y + b.height - b.border]
+        ];
+        corners.forEach(([x, y]) => {
+          ctx.fillStyle = hex(p.wallDark);
+          ctx.fillRect(x, y, b.border, b.border);
+          ctx.fillStyle = hex(p.wallMain);
+          ctx.fillRect(x + (x > b.x ? 0 : 4), y + 4, b.border - 4, b.border - 4);
+        });
+      };
+
+      const drawDoorTunnel = (ctx, door) => {
+        const p = kit.palette;
+        const rect = doorRect(door);
+        const [start, end] = doorGap(door);
+        ctx.fillStyle = hex(p.outsideDeep);
+        ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+        ctx.fillStyle = hex(p.doorOpen, 0.82);
+        ctx.fillRect(rect.x + 4, rect.y + 4, rect.width - 8, rect.height - 8);
+
+        if (door.side === "east" || door.side === "west") {
+          line(ctx, rect.x, start, rect.x + rect.width, start, hex(p.wallEdge, 0.78), 3);
+          line(ctx, rect.x, end, rect.x + rect.width, end, hex(p.wallEdge, 0.78), 3);
+        } else {
+          line(ctx, start, rect.y, start, rect.y + rect.height, hex(p.wallEdge, 0.78), 3);
+          line(ctx, end, rect.y, end, rect.y + rect.height, hex(p.wallEdge, 0.78), 3);
+        }
+      };
+
+      const wallSegments = (side, doors) => {
+        const b = kit.room.bounds;
+        const axisStart = side === "north" || side === "south" ? b.x : b.y;
+        const axisEnd = side === "north" || side === "south" ? b.x + b.width : b.y + b.height;
+        const gaps = doors
+          .filter((door) => door.side === side)
+          .map((door) => {
+            const [start, end] = doorGap(door);
+            return { start, end };
+          })
+          .sort((a, b) => a.start - b.start);
+        const segments = [];
+        let cursor = axisStart;
+        gaps.forEach((gap) => {
+          if (gap.start > cursor) segments.push({ start: cursor, end: gap.start });
+          cursor = Math.max(cursor, gap.end);
+        });
+        if (cursor < axisEnd) segments.push({ start: cursor, end: axisEnd });
+        return segments;
+      };
+
+      const drawWallSide = (ctx, side, doors) => {
+        wallSegments(side, doors).forEach((segment) => drawWallSegment(ctx, side, segment));
+      };
+
+      const drawWallSegment = (ctx, side, segment) => {
+        const p = kit.palette;
+        const b = kit.room.bounds;
+        let rect;
+        if (side === "north") rect = { x: segment.start, y: b.y, width: segment.end - segment.start, height: b.border };
+        else if (side === "south") rect = { x: segment.start, y: b.y + b.height - b.border, width: segment.end - segment.start, height: b.border };
+        else if (side === "west") rect = { x: b.x, y: segment.start, width: b.border, height: segment.end - segment.start };
+        else rect = { x: b.x + b.width - b.border, y: segment.start, width: b.border, height: segment.end - segment.start };
+
+        ctx.fillStyle = hex(p.wallDark);
+        ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+        ctx.fillStyle = hex(p.wallMain);
+        if (side === "north") ctx.fillRect(rect.x, rect.y + 4, rect.width, rect.height - 4);
+        else if (side === "south") ctx.fillRect(rect.x, rect.y, rect.width, rect.height - 4);
+        else if (side === "west") ctx.fillRect(rect.x + 4, rect.y, rect.width - 4, rect.height);
+        else ctx.fillRect(rect.x, rect.y, rect.width - 4, rect.height);
+
+        if (side === "north") {
+          line(ctx, segment.start, b.y + b.border, segment.end, b.y + b.border, hex(p.wallEdge, 0.9), 4);
+          line(ctx, segment.start + 4, b.y + b.border - 7, segment.end - 4, b.y + b.border - 7, hex(p.wallHighlight, 0.5), 2);
+        } else if (side === "south") {
+          line(ctx, segment.start, b.y + b.height - b.border, segment.end, b.y + b.height - b.border, hex(p.wallEdge, 0.9), 4);
+          line(ctx, segment.start + 4, b.y + b.height - b.border + 7, segment.end - 4, b.y + b.height - b.border + 7, hex(p.wallHighlight, 0.36), 2);
+        } else if (side === "west") {
+          line(ctx, b.x + b.border, segment.start, b.x + b.border, segment.end, hex(p.wallEdge, 0.9), 4);
+          line(ctx, b.x + b.border - 7, segment.start + 4, b.x + b.border - 7, segment.end - 4, hex(p.wallHighlight, 0.42), 2);
+        } else {
+          line(ctx, b.x + b.width - b.border, segment.start, b.x + b.width - b.border, segment.end, hex(p.wallEdge, 0.9), 4);
+          line(ctx, b.x + b.width - b.border + 7, segment.start + 4, b.x + b.width - b.border + 7, segment.end - 4, hex(p.wallHighlight, 0.42), 2);
+        }
+      };
+
+      const drawDoorDecorations = (ctx, door) => {
+        const base = doorBase(door);
+        const advance = inward(door.side);
+        const offsetAxis = lateral(door.side);
+        const place = (offset, forward, scale, rotation = 0) => ({
+          kind: "stone",
+          x: base.x + offsetAxis.x * offset + advance.x * forward,
+          y: base.y + offsetAxis.y * offset + advance.y * forward,
+          scale,
+          rotation
+        });
+        const target = door.targetTheme;
+
+        if (target === "mushroom") {
+          [
+            place(-54, 18, 0.46, -0.1),
+            place(-20, 38, 0.54, 0.08),
+            place(24, 22, 0.44, 0.04),
+            place(58, 46, 0.5, -0.05)
+          ].forEach((prop) => drawMushrooms(ctx, { ...prop, kind: "mushroom" }));
+          return;
+        }
+        if (target === "forest" || target === "start") {
+          drawStump(ctx, { ...place(-42, 28, 0.48, 0.1), kind: "stump" });
+          drawStump(ctx, { ...place(42, 36, 0.42, -0.08), kind: "stump" });
+          drawStoneCluster(ctx, { ...place(0, 56, 0.36, 0.03), kind: "stone" });
+          return;
+        }
+        if (target === "wizard") {
+          drawWizardSpark(ctx, place(-34, 26, 0.78, -0.05));
+          drawWizardSpark(ctx, place(34, 38, 0.64, 0.08));
+          drawMushrooms(ctx, { ...place(0, 54, 0.4, -0.08), kind: "mushroom" });
+          return;
+        }
+        if (target === "boss") {
+          drawStoneCluster(ctx, { ...place(-44, 26, 0.64, 0.08), kind: "stone" });
+          drawStoneCluster(ctx, { ...place(2, 48, 0.76, -0.02), kind: "stone" });
+          drawStump(ctx, { ...place(48, 34, 0.52, -0.08), kind: "stump" });
+          return;
+        }
+        drawStoneCluster(ctx, { ...place(-32, 24, 0.46, 0.06), kind: "stone" });
+        drawStoneCluster(ctx, { ...place(32, 40, 0.5, -0.04), kind: "stone" });
+      };
+
+      const drawWizardSpark = (ctx, prop) => {
+        const p = kit.palette;
+        const radius = 9 * prop.scale;
+        const tilt = prop.rotation * 10;
+        line(ctx, prop.x - radius, prop.y + tilt, prop.x + radius, prop.y - tilt, hex(p.wizardSpark, 0.58), Math.max(1, Math.round(2 * prop.scale)));
+        line(ctx, prop.x, prop.y - radius, prop.x, prop.y + radius, hex(p.wizardSpark, 0.58), Math.max(1, Math.round(2 * prop.scale)));
+        ellipse(ctx, prop.x, prop.y, 4.8 * prop.scale, 4.8 * prop.scale, hex(p.wizardGlow, 0.44));
+      };
+
+      const drawDoorState = (ctx, doors, phase) => {
+        const p = kit.palette;
+        doors.forEach((door) => {
+          const rect = doorRect(door);
+          const [start, end] = doorGap(door);
+          if (phase !== "combat") {
+            ctx.fillStyle = hex(p.outsideDeep, 0.98);
+            ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+            ctx.fillStyle = hex(phase === "cleared" ? p.doorCleared : p.doorOpen, 0.84);
+            ctx.fillRect(rect.x + 6, rect.y + 6, rect.width - 12, rect.height - 12);
+            if (door.side === "east" || door.side === "west") {
+              line(ctx, rect.x, start, rect.x + rect.width, start, hex(p.wallEdge, phase === "cleared" ? 0.72 : 0.56), 3);
+              line(ctx, rect.x, end, rect.x + rect.width, end, hex(p.wallEdge, phase === "cleared" ? 0.72 : 0.56), 3);
+            } else {
+              line(ctx, start, rect.y, start, rect.y + rect.height, hex(p.wallEdge, phase === "cleared" ? 0.72 : 0.56), 3);
+              line(ctx, end, rect.y, end, rect.y + rect.height, hex(p.wallEdge, phase === "cleared" ? 0.72 : 0.56), 3);
+            }
+            return;
+          }
+
+          ctx.fillStyle = hex(p.wallDark);
+          ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+          ctx.fillStyle = hex(p.wallMain);
+          ctx.fillRect(rect.x + 4, rect.y + 4, rect.width - 8, rect.height - 8);
+          ctx.fillStyle = hex(p.wallInner, 0.72);
+          ctx.fillRect(rect.x + 10, rect.y + 10, rect.width - 20, rect.height - 20);
+          ctx.strokeStyle = hex(p.wallEdge, 0.9);
+          ctx.lineWidth = 4;
+          ctx.strokeRect(rect.x + 4, rect.y + 4, rect.width - 8, rect.height - 8);
+          if (door.side === "east" || door.side === "west") {
+            const centerX = rect.x + rect.width / 2;
+            line(ctx, centerX, rect.y + 12, centerX, rect.y + rect.height - 12, hex(p.wallHighlight, 0.48), 2);
+          } else {
+            const centerY = rect.y + rect.height / 2;
+            line(ctx, rect.x + 12, centerY, rect.x + rect.width - 12, centerY, hex(p.wallHighlight, 0.48), 2);
+          }
+        });
+      };
+
+      const drawMarkers = (ctx, phase) => {
+        const p = kit.palette;
+        if (phase === "open") {
+          const trigger = kit.room.trigger;
+          ctx.strokeStyle = hex(p.triggerIdle, 0.3);
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(trigger.x, trigger.y, trigger.radius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.strokeStyle = hex(p.triggerIdle, 0.22);
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(trigger.x, trigger.y, trigger.radius * 0.46, 0, Math.PI * 2);
+          ctx.stroke();
+
+          for (const spawn of kit.room.spawnPoints) {
+            ellipse(ctx, spawn.x, spawn.y, 6, 6, hex(p.spawnIdle, 0.34));
+            ellipse(ctx, spawn.x - 7, spawn.y + 5, 4, 4, hex(p.spawnIdle, 0.34));
+            ellipse(ctx, spawn.x + 7, spawn.y + 4, 4, 4, hex(p.spawnIdle, 0.34));
+            ellipse(ctx, spawn.x, spawn.y, 14, 14, null, hex(p.spawnIdle, 0.18), 1);
+          }
+        }
+      };
+
+      const getSettings = () => ({
+        themeId: $("themeSelect").value,
+        phase: $("phaseSelect").value,
+        doorMode: $("doorModeSelect").value,
+        decorSeed: Number($("decorSeedInput").value),
+        detailDensity: Number($("detailDensityInput").value),
+        propDensity: Number($("propDensityInput").value),
+        showMarkers: $("markersInput").checked,
+        showReferences: $("refsInput").checked
+      });
+
+      const render = () => {
+        const settings = getSettings();
+        const canvas = $("roomCanvas");
+        drawRoom(canvas.getContext("2d"), settings);
+        $("paramsOutput").value = JSON.stringify({
+          id: "BOWBERT_ROOM_THEME_TUNING",
+          ...settings,
+          theme: kit.themes[settings.themeId],
+          room: kit.room
+        }, null, 2);
+        $("refs").style.display = settings.showReferences ? "grid" : "none";
+      };
+
+      const renderMiniGrid = () => {
+        const grid = $("miniGrid");
+        grid.innerHTML = "";
+        Object.entries(kit.themes).forEach(([themeId, theme]) => {
+          const card = document.createElement("div");
+          card.className = "mini";
+          const title = document.createElement("div");
+          title.className = "mini-title";
+          title.textContent = theme.label;
+          const canvas = document.createElement("canvas");
+          canvas.width = 640;
+          canvas.height = 360;
+          card.append(title, canvas);
+          grid.append(card);
+          drawRoom(canvas.getContext("2d"), {
+            themeId,
+            phase: themeId === "wizard" || themeId === "start" ? "cleared" : "open",
+            doorMode: "route",
+            decorSeed: theme.decorSeed,
+            detailDensity: 1,
+            propDensity: 1,
+            showMarkers: false
+          }, 0.5);
+        });
+      };
+
+      const renderReferences = () => {
+        const refs = $("refs");
+        refs.innerHTML = "";
+        kit.sourceReferences.forEach((src) => {
+          const img = document.createElement("img");
+          img.src = src;
+          img.alt = src.split("/").pop();
+          refs.append(img);
+        });
+      };
+
+      const init = async () => {
+        const response = await fetch("./room-theme-kit.json");
+        kit = await response.json();
+        const themeSelect = $("themeSelect");
+        Object.entries(kit.themes).forEach(([id, theme]) => {
+          const option = document.createElement("option");
+          option.value = id;
+          option.textContent = theme.label;
+          if (id === "forest") option.selected = true;
+          themeSelect.append(option);
+        });
+        $("decorSeedInput").value = kit.themes.forest.decorSeed;
+        renderReferences();
+        renderMiniGrid();
+        render();
+      };
+
+      ["themeSelect", "phaseSelect", "doorModeSelect", "decorSeedInput", "detailDensityInput", "propDensityInput", "markersInput", "refsInput"].forEach((id) => {
+        $(id).addEventListener("input", () => {
+          if (id === "themeSelect") {
+            const theme = kit.themes[$("themeSelect").value];
+            $("decorSeedInput").value = theme.decorSeed;
+          }
+          render();
+        });
+      });
+
+      $("copyButton").addEventListener("click", async () => {
+        $("paramsOutput").select();
+        await navigator.clipboard.writeText($("paramsOutput").value);
+      });
+
+      init();
+    </script>
+  </body>
+</html>

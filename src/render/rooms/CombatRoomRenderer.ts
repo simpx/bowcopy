@@ -1,5 +1,11 @@
 import Phaser from 'phaser';
 
+import {
+  ROOM_THEME_KIT,
+  getRoomThemeKitTheme,
+  hexColorToNumber,
+  type FloorProp
+} from '../../data/roomThemeKit';
 import type {
   CombatRoomDefinition,
   CombatRoomState,
@@ -10,93 +16,54 @@ import type {
 } from '../../sim/rooms';
 import { areCombatRoomDoorsOpen } from '../../sim/rooms';
 
-const OUTSIDE_COLOR = 0x0b1711;
-const OUTSIDE_DEEP = 0x030806;
-const FLOOR_COLOR = 0x3f694b;
-const FLOOR_SHADOW = 0x17291f;
-const FLOOR_GRASS = 0x254634;
-const FLOOR_GRASS_SOFT = 0x6e8c62;
-const FLOOR_STONE = 0x7c8372;
-const FLOOR_SCUFF = 0x79392f;
-const FLOOR_WOOD = 0x6f4a32;
-const FLOOR_WOOD_DARK = 0x241811;
-const FLOOR_MUSHROOM_CAP = 0xa94842;
-const FLOOR_MUSHROOM_STEM = 0xc2b38b;
-const WALL_DARK = 0x020503;
-const WALL_MAIN = 0x0a1c13;
-const WALL_INNER = 0x10271a;
-const WALL_EDGE = 0x020503;
-const WALL_HIGHLIGHT = 0x234430;
-const DOOR_OPEN = 0x16291e;
-const DOOR_CLEARED = 0x264632;
-const SPAWN_IDLE = 0x7fa46a;
-const TRIGGER_IDLE = 0x8dab76;
+const ROOM_PALETTE = ROOM_THEME_KIT.palette;
+const FLOOR_DETAIL_RULES = ROOM_THEME_KIT.floorDetails;
+const OUTSIDE_COLOR = hexColorToNumber(ROOM_PALETTE.outside);
+const OUTSIDE_DEEP = hexColorToNumber(ROOM_PALETTE.outsideDeep);
+const FLOOR_SHADOW = hexColorToNumber(ROOM_PALETTE.floorShadow);
+const FLOOR_GRASS = hexColorToNumber(ROOM_PALETTE.floorGrass);
+const FLOOR_GRASS_SOFT = hexColorToNumber(ROOM_PALETTE.floorGrassSoft);
+const FLOOR_STONE = hexColorToNumber(ROOM_PALETTE.floorStone);
+const FLOOR_SCUFF = hexColorToNumber(ROOM_PALETTE.floorScuff);
+const FLOOR_WOOD = hexColorToNumber(ROOM_PALETTE.floorWood);
+const FLOOR_WOOD_DARK = hexColorToNumber(ROOM_PALETTE.floorWoodDark);
+const FLOOR_MUSHROOM_CAP = hexColorToNumber(ROOM_PALETTE.floorMushroomCap);
+const FLOOR_MUSHROOM_STEM = hexColorToNumber(ROOM_PALETTE.floorMushroomStem);
+const WALL_DARK = hexColorToNumber(ROOM_PALETTE.wallDark);
+const WALL_MAIN = hexColorToNumber(ROOM_PALETTE.wallMain);
+const WALL_INNER = hexColorToNumber(ROOM_PALETTE.wallInner);
+const WALL_EDGE = hexColorToNumber(ROOM_PALETTE.wallEdge);
+const WALL_HIGHLIGHT = hexColorToNumber(ROOM_PALETTE.wallHighlight);
+const DOOR_OPEN = hexColorToNumber(ROOM_PALETTE.doorOpen);
+const DOOR_CLEARED = hexColorToNumber(ROOM_PALETTE.doorCleared);
+const SPAWN_IDLE = hexColorToNumber(ROOM_PALETTE.spawnIdle);
+const TRIGGER_IDLE = hexColorToNumber(ROOM_PALETTE.triggerIdle);
+const WIZARD_SPARK = hexColorToNumber(ROOM_PALETTE.wizardSpark);
+const WIZARD_GLOW = hexColorToNumber(ROOM_PALETTE.wizardGlow);
 
 interface Segment {
   readonly start: number;
   readonly end: number;
 }
 
-type FloorPropKind = 'stump' | 'stone' | 'mushroom';
-
-interface FloorProp {
-  readonly kind: FloorPropKind;
-  readonly x: number;
-  readonly y: number;
-  readonly scale: number;
-  readonly rotation: number;
-}
-
-const FLOOR_PROPS: readonly FloorProp[] = [
-  { kind: 'stone', x: 214, y: 162, scale: 0.72, rotation: -0.08 },
-  { kind: 'stump', x: 1056, y: 210, scale: 0.68, rotation: 0.04 },
-  { kind: 'mushroom', x: 186, y: 492, scale: 0.62, rotation: -0.08 },
-  { kind: 'stone', x: 724, y: 126, scale: 0.52, rotation: 0.1 },
-  { kind: 'mushroom', x: 1004, y: 524, scale: 0.58, rotation: 0.06 },
-  { kind: 'stump', x: 392, y: 610, scale: 0.52, rotation: -0.05 }
-] as const;
+const FLOOR_PROPS = ROOM_THEME_KIT.baseProps;
 
 const THEME_FLOOR_COLORS: Record<RoomTheme, number> = {
-  start: 0x406c4e,
-  wood: FLOOR_COLOR,
-  stone: 0x405c4e,
-  mushroom: 0x3f654f,
-  wizard: 0x3d604f,
-  boss: 0x495348
+  start: hexColorToNumber(getRoomThemeKitTheme('start').floorColor),
+  wood: hexColorToNumber(getRoomThemeKitTheme('wood').floorColor),
+  stone: hexColorToNumber(getRoomThemeKitTheme('stone').floorColor),
+  mushroom: hexColorToNumber(getRoomThemeKitTheme('mushroom').floorColor),
+  wizard: hexColorToNumber(getRoomThemeKitTheme('wizard').floorColor),
+  boss: hexColorToNumber(getRoomThemeKitTheme('boss').floorColor)
 };
 
 const THEME_EXTRA_PROPS: Record<RoomTheme, readonly FloorProp[]> = {
-  start: [
-    { kind: 'stone', x: 498, y: 186, scale: 0.48, rotation: 0.08 },
-    { kind: 'stump', x: 890, y: 556, scale: 0.48, rotation: -0.04 }
-  ],
-  wood: [
-    { kind: 'stump', x: 330, y: 202, scale: 0.52, rotation: 0.12 },
-    { kind: 'stump', x: 944, y: 448, scale: 0.66, rotation: -0.04 },
-    { kind: 'stone', x: 768, y: 572, scale: 0.4, rotation: 0.1 }
-  ],
-  stone: [
-    { kind: 'stone', x: 330, y: 202, scale: 0.48, rotation: 0.12 },
-    { kind: 'stone', x: 944, y: 448, scale: 0.62, rotation: -0.04 },
-    { kind: 'stone', x: 768, y: 572, scale: 0.54, rotation: 0.05 }
-  ],
-  mushroom: [
-    { kind: 'mushroom', x: 318, y: 210, scale: 0.48, rotation: 0.1 },
-    { kind: 'mushroom', x: 910, y: 170, scale: 0.44, rotation: -0.08 },
-    { kind: 'mushroom', x: 758, y: 566, scale: 0.52, rotation: 0.04 },
-    { kind: 'mushroom', x: 1044, y: 438, scale: 0.42, rotation: -0.12 },
-    { kind: 'mushroom', x: 486, y: 532, scale: 0.5, rotation: 0.06 }
-  ],
-  wizard: [
-    { kind: 'stump', x: 324, y: 218, scale: 0.6, rotation: 0.1 },
-    { kind: 'mushroom', x: 900, y: 504, scale: 0.62, rotation: -0.12 },
-    { kind: 'stone', x: 632, y: 180, scale: 0.5, rotation: 0.02 }
-  ],
-  boss: [
-    { kind: 'stone', x: 330, y: 202, scale: 0.7, rotation: 0.12 },
-    { kind: 'stone', x: 944, y: 448, scale: 0.76, rotation: -0.04 },
-    { kind: 'stump', x: 742, y: 562, scale: 0.68, rotation: 0.08 }
-  ]
+  start: getRoomThemeKitTheme('start').extraProps,
+  wood: getRoomThemeKitTheme('wood').extraProps,
+  stone: getRoomThemeKitTheme('stone').extraProps,
+  mushroom: getRoomThemeKitTheme('mushroom').extraProps,
+  wizard: getRoomThemeKitTheme('wizard').extraProps,
+  boss: getRoomThemeKitTheme('boss').extraProps
 };
 
 export const preloadCombatRoomAssets = (_scene: Phaser.Scene) => {};
@@ -172,16 +139,16 @@ export class CombatRoomRenderer {
   private drawSimpleFloorDetails() {
     const graphics = this.scene.add.graphics().setDepth(1);
     const floor = this.getInnerFloorRect();
-    const left = floor.x + 26;
-    const right = floor.x + floor.width - 26;
-    const top = floor.y + 24;
-    const bottom = floor.y + floor.height - 24;
+    const left = floor.x + FLOOR_DETAIL_RULES.padding.x;
+    const right = floor.x + floor.width - FLOOR_DETAIL_RULES.padding.x;
+    const top = floor.y + FLOOR_DETAIL_RULES.padding.y;
+    const bottom = floor.y + floor.height - FLOOR_DETAIL_RULES.padding.y;
 
-    for (let y = top; y <= bottom; y += 58) {
-      for (let x = left; x <= right; x += 78) {
+    for (let y = top; y <= bottom; y += FLOOR_DETAIL_RULES.gridStep.y) {
+      for (let x = left; x <= right; x += FLOOR_DETAIL_RULES.gridStep.x) {
         const seed = this.getFloorSeed(x, y);
 
-        if (seed < 0.12) {
+        if (seed < FLOOR_DETAIL_RULES.skipBelowSeed) {
           continue;
         }
 
@@ -189,22 +156,25 @@ export class CombatRoomRenderer {
         const detailY = y + (this.getFloorSeed(y, x) - 0.5) * 38;
         const scale = 0.78 + this.getFloorSeed(x + 31, y - 17) * 0.54;
         const shapeSeed = this.getFloorSeed(x - 43, y + 71);
+        const shape =
+          FLOOR_DETAIL_RULES.shapeMix.find((candidate) => shapeSeed < candidate.maxSeed)?.shape ??
+          'tiny-dash';
 
-        if (shapeSeed < 0.46) {
+        if (shape === 'v-grass') {
           this.drawVGrassTuft(graphics, detailX, detailY, scale);
-        } else if (shapeSeed < 0.72) {
+        } else if (shape === 'w-grass') {
           this.drawWGrassTuft(graphics, detailX, detailY, scale);
-        } else if (shapeSeed < 0.9) {
+        } else if (shape === 'split-grass') {
           this.drawSplitGrassTuft(graphics, detailX, detailY, scale);
         } else {
           this.drawTinyGroundDash(graphics, detailX, detailY, scale);
         }
 
-        if (seed > 0.86) {
+        if (seed > FLOOR_DETAIL_RULES.pebbleSeed) {
           this.drawPebble(graphics, detailX + 26, detailY + 7, scale);
         }
 
-        if (seed > 0.94) {
+        if (seed > FLOOR_DETAIL_RULES.scuffSeed) {
           this.drawScuff(graphics, detailX - 22, detailY + 16, scale);
         }
       }
@@ -478,10 +448,10 @@ export class CombatRoomRenderer {
     const radius = 9 * scale;
     const tilt = rotation * 10;
 
-    graphics.lineStyle(Math.max(1, Math.round(2 * scale)), 0xb889f2, 0.58);
+    graphics.lineStyle(Math.max(1, Math.round(2 * scale)), WIZARD_SPARK, 0.58);
     graphics.lineBetween(x - radius, y + tilt, x + radius, y - tilt);
     graphics.lineBetween(x, y - radius, x, y + radius);
-    graphics.fillStyle(0xeedcff, 0.44);
+    graphics.fillStyle(WIZARD_GLOW, 0.44);
     graphics.fillCircle(x, y, 2.4 * scale);
   }
 

@@ -2,7 +2,7 @@
   "id": "spooper-gooper",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "rigged",
+  "status": "playtested",
   "sourceReferences": [
     "source/reference-01.png",
     "source/video-appear-reference.jpg",
@@ -46,17 +46,17 @@
     "archetype": "angry-embedded",
     "eyes": {
       "left": {
-        "x": 0.38,
-        "y": 0.46,
-        "radiusX": 0.045,
-        "radiusY": 0.038,
+        "x": 0.276,
+        "y": 0.451,
+        "radiusX": 0.04,
+        "radiusY": 0.036,
         "rotation": -0.2
       },
       "right": {
-        "x": 0.625,
-        "y": 0.46,
-        "radiusX": 0.045,
-        "radiusY": 0.038,
+        "x": 0.723,
+        "y": 0.451,
+        "radiusX": 0.04,
+        "radiusY": 0.036,
         "rotation": 0.2
       }
     },
@@ -149,10 +149,15 @@
       "imageSize": null,
       "scale": null,
       "mode": "runtime-black-blob",
+      "system": "src/sim/projectiles/EnemyDartProjectileSystem.ts",
+      "renderer": "src/render/projectiles/EnemyDartProjectileRenderer.ts",
+      "style": "black-ink",
+      "assetFolder": "../../projectiles/black-ink",
       "originOffset": {
         "x": 0,
         "y": -10
-      }
+      },
+      "notes": "Runtime reuses the shared projectile movement/collision system with the dedicated black-ink visual style."
     }
   },
   "vfx": {
@@ -177,7 +182,6 @@
     "appear": null
   },
   "openItems": [
-    "Tune opacity, appear/disappear timing, projectile speed, projectile count, and trail density against gameplay.",
-    "Decide whether runtime black blob projectiles are enough or a projectile core image is needed."
+    "Tune opacity, appear/disappear timing, projectile speed, projectile count, and trail density against gameplay."
   ]
 }

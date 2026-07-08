@@ -1,0 +1,24 @@
+{
+  "id": "wizard",
+  "kind": "reward-room-theme",
+  "projectContext": "bowbert",
+  "status": "runtime-integrated",
+  "runtimeTheme": "wizard",
+  "sharedKit": "../room-theme-kit.json",
+  "theme": {
+    "floorColor": "#3d604f",
+    "decorSeed": 0.83,
+    "extraProps": [
+      { "kind": "stump", "x": 324, "y": 218, "scale": 0.6, "rotation": 0.1 },
+      { "kind": "mushroom", "x": 900, "y": 504, "scale": 0.62, "rotation": -0.12 },
+      { "kind": "stone", "x": 632, "y": 180, "scale": 0.5, "rotation": 0.02 }
+    ]
+  },
+  "encounter": {
+    "kind": "reward",
+    "preferredEnemies": []
+  },
+  "openItems": [
+    "Final wizard NPC and sigil reward props are not implemented yet."
+  ]
+}

@@ -32,7 +32,7 @@ export const DART_TRI_GOOBER_RIG = {
         eyeScaleX: 1.02,
         eyeScaleY: 1.255,
         pupilScale: 1.12,
-        pupilShiftX: 0.002,
+        pupilShiftX: 0,
         pupilShiftY: -0.006,
         cutSlope: 2.6,
         cutOffset: -0.675,

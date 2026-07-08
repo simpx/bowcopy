@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Procedural Branch Bow Tuning</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07110c;
+        --panel: #101c14;
+        --line: #2e4a37;
+        --text: #f7f1d0;
+        --muted: #b8c8ae;
+        --accent: #ffd75d;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      .capture {
+        background: transparent;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.034) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.034) 1px, transparent 1px),
+          var(--bg);
+        background-size: 44px 44px;
+        color: var(--text);
+      }
+
+      main {
+        width: min(1280px, calc(100vw - 24px));
+        margin: 0 auto;
+        padding: 22px 0 38px;
+      }
+
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 18px;
+        margin-bottom: 14px;
+      }
+
+      h1 { margin: 0; font-size: clamp(28px, 3vw, 44px); line-height: 1; letter-spacing: 0; }
+      a { color: var(--accent); font-weight: 850; text-decoration: none; }
+      .summary { color: var(--muted); max-width: 620px; text-align: right; line-height: 1.46; font-size: 14px; }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(360px, 1.15fr) minmax(320px, .85fr);
+        gap: 14px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--panel) 94%, black);
+        overflow: hidden;
+      }
+
+      .images {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1px;
+        background: var(--line);
+      }
+
+      .image-cell {
+        min-height: 156px;
+        display: grid;
+        place-items: center;
+        position: relative;
+        overflow: hidden;
+        background: #0a1510;
+      }
+
+      .image-cell img {
+        max-width: 92%;
+        max-height: 134px;
+        object-fit: contain;
+        image-rendering: auto;
+        filter: drop-shadow(0 7px 0 rgba(0, 0, 0, .16));
+      }
+
+      .label {
+        position: absolute;
+        left: 8px;
+        top: 7px;
+        padding: 3px 7px;
+        border-radius: 4px;
+        color: var(--accent);
+        background: rgba(3, 8, 5, .78);
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .canvas-wrap {
+        display: grid;
+        place-items: center;
+        min-height: 456px;
+        padding: 14px;
+        background: radial-gradient(circle at center, rgba(255, 215, 93, .08), transparent 48%), #0a1610;
+      }
+
+      canvas {
+        width: min(100%, 620px);
+        max-height: 420px;
+        border: 1px solid #223828;
+        border-radius: 6px;
+        background: #122219;
+      }
+
+      .toolbar, .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px;
+        border-top: 1px solid var(--line);
+      }
+
+      button, select, input[type="range"] { font: inherit; }
+      button, select {
+        min-height: 36px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #112017;
+        color: var(--text);
+      }
+      button { padding: 0 12px; cursor: pointer; font-weight: 800; }
+      button.active { border-color: var(--accent); color: #10140b; background: var(--accent); }
+
+      label {
+        display: grid;
+        gap: 5px;
+        min-width: 140px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+      input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+      pre {
+        margin: 0;
+        padding: 12px;
+        min-height: 580px;
+        max-height: 720px;
+        overflow: auto;
+        color: #dfe8d6;
+        background: #08110c;
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      @media (max-width: 920px) {
+        header, .layout { grid-template-columns: 1fr; }
+        .summary { text-align: left; }
+      }
+
+      @media (max-width: 620px) {
+        main { width: min(100vw - 12px, 1280px); padding-top: 12px; }
+        .images { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+
+      .capture main {
+        width: 720px;
+        padding: 0;
+      }
+
+      .capture header,
+      .capture .images,
+      .capture aside,
+      .capture .toolbar,
+      .capture .controls {
+        display: none;
+      }
+
+      .capture .layout {
+        display: block;
+      }
+
+      .capture .panel {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+      }
+
+      .capture .canvas-wrap {
+        min-height: 520px;
+        padding: 0;
+        background: transparent;
+      }
+
+      .capture canvas {
+        width: 720px;
+        height: 520px;
+        max-height: none;
+        border: 0;
+        border-radius: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Procedural Branch Bow</h1>
+        <div class="summary">
+          Reads this folder's rig.json and previews the runtime branch bow texture, draw state, arrow-on-string, recoil, and glow.
+          <br><a href="../../characters/bowbert/tuning.html">Bowbert tuning</a>
+          <span> / </span>
+          <a href="../../../">game debug</a>
+        </div>
+      </header>
+      <div class="layout">
+        <section class="panel">
+          <div class="images">
+            <div class="image-cell"><span class="label">Relaxed Ref</span><img src="source/bow-relaxed-reference.png" alt=""></div>
+            <div class="image-cell"><span class="label">Full Draw Ref</span><img src="source/bow-full-draw-reference.png" alt=""></div>
+            <div class="image-cell"><span class="label">Aiming Ref</span><img src="source/bow-aiming-reference.png" alt=""></div>
+            <div class="image-cell"><span class="label">Arrow Ref</span><img src="source/arrow-projectile-reference.png" alt=""></div>
+          </div>
+          <div class="canvas-wrap">
+            <canvas width="720" height="520"></canvas>
+          </div>
+          <div class="toolbar">
+            <button type="button" data-state="relaxed" class="active">relaxed</button>
+            <button type="button" data-state="aiming">aiming</button>
+            <button type="button" data-state="fullDraw">full draw</button>
+            <button type="button" data-state="release">release</button>
+          </div>
+          <div class="controls">
+            <label>draw<input data-control="draw" type="range" min="0" max="1" step="0.01" value="0"></label>
+            <label>recoil<input data-control="recoil" type="range" min="0" max="1" step="0.01" value="0"></label>
+            <label>zoom<input data-control="zoom" type="range" min="0.72" max="1.55" step="0.01" value="1.05"></label>
+            <label>arrow<select data-control="showArrow"><option value="false">off</option><option value="true">on</option></select></label>
+            <label>glow<select data-control="glow"><option value="false">off</option><option value="true">on</option></select></label>
+          </div>
+        </section>
+        <aside class="panel">
+          <div class="toolbar" style="border-top: 0">
+            <button type="button" data-action="copy-rig">copy rig</button>
+            <button type="button" data-action="copy-preview">copy preview</button>
+          </div>
+          <pre></pre>
+        </aside>
+      </div>
+    </main>
+    <script>
+      const loadRig = () => fetch("./rig.json").then((response) => response.json());
+      const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+      const path = (d) => new Path2D(d);
+
+      const LEAF_TIP_TOP = path("M-18 0 C-46 -30 -35 -61 5 -63 C22 -36 18 -15 -18 0Z");
+      const LEAF_TIP_BOTTOM = path("M-18 0 C-46 30 -35 61 5 63 C22 36 18 15 -18 0Z");
+      const ARROW_TAIL_TOP = path("M-136 0 C-169 -25 -190 -28 -213 -22 C-193 3 -167 9 -136 0Z");
+      const ARROW_TAIL_BOTTOM = path("M-136 0 C-169 25 -190 28 -213 22 C-193 -3 -167 -9 -136 0Z");
+      const BRANCH_LIMB = path("M48 -166 C132 -125 150 -55 98 0 C151 61 125 127 47 166");
+      const BRANCH_GRIP = path("M79 -24 C101 -14 105 16 80 28");
+      const BOW_CHARGE_ARC = path("M64 -158 C142 -122 157 -58 105 0 C157 58 142 122 64 158");
+
+      const setupStroke = (ctx, width, color, alpha = 1) => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.globalAlpha = alpha;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+      };
+
+      const strokePath = (ctx, p, stroke = "#070707", width = 8, alpha = 1) => {
+        ctx.save();
+        setupStroke(ctx, width, stroke, alpha);
+        ctx.stroke(p);
+        ctx.restore();
+      };
+
+      const fillAndStrokePath = (ctx, p, fill, stroke = "#070707", width = 8, alpha = 1) => {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = fill;
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = width;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.fill(p);
+        ctx.stroke(p);
+        ctx.restore();
+      };
+
+      const drawSparkle = (ctx, x, y, size, rotation, alpha) => {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rotation);
+        setupStroke(ctx, 4, "#070707", alpha * 0.7);
+        ctx.beginPath();
+        ctx.moveTo(-size, 0);
+        ctx.lineTo(size, 0);
+        ctx.moveTo(0, -size);
+        ctx.lineTo(0, size);
+        ctx.stroke();
+        setupStroke(ctx, 2, "#fff2ad", alpha);
+        ctx.beginPath();
+        ctx.moveTo(-size, 0);
+        ctx.lineTo(size, 0);
+        ctx.moveTo(0, -size);
+        ctx.lineTo(0, size);
+        ctx.stroke();
+        ctx.restore();
+      };
+
+      const drawArrow = (ctx, x, y, scale, alpha = 1) => {
+        ctx.save();
+        ctx.globalAlpha *= alpha;
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+        setupStroke(ctx, 14, "#070707");
+        ctx.beginPath();
+        ctx.moveTo(-132, 0);
+        ctx.lineTo(128, 0);
+        ctx.moveTo(128, 0);
+        ctx.lineTo(96, -22);
+        ctx.moveTo(128, 0);
+        ctx.lineTo(96, 22);
+        ctx.stroke();
+        setupStroke(ctx, 7, "#fff2ad");
+        ctx.beginPath();
+        ctx.moveTo(-132, 0);
+        ctx.lineTo(128, 0);
+        ctx.moveTo(128, 0);
+        ctx.lineTo(96, -22);
+        ctx.moveTo(128, 0);
+        ctx.lineTo(96, 22);
+        ctx.stroke();
+        fillAndStrokePath(ctx, ARROW_TAIL_TOP, "#67dc55", "#070707", 8);
+        fillAndStrokePath(ctx, ARROW_TAIL_BOTTOM, "#67dc55", "#070707", 8);
+        ctx.fillStyle = "#fff2ad";
+        ctx.globalAlpha *= 0.86;
+        ctx.beginPath();
+        ctx.arc(-132, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      };
+
+      const drawBranchLimb = (ctx) => {
+        strokePath(ctx, BRANCH_LIMB, "#070707", 24);
+        strokePath(ctx, BRANCH_LIMB, "#9a6236", 11);
+        strokePath(ctx, path("M92 -101 C70 -88 63 -70 71 -51"), "#070707", 6);
+        strokePath(ctx, path("M113 42 C88 55 80 76 90 99"), "#070707", 6);
+        ctx.save();
+        ctx.translate(48, -166);
+        ctx.rotate((-18 * Math.PI) / 180);
+        ctx.scale(0.74, 0.74);
+        fillAndStrokePath(ctx, LEAF_TIP_TOP, "#67dc55", "#070707", 8);
+        strokePath(ctx, path("M-15 -5 C-10 -25 -4 -43 5 -59"), "#1d421f", 4);
+        ctx.restore();
+        ctx.save();
+        ctx.translate(47, 166);
+        ctx.rotate((18 * Math.PI) / 180);
+        ctx.scale(0.74, 0.74);
+        fillAndStrokePath(ctx, LEAF_TIP_BOTTOM, "#67dc55", "#070707", 8);
+        strokePath(ctx, path("M-15 5 C-10 25 -4 43 5 59"), "#1d421f", 4);
+        ctx.restore();
+        ctx.fillStyle = "#fff2ad";
+        ctx.globalAlpha = 0.86;
+        ctx.beginPath();
+        ctx.arc(48, -166, 5, 0, Math.PI * 2);
+        ctx.arc(47, 166, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      };
+
+      const drawBowString = (ctx, draw, fullDraw) => {
+        const stringX = 60 - draw * 136;
+        const p = new Path2D();
+        p.moveTo(48, -166);
+        p.bezierCurveTo(stringX, -64, stringX, 64, 47, 166);
+        if (draw > 0) strokePath(ctx, p, "#fff2ad", 9 + draw * 8 + fullDraw * 2, 0.1 + draw * 0.32 + fullDraw * 0.16);
+        strokePath(ctx, p, "#fff2ad", 5.5);
+      };
+
+      const drawChargeArc = (ctx, draw, fullDraw, timeSeconds) => {
+        if (draw <= 0.08) return;
+        ctx.save();
+        setupStroke(ctx, 7, "#fff2ad", 0.14 + draw * 0.32);
+        ctx.setLineDash([70 + draw * 330, 430]);
+        ctx.lineDashOffset = 210 - draw * 180;
+        ctx.stroke(BOW_CHARGE_ARC);
+        ctx.restore();
+        if (draw < 1) return;
+        ctx.save();
+        setupStroke(ctx, 5, "#fff2ad", 0.16 + fullDraw * 0.34);
+        ctx.setLineDash([42, 24]);
+        ctx.lineDashOffset = -timeSeconds * 42;
+        ctx.stroke(BOW_CHARGE_ARC);
+        if (fullDraw >= 1) {
+          drawSparkle(ctx, -60, -112, 10 + Math.sin(timeSeconds * 16) * 2, timeSeconds, 0.72);
+          drawSparkle(ctx, -48, 102, 8 + Math.cos(timeSeconds * 14) * 2, -timeSeconds, 0.58);
+        }
+        ctx.restore();
+      };
+
+      const drawBranchGrip = (ctx) => {
+        strokePath(ctx, BRANCH_GRIP, "#070707", 24);
+        strokePath(ctx, BRANCH_GRIP, "#9a6236", 11);
+        strokePath(ctx, path("M71 -23 L92 -16 M68 -2 L98 4 M72 21 L92 27"), "#fff2ad", 5.5);
+      };
+
+      const drawBow = (ctx, rig, options, timeMs) => {
+        const draw = clamp(options.draw, 0, 1);
+        const recoil = clamp(options.recoil, 0, 1);
+        const fullDraw = clamp((draw - 0.82) / 0.18, 0, 1);
+        const timeSeconds = timeMs / 1000;
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.fillStyle = "#122219";
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.strokeStyle = "rgba(255,255,255,.045)";
+        for (let line = 0; line <= ctx.canvas.width; line += 48) {
+          ctx.beginPath();
+          ctx.moveTo(line, 0);
+          ctx.lineTo(line, ctx.canvas.height);
+          ctx.stroke();
+        }
+        for (let line = 0; line <= ctx.canvas.height; line += 48) {
+          ctx.beginPath();
+          ctx.moveTo(0, line);
+          ctx.lineTo(ctx.canvas.width, line);
+          ctx.stroke();
+        }
+        ctx.save();
+        ctx.translate(ctx.canvas.width / 2 + recoil * 8, ctx.canvas.height / 2);
+        ctx.scale((rig.texture.drawScale ?? 0.58) * options.zoom, (rig.texture.drawScale ?? 0.58) * options.zoom);
+        if (options.glow) {
+          ctx.save();
+          ctx.fillStyle = "#fff2ad";
+          ctx.globalAlpha = 0.045 + draw * 0.075;
+          ctx.beginPath();
+          ctx.ellipse(28, 0, 178 + draw * 24, 214 + draw * 18, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+        drawBranchLimb(ctx);
+        drawChargeArc(ctx, draw, fullDraw, timeSeconds);
+        drawBowString(ctx, draw, fullDraw);
+        if (options.showArrow && draw > 0.08) drawArrow(ctx, 124 - draw * 176, 1, 0.78 + draw * 0.08 + fullDraw * 0.02);
+        if (draw > 0) {
+          const nockX = 60 - draw * 136;
+          const readyPulse = fullDraw >= 1 ? 0.65 + Math.sin(timeSeconds * 18) * 0.35 : 0;
+          ctx.save();
+          ctx.globalAlpha = 0.38 + draw * 0.32 + fullDraw * 0.24;
+          ctx.fillStyle = "#fff2ad";
+          ctx.beginPath();
+          ctx.arc(nockX, 1, 4 + draw * 5 + fullDraw * 2, 0, Math.PI * 2);
+          ctx.fill();
+          if (fullDraw > 0) {
+            setupStroke(ctx, 4, "#fff2ad", 0.16 + fullDraw * 0.34 + readyPulse * 0.28);
+            ctx.beginPath();
+            ctx.arc(nockX, 1, 14 + fullDraw * 10 + readyPulse * 6, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+        if (recoil > 0.08) {
+          setupStroke(ctx, 6, "#fff2ad", 0.3 * recoil);
+          ctx.beginPath();
+          ctx.moveTo(-62, -30);
+          ctx.bezierCurveTo(-28, -42, 28, -36, 78, -24);
+          ctx.moveTo(-62, 30);
+          ctx.bezierCurveTo(-28, 42, 28, 36, 78, 24);
+          ctx.stroke();
+        }
+        drawBranchGrip(ctx);
+        ctx.restore();
+      };
+
+      const render = async () => {
+        const rig = await loadRig();
+        const params = new URLSearchParams(window.location.search);
+        const stateName = params.get("state") ?? "relaxed";
+        if (params.get("capture") === "1") {
+          document.body.classList.add("capture");
+        }
+        const controls = {
+          draw: document.querySelector('[data-control="draw"]'),
+          recoil: document.querySelector('[data-control="recoil"]'),
+          zoom: document.querySelector('[data-control="zoom"]'),
+          showArrow: document.querySelector('[data-control="showArrow"]'),
+          glow: document.querySelector('[data-control="glow"]')
+        };
+        const applyState = (name) => {
+          const state = rig.states[name] ?? rig.states.relaxed;
+          controls.draw.value = state.draw;
+          controls.recoil.value = state.recoil;
+          controls.showArrow.value = String(state.showArrow);
+          controls.glow.value = String(state.glow);
+          document.querySelectorAll("[data-state]").forEach((button) => button.classList.toggle("active", button.dataset.state === name));
+        };
+        const getOptions = () => ({
+          draw: Number(controls.draw.value),
+          recoil: Number(controls.recoil.value),
+          zoom: Number(controls.zoom.value),
+          showArrow: controls.showArrow.value === "true",
+          glow: controls.glow.value === "true"
+        });
+        const pre = document.querySelector("pre");
+        const syncPre = () => {
+          pre.textContent = JSON.stringify({ id: rig.id, preview: getOptions(), rig }, null, 2);
+        };
+        applyState(stateName);
+        for (const control of Object.values(controls)) {
+          control.addEventListener("input", syncPre);
+          control.addEventListener("change", syncPre);
+        }
+        for (const button of document.querySelectorAll("[data-state]")) {
+          button.addEventListener("click", () => {
+            applyState(button.dataset.state);
+            syncPre();
+          });
+        }
+        document.querySelector('[data-action="copy-rig"]').addEventListener("click", async () => {
+          await navigator.clipboard.writeText(JSON.stringify(rig, null, 2));
+        });
+        document.querySelector('[data-action="copy-preview"]').addEventListener("click", async () => {
+          await navigator.clipboard.writeText(pre.textContent);
+        });
+        syncPre();
+        const ctx = document.querySelector("canvas").getContext("2d");
+        const tick = (time) => {
+          drawBow(ctx, rig, getOptions(), time);
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      };
+
+      render().catch((error) => {
+        document.body.innerHTML = `<main><h1>Tuning failed</h1><pre>${String(error.stack ?? error)}</pre></main>`;
+      });
+    </script>
+  </body>
+</html>

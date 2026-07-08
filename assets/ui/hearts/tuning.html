@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bowbert Hearts HUD Tuning</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07110c;
+        --panel: #102016;
+        --line: #2c4935;
+        --text: #fff6c8;
+        --muted: #aabc9b;
+        --accent: #e9cf6f;
+      }
+
+      * { box-sizing: border-box; }
+
+      html,
+      body {
+        overflow-x: hidden;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: end;
+        min-width: 0;
+        padding: 20px clamp(14px, 4vw, 32px) 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(22px, 4vw, 34px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .sub {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .page {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 16px;
+        min-width: 0;
+        padding: 16px clamp(14px, 4vw, 32px) 32px;
+      }
+
+      .stage,
+      .panel,
+      .refs,
+      .strip {
+        min-width: 0;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .stage {
+        position: relative;
+        min-height: 430px;
+        overflow: hidden;
+        background:
+          linear-gradient(rgb(3 8 6 / 76%), rgb(3 8 6 / 76%)),
+          repeating-linear-gradient(0deg, transparent 0 47px, rgb(255 255 255 / 5%) 48px 49px),
+          repeating-linear-gradient(90deg, transparent 0 63px, rgb(255 255 255 / 5%) 64px 65px),
+          #3f694b;
+      }
+
+      .hud-root {
+        position: absolute;
+        top: 22px;
+        left: 22px;
+      }
+
+      .sample-row {
+        position: absolute;
+        left: 22px;
+        right: 22px;
+        bottom: 24px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .sample {
+        min-height: 110px;
+        border: 1px solid rgb(255 255 255 / 12%);
+        border-radius: 8px;
+        background: rgb(5 14 9 / 72%);
+        padding: 12px;
+      }
+
+      .sample-title {
+        margin-bottom: 8px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .heart-row {
+        display: flex;
+        align-items: center;
+        gap: var(--heart-gap);
+        height: var(--heart-row-height);
+      }
+
+      .heart {
+        position: relative;
+        width: var(--heart-width);
+        aspect-ratio: var(--heart-aspect);
+        transform: translateY(0) rotate(var(--heart-base-tilt));
+        filter: var(--heart-drop-shadow);
+        transition:
+          opacity var(--heart-transition) ease,
+          transform var(--heart-transition) ease;
+      }
+
+      .heart:nth-child(2n) {
+        transform: translateY(var(--heart-alt-y)) rotate(var(--heart-alt-tilt));
+      }
+
+      .heart::after {
+        position: absolute;
+        left: 50%;
+        bottom: var(--heart-peg-bottom);
+        width: var(--heart-peg-width);
+        height: var(--heart-peg-height);
+        border-radius: 999px;
+        background: var(--heart-peg);
+        content: "";
+        transform: translateX(-50%) rotate(var(--heart-peg-rotation));
+        z-index: -1;
+      }
+
+      .heart svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+
+      .heart-shell {
+        fill: var(--heart-shell);
+        opacity: var(--heart-shell-opacity);
+      }
+
+      .heart-fill {
+        fill: var(--heart-fill);
+        clip-path: var(--heart-empty-clip);
+        transition: clip-path var(--heart-transition) ease;
+      }
+
+      .heart-highlight {
+        fill: none;
+        stroke: var(--heart-highlight);
+        stroke-width: var(--heart-highlight-width);
+        stroke-linecap: round;
+        opacity: 0;
+      }
+
+      .heart-outline {
+        fill: none;
+        stroke: var(--heart-outline);
+        stroke-width: var(--heart-outline-width);
+        stroke-linejoin: round;
+        stroke-linecap: round;
+      }
+
+      .heart.is-full .heart-fill {
+        clip-path: var(--heart-full-clip);
+      }
+
+      .heart.is-half .heart-fill {
+        clip-path: var(--heart-half-clip);
+      }
+
+      .heart.is-full .heart-highlight,
+      .heart.is-half .heart-highlight {
+        opacity: var(--heart-highlight-opacity);
+      }
+
+      .heart.is-empty {
+        opacity: var(--heart-empty-opacity);
+        transform: translateY(var(--heart-empty-y)) scale(var(--heart-empty-scale)) rotate(var(--heart-base-tilt));
+      }
+
+      .is-damaged {
+        animation: hearts-wiggle var(--heart-wiggle-ms) ease-out;
+      }
+
+      .is-damaged .heart.is-full,
+      .is-damaged .heart.is-half {
+        animation: hearts-flash var(--heart-flash-ms) ease-out;
+      }
+
+      @keyframes hearts-wiggle {
+        0%, 100% { transform: translate3d(0, 0, 0); }
+        18% { transform: translate3d(-4px, 0, 0); }
+        36% { transform: translate3d(5px, 0, 0); }
+        58% { transform: translate3d(-3px, 0, 0); }
+        78% { transform: translate3d(2px, 0, 0); }
+      }
+
+      @keyframes hearts-flash {
+        0%, 100% { filter: var(--heart-drop-shadow); }
+        35% { filter: var(--heart-flash-shadow); }
+      }
+
+      .panel {
+        padding: 14px;
+      }
+
+      .controls {
+        display: grid;
+        gap: 14px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      input[type="range"],
+      button,
+      textarea {
+        min-width: 0;
+        width: 100%;
+      }
+
+      button {
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #13291c;
+        color: var(--text);
+        cursor: pointer;
+        font: inherit;
+        font-weight: 850;
+      }
+
+      input[type="range"] {
+        accent-color: var(--accent);
+      }
+
+      .check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text);
+        font-size: 14px;
+        text-transform: none;
+      }
+
+      .check input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent);
+      }
+
+      textarea {
+        min-height: 220px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #07110c;
+        color: var(--text);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 11px;
+        line-height: 1.45;
+        padding: 10px;
+      }
+
+      .refs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        padding: 8px;
+        margin-top: 16px;
+      }
+
+      .refs img {
+        width: 100%;
+        height: 130px;
+        object-fit: contain;
+        border-radius: 4px;
+        background: #3f694b;
+        border: 1px solid #28402f;
+      }
+
+      .strip {
+        margin-top: 16px;
+        padding: 16px;
+      }
+
+      .capture header,
+      .capture .panel {
+        display: none;
+      }
+
+      .capture .page {
+        display: block;
+      }
+
+      @media (max-width: 880px) {
+        header,
+        .page {
+          grid-template-columns: 1fr;
+        }
+
+        header {
+          gap: 12px;
+        }
+
+        header button {
+          width: 100%;
+        }
+
+        .panel {
+          order: -1;
+        }
+
+        .sample-row {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Bowbert Hearts HUD Tuning</h1>
+        <div class="sub">Runtime SVG health widget from assets/ui/hearts/rig.json</div>
+      </div>
+      <button id="copyButton" type="button">Copy Params</button>
+    </header>
+
+    <main class="page">
+      <section>
+        <div class="stage">
+          <div id="hudRoot" class="hud-root"></div>
+          <div class="sample-row" id="sampleRow"></div>
+        </div>
+        <div class="refs" id="refs"></div>
+        <div class="strip">
+          <div class="sample-title">Row Scale Check</div>
+          <div id="scaleRow"></div>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="controls">
+          <label>
+            Current Health
+            <input id="healthInput" type="range" min="0" max="5" step="0.5" value="4.5" />
+          </label>
+          <label>
+            Max Hearts
+            <input id="maxInput" type="range" min="1" max="8" step="1" value="5" />
+          </label>
+          <label>
+            Heart Width
+            <input id="widthInput" type="range" min="22" max="48" step="1" value="38" />
+          </label>
+          <label>
+            Gap
+            <input id="gapInput" type="range" min="2" max="14" step="1" value="8" />
+          </label>
+          <label>
+            Tilt
+            <input id="tiltInput" type="range" min="-10" max="8" step="1" value="-3" />
+          </label>
+          <label class="check">
+            <input id="damageInput" type="checkbox" />
+            Damage flash
+          </label>
+          <label>
+            Params
+            <textarea id="paramsOutput" spellcheck="false"></textarea>
+          </label>
+        </div>
+      </aside>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let rig;
+
+      const createHeart = (fill) => {
+        const div = document.createElement("div");
+        div.className = "heart";
+        div.classList.toggle("is-full", fill >= 1);
+        div.classList.toggle("is-half", fill > 0 && fill < 1);
+        div.classList.toggle("is-empty", fill <= 0);
+        div.innerHTML = `
+          <svg viewBox="${rig.shape.viewBox}" aria-hidden="true" focusable="false">
+            <path class="heart-shell" d="${rig.shape.heartPath}" />
+            <path class="heart-fill" d="${rig.shape.heartPath}" />
+            <path class="heart-highlight" d="${rig.shape.highlightPath}" />
+            <path class="heart-outline" d="${rig.shape.heartPath}" />
+          </svg>
+        `;
+        return div;
+      };
+
+      const createRow = (current, max) => {
+        const row = document.createElement("div");
+        row.className = "heart-row";
+        for (let index = 0; index < max; index += 1) {
+          row.append(createHeart(Math.max(0, Math.min(1, current - index))));
+        }
+        return row;
+      };
+
+      const applyVars = () => {
+        const width = Number($("widthInput").value);
+        const gap = Number($("gapInput").value);
+        const tilt = Number($("tiltInput").value);
+        const root = document.documentElement;
+        root.style.setProperty("--heart-width", `${width}px`);
+        root.style.setProperty("--heart-gap", `${gap}px`);
+        root.style.setProperty("--heart-row-height", `${Math.round(width * 1.06)}px`);
+        root.style.setProperty("--heart-aspect", rig.shape.aspectRatio);
+        root.style.setProperty("--heart-base-tilt", `${tilt}deg`);
+        root.style.setProperty("--heart-alt-tilt", `${Math.max(-8, -tilt + 1)}deg`);
+        root.style.setProperty("--heart-alt-y", `${rig.style.alternateYOffsetPx}px`);
+        root.style.setProperty("--heart-empty-y", `${rig.style.emptyYOffsetPx}px`);
+        root.style.setProperty("--heart-empty-scale", rig.style.emptyScale);
+        root.style.setProperty("--heart-drop-shadow", rig.style.dropShadow);
+        root.style.setProperty("--heart-flash-shadow", rig.style.flashShadow);
+        root.style.setProperty("--heart-shell", rig.colors.shell);
+        root.style.setProperty("--heart-fill", rig.colors.fill);
+        root.style.setProperty("--heart-highlight", rig.colors.highlight);
+        root.style.setProperty("--heart-outline", rig.colors.outline);
+        root.style.setProperty("--heart-peg", rig.colors.peg);
+        root.style.setProperty("--heart-shell-opacity", rig.style.shellOpacity);
+        root.style.setProperty("--heart-highlight-opacity", rig.style.highlightOpacity);
+        root.style.setProperty("--heart-empty-opacity", rig.style.emptyOpacity);
+        root.style.setProperty("--heart-outline-width", rig.style.outlineWidth);
+        root.style.setProperty("--heart-highlight-width", rig.style.highlightWidth);
+        root.style.setProperty("--heart-transition", `${rig.motion.transitionMs}ms`);
+        root.style.setProperty("--heart-wiggle-ms", `${rig.motion.wiggleMs}ms`);
+        root.style.setProperty("--heart-flash-ms", `${rig.motion.flashMs}ms`);
+        root.style.setProperty("--heart-full-clip", rig.states.full.clipPath);
+        root.style.setProperty("--heart-half-clip", rig.states.half.clipPath);
+        root.style.setProperty("--heart-empty-clip", rig.states.empty.clipPath);
+        root.style.setProperty("--heart-peg-width", rig.shape.peg.width);
+        root.style.setProperty("--heart-peg-height", rig.shape.peg.height);
+        root.style.setProperty("--heart-peg-bottom", rig.shape.peg.bottom);
+        root.style.setProperty("--heart-peg-rotation", `${rig.shape.peg.rotationDeg}deg`);
+      };
+
+      const render = () => {
+        applyVars();
+        const current = Number($("healthInput").value);
+        const max = Number($("maxInput").value);
+        const damaged = $("damageInput").checked;
+        const hudRoot = $("hudRoot");
+        hudRoot.innerHTML = "";
+        const row = createRow(current, max);
+        row.classList.toggle("is-damaged", damaged);
+        hudRoot.append(row);
+
+        const samples = [
+          ["Full", max, max],
+          ["Half", max - 0.5, max],
+          ["Low", 1.5, max],
+          ["Empty", 0, max]
+        ];
+        $("sampleRow").innerHTML = "";
+        samples.forEach(([label, value, sampleMax]) => {
+          const card = document.createElement("div");
+          card.className = "sample";
+          const title = document.createElement("div");
+          title.className = "sample-title";
+          title.textContent = label;
+          card.append(title, createRow(value, sampleMax));
+          $("sampleRow").append(card);
+        });
+
+        $("scaleRow").innerHTML = "";
+        $("scaleRow").append(createRow(5, 5), createRow(2.5, 5), createRow(7.5, 8));
+
+        $("paramsOutput").value = JSON.stringify({
+          id: "BOWBERT_HEARTS_HUD_TUNING",
+          current,
+          max,
+          heartWidthPx: Number($("widthInput").value),
+          gapPx: Number($("gapInput").value),
+          tiltDeg: Number($("tiltInput").value),
+          damaged,
+          rig
+        }, null, 2);
+      };
+
+      const renderRefs = () => {
+        const refs = $("refs");
+        refs.innerHTML = "";
+        rig.sourceReferences.forEach((src) => {
+          const img = document.createElement("img");
+          img.src = src;
+          img.alt = src.split("/").pop();
+          refs.append(img);
+        });
+      };
+
+      const init = async () => {
+        rig = await (await fetch("./rig.json")).json();
+        $("widthInput").value = Number.parseInt(rig.layout.heartWidth.match(/\d+px|(\d+)/)?.[1] || "38", 10);
+        $("gapInput").value = Number.parseInt(rig.layout.rowGap.match(/\d+px|(\d+)/)?.[1] || "8", 10);
+        $("tiltInput").value = rig.style.baseTiltDeg;
+        renderRefs();
+        render();
+      };
+
+      ["healthInput", "maxInput", "widthInput", "gapInput", "tiltInput", "damageInput"].forEach((id) => {
+        $(id).addEventListener("input", render);
+      });
+
+      $("copyButton").addEventListener("click", async () => {
+        $("paramsOutput").select();
+        await navigator.clipboard.writeText($("paramsOutput").value);
+      });
+
+      init();
+    </script>
+  </body>
+</html>

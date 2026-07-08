@@ -1,0 +1,24 @@
+{
+  "id": "mushroom",
+  "kind": "combat-room-theme",
+  "projectContext": "bowbert",
+  "status": "runtime-integrated",
+  "runtimeTheme": "mushroom",
+  "sharedKit": "../room-theme-kit.json",
+  "theme": {
+    "floorColor": "#3f654f",
+    "decorSeed": 0.68,
+    "extraProps": [
+      { "kind": "mushroom", "x": 318, "y": 210, "scale": 0.48, "rotation": 0.1 },
+      { "kind": "mushroom", "x": 910, "y": 170, "scale": 0.44, "rotation": -0.08 },
+      { "kind": "mushroom", "x": 758, "y": 566, "scale": 0.52, "rotation": 0.04 },
+      { "kind": "mushroom", "x": 1044, "y": 438, "scale": 0.42, "rotation": -0.12 },
+      { "kind": "mushroom", "x": 486, "y": 532, "scale": 0.5, "rotation": 0.06 }
+    ]
+  },
+  "encounter": {
+    "kind": "normal",
+    "preferredEnemies": ["red-shroom", "purple-shroom"]
+  },
+  "openItems": []
+}

@@ -1,5 +1,5 @@
 ---
-status: rigged
+status: playtested
 kind: enemy
 projectContext: bowbert
 lockedReference: source/reference-01.png
@@ -33,11 +33,25 @@ Source:
 - `source/video-explosion-aoe-reference.jpg`
 - `source/video-explosion-radius-reference.jpg`
 
+Generated candidates:
+- `base.png`: promoted from `exports/base-v2-candidate.png` as the current runtime base.
+- `base-source.png`: promoted from `exports/base-v2-green.png` as the retained chroma source.
+- `exports/base-before-regeneration.png`: previous runtime base kept for rollback/comparison.
+- `exports/base-v2-candidate.png`: regenerated Bowbert Studio base candidate with blank eye whites for runtime gaze.
+- `exports/base-v2-green.png`: chroma-key source for the regenerated candidate.
+
+Runtime evidence:
+- `src/characters/kaboomletRig.ts`: points to `assets/characters/kaboomlet/base.png` and stores normalized eye placement.
+- `src/render/enemies/KaboomletRenderer.ts`: loads the accepted PNG base and overlays runtime black gaze.
+- `src/game/scenes/CombatRoomScene.ts`: maps wood rooms and `?encounter=kaboomlet` debug previews to Kaboomlet.
+- `playtest/runtime-encounter.png`: browser screenshot proof that the accepted PNG base renders in the game scene.
+- `../../effects/explosions/kaboomlet/`: dedicated runtime explosion effect package and tuning preview.
+
 Decomposition:
 - base.png: generated fixed enemy body.
 - attachments/: only independently positioned art such as eyes, weapon, shell, hat, or props.
 - projectiles/: reusable projectile cores, no baked trails.
-- vfx/: explosion warning ring, blast flash, debris, sparks, and red/orange particle burst are runtime effects.
+- vfx/: explosion warning ring, blast flash, debris, sparks, and red/orange particle burst are tracked in `../../effects/explosions/kaboomlet/`.
 - runtime: gaze, armed flashing, chase wobble, countdown pulse, death detonation, AoE damage, squash/stretch, hit/death timing.
 
 Image generation prompt packets:
@@ -64,25 +78,27 @@ Acceptance checks:
 - Runtime-changing parts are separated when practical.
 - Transparent PNG, tight crop with enough room for protrusions.
 
-### projectiles/<name>.png
+### effects/explosions/kaboomlet
 
 Inputs:
-- TODO
+- `source/video-explosion-aoe-reference.jpg`
+- `source/video-explosion-radius-reference.jpg`
 
-Mode: image-to-image when a projectile/effect reference exists.
+Mode: runtime procedural first; optional image-to-image only if a bitmap blast core is later requested.
 
 Layer contract:
 - Runtime explosion VFX is procedural first.
 - If an effect core is generated later, it must be a reusable blast/spark core only.
 
 Generation prompt:
-> TODO
+> Chunky white and yellow explosion cloud for a top-down doodle mobile roguelike, bold soft outline, simple color blocks, readable at mobile scale, transparent background, centered reusable blast core.
 
 Boundary notes:
-> Transparent background, clean edges, centered reusable effect core, enough padding for runtime scaling and fade.
+> Keep warning ring, debris, Kaboomlet body, enemies, floor, UI, and damage timing as runtime layers.
 
 Acceptance checks:
-- TODO
+- Matches the reference color mass and reads clearly over the green room floor.
+- Layers cleanly with runtime red warning radius and debris burst.
 
 Runtime rig notes:
 - use runtime armed flashing, fuse spark, warning ring, and explosion anticipation instead of sprite sheets.

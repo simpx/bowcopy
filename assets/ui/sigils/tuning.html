@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bowbert Silly Sigils Tuning</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07110c;
+        --panel: #102016;
+        --line: #2c4935;
+        --text: #fff6c8;
+        --muted: #b9caa5;
+        --accent: #e9cf6f;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        overflow-x: hidden;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        align-items: end;
+        padding: 20px clamp(14px, 4vw, 32px) 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(22px, 4vw, 34px);
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .sub {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .page {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 16px;
+        min-width: 0;
+        padding: 16px clamp(14px, 4vw, 32px) 32px;
+      }
+
+      .stage,
+      .panel,
+      .refs,
+      .choice {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .stage {
+        min-height: 540px;
+        padding: 18px;
+        background:
+          radial-gradient(circle at 18% 18%, rgb(184 137 242 / 12%), transparent 28%),
+          linear-gradient(rgb(3 8 6 / 72%), rgb(3 8 6 / 72%)),
+          repeating-linear-gradient(0deg, transparent 0 47px, rgb(255 255 255 / 5%) 48px 49px),
+          repeating-linear-gradient(90deg, transparent 0 63px, rgb(255 255 255 / 5%) 64px 65px),
+          #3f694b;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+      }
+
+      .sigil-card {
+        min-height: var(--card-min-height);
+        padding: 14px;
+        border: 5px solid var(--card-edge);
+        border-radius: 8px;
+        background: var(--card-bg);
+        box-shadow: var(--card-shadow);
+        position: relative;
+      }
+
+      .sigil-card::before {
+        position: absolute;
+        inset: 7px;
+        border: 2px solid var(--card-inset);
+        border-radius: 5px;
+        content: "";
+        pointer-events: none;
+      }
+
+      .sigil-card.is-choice {
+        outline: 3px solid var(--choice-glow);
+        outline-offset: 3px;
+      }
+
+      .icon-wrap {
+        width: var(--icon-size);
+        height: var(--icon-size);
+        margin: 0 auto 10px;
+      }
+
+      .icon-wrap svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+
+      .sigil-title {
+        margin: 4px 0 6px;
+        color: var(--text);
+        font-size: 17px;
+        font-weight: 900;
+        text-align: center;
+      }
+
+      .sigil-copy {
+        margin: 0 auto;
+        max-width: 18ch;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+        text-align: center;
+      }
+
+      .sigil-copy strong {
+        color: var(--accent);
+      }
+
+      .choice {
+        margin-top: 18px;
+        padding: 18px;
+      }
+
+      .choice-title,
+      .refs-title {
+        margin: 0 0 12px;
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 900;
+      }
+
+      .choice-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .panel {
+        padding: 14px;
+      }
+
+      .controls {
+        display: grid;
+        gap: 14px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      select,
+      input[type="range"],
+      button,
+      textarea {
+        min-width: 0;
+        width: 100%;
+      }
+
+      select,
+      button {
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #13291c;
+        color: var(--text);
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+        font-weight: 850;
+      }
+
+      input[type="range"] {
+        accent-color: var(--accent);
+      }
+
+      textarea {
+        min-height: 260px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #07110c;
+        color: var(--text);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 11px;
+        line-height: 1.45;
+        padding: 10px;
+      }
+
+      .refs {
+        margin-top: 18px;
+        padding: 12px;
+      }
+
+      .refs img {
+        width: 100%;
+        max-height: 180px;
+        object-fit: cover;
+        border: 1px solid #28402f;
+        border-radius: 6px;
+      }
+
+      .capture header,
+      .capture .panel {
+        display: none;
+      }
+
+      .capture .page {
+        display: block;
+      }
+
+      @media (max-width: 880px) {
+        header,
+        .page {
+          grid-template-columns: 1fr;
+        }
+
+        header button {
+          width: 100%;
+        }
+
+        .panel {
+          order: -1;
+        }
+
+        .choice-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>Bowbert Silly Sigils</h1>
+        <div class="sub">Runtime SVG power-up cards from assets/ui/sigils/rig.json</div>
+      </div>
+      <button id="copyButton" type="button">Copy Params</button>
+    </header>
+
+    <main class="page">
+      <section>
+        <div class="stage">
+          <div class="grid" id="sigilGrid"></div>
+        </div>
+        <div class="choice">
+          <div class="choice-title">Wizard Room Choice Preview</div>
+          <div class="choice-row" id="choiceRow"></div>
+        </div>
+        <div class="refs">
+          <div class="refs-title">Source Context</div>
+          <img src="../../../refs/keyframes/0990_sigils.jpg" alt="sigil source context" />
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="controls">
+          <label>
+            Choice A
+            <select id="choiceA"></select>
+          </label>
+          <label>
+            Choice B
+            <select id="choiceB"></select>
+          </label>
+          <label>
+            Choice C
+            <select id="choiceC"></select>
+          </label>
+          <label>
+            Icon Size
+            <input id="iconSizeInput" type="range" min="56" max="112" step="2" value="84" />
+          </label>
+          <label>
+            Card Width
+            <input id="cardWidthInput" type="range" min="150" max="240" step="2" value="190" />
+          </label>
+          <label>
+            Outline
+            <input id="outlineInput" type="range" min="3" max="8" step="1" value="5" />
+          </label>
+          <label>
+            Params
+            <textarea id="paramsOutput" spellcheck="false"></textarea>
+          </label>
+        </div>
+      </aside>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      let rig;
+
+      const svg = (content, accent) => `
+        <svg viewBox="${rig.style.viewBox}" aria-hidden="true" focusable="false" style="--accent:${accent}">
+          ${content}
+        </svg>
+      `;
+
+      const common = () => {
+        const p = rig.palette;
+        return {
+          outline: `stroke="${p.black}" stroke-width="${rig.style.outlineWidth}" stroke-linecap="round" stroke-linejoin="round"`,
+          thin: `stroke="${p.black}" stroke-width="${rig.style.innerOutlineWidth}" stroke-linecap="round" stroke-linejoin="round"`
+        };
+      };
+
+      const arrow = (x, y, rotation, color) => {
+        const c = common();
+        return `
+          <g transform="translate(${x} ${y}) rotate(${rotation})">
+            <path d="M-24 0H18" ${c.outline} />
+            <path d="M18 0L3 -12L7 0L3 12Z" fill="${color}" ${c.outline} />
+            <path d="M-24 0L-34 -8M-24 0L-34 8" ${c.thin} />
+          </g>
+        `;
+      };
+
+      const drawIcon = (sigil) => {
+        const p = rig.palette;
+        const c = common();
+        const accent = sigil.accent;
+
+        if (sigil.icon === "triple-arrows") {
+          return svg(`${arrow(48, 32, -14, accent)}${arrow(48, 48, 0, accent)}${arrow(48, 64, 14, accent)}`, accent);
+        }
+
+        if (sigil.icon === "speed-boots") {
+          return svg(`
+            <path d="M30 60C38 51 45 43 50 27C60 33 65 46 64 60C57 64 45 65 30 60Z" fill="${p.blue}" ${c.outline}/>
+            <path d="M50 65C58 59 69 59 77 66C67 73 56 74 43 70C44 66 46 64 50 65Z" fill="${p.white}" ${c.outline}/>
+            <path d="M18 38H37M13 50H32M18 63H35" ${c.outline}/>
+          `, accent);
+        }
+
+        if (sigil.icon === "piercing-arrow") {
+          return svg(`
+            <rect x="18" y="30" width="22" height="36" rx="5" fill="${p.gray}" ${c.outline}/>
+            <rect x="56" y="30" width="22" height="36" rx="5" fill="${p.gray}" ${c.outline}/>
+            ${arrow(48, 48, 0, accent)}
+            <path d="M29 43L32 53M66 43L69 53" ${c.thin}/>
+          `, accent);
+        }
+
+        if (sigil.icon === "random-arrows") {
+          return svg(`
+            ${arrow(48, 48, 0, accent)}
+            ${arrow(35, 31, -36, p.red)}
+            ${arrow(62, 64, 38, p.red)}
+            <circle cx="27" cy="71" r="4" fill="${p.gold}" ${c.thin}/>
+            <circle cx="72" cy="24" r="3" fill="${p.gold}" ${c.thin}/>
+          `, accent);
+        }
+
+        if (sigil.icon === "empty-scribble") {
+          return svg(`
+            <path d="M23 52C21 33 40 20 58 27C77 34 78 58 60 69C45 78 23 70 24 51" fill="none" ${c.outline}/>
+            <path d="M33 35C43 26 62 31 66 45C70 59 54 72 39 65" fill="none" stroke="${p.gray}" stroke-width="6" stroke-linecap="round"/>
+            <path d="M61 31L34 67" ${c.outline}/>
+          `, accent);
+        }
+
+        if (sigil.icon === "peaceful-room") {
+          return svg(`
+            <rect x="18" y="24" width="60" height="48" rx="6" fill="${p.darkGreen}" ${c.outline}/>
+            <path d="M32 58C41 40 55 38 66 50C53 51 45 56 39 67" fill="${p.green}" ${c.outline}/>
+            <path d="M40 66C41 54 45 45 53 38" ${c.thin}/>
+            <path d="M26 34H40M56 34H70" stroke="${p.gold}" stroke-width="4" stroke-linecap="round"/>
+          `, accent);
+        }
+
+        return svg(`
+          <path d="M25 58C33 42 50 37 68 47C66 58 57 67 43 68C36 68 29 65 25 58Z" fill="${p.purple}" ${c.outline}/>
+          <path d="M35 44C39 25 56 22 63 39C53 36 43 37 35 44Z" fill="${p.gold}" ${c.outline}/>
+          <path d="M22 62C38 71 60 71 76 61" fill="none" ${c.outline}/>
+        `, accent);
+      };
+
+      const createCard = (sigil, isChoice = false) => {
+        const card = document.createElement("article");
+        card.className = `sigil-card${isChoice ? " is-choice" : ""}`;
+        card.style.setProperty("--accent", sigil.accent);
+        card.innerHTML = `
+          <div class="icon-wrap">${drawIcon(sigil)}</div>
+          <div class="sigil-title">${sigil.name}</div>
+          <p class="sigil-copy"><strong>${sigil.effect}</strong><br>${sigil.tradeoff}</p>
+        `;
+        return card;
+      };
+
+      const applyVars = () => {
+        const root = document.documentElement;
+        root.style.setProperty("--card-bg", rig.style.cardBackground);
+        root.style.setProperty("--card-edge", rig.style.cardEdge);
+        root.style.setProperty("--card-inset", rig.style.cardInset);
+        root.style.setProperty("--card-shadow", rig.style.dropShadow);
+        root.style.setProperty("--card-min-height", `${Math.round(Number($("cardWidthInput").value) * 1.22)}px`);
+        root.style.setProperty("--icon-size", `${$("iconSizeInput").value}px`);
+        root.style.setProperty("--text", rig.style.text);
+        root.style.setProperty("--muted", rig.style.mutedText);
+        root.style.setProperty("--accent", rig.style.accent);
+        root.style.setProperty("--choice-glow", rig.style.choiceGlow);
+        rig.style.outlineWidth = Number($("outlineInput").value);
+      };
+
+      const selectedSigils = () => [
+        $("choiceA").value,
+        $("choiceB").value,
+        $("choiceC").value
+      ].map((id) => rig.sigils.find((sigil) => sigil.id === id));
+
+      const render = () => {
+        applyVars();
+        const grid = $("sigilGrid");
+        grid.innerHTML = "";
+        grid.style.gridTemplateColumns = `repeat(auto-fit, minmax(${$("cardWidthInput").value}px, 1fr))`;
+        rig.sigils.forEach((sigil) => grid.append(createCard(sigil)));
+
+        const choice = $("choiceRow");
+        choice.innerHTML = "";
+        selectedSigils().forEach((sigil) => choice.append(createCard(sigil, true)));
+
+        $("paramsOutput").value = JSON.stringify({
+          id: "BOWBERT_SIGILS_TUNING",
+          choices: selectedSigils().map((sigil) => sigil.id),
+          iconSize: Number($("iconSizeInput").value),
+          cardWidth: Number($("cardWidthInput").value),
+          outlineWidth: Number($("outlineInput").value),
+          rig
+        }, null, 2);
+      };
+
+      const initSelects = () => {
+        ["choiceA", "choiceB", "choiceC"].forEach((id, index) => {
+          const select = $(id);
+          rig.sigils.forEach((sigil) => {
+            const option = document.createElement("option");
+            option.value = sigil.id;
+            option.textContent = sigil.name;
+            select.append(option);
+          });
+          select.value = rig.sigils[index]?.id ?? rig.sigils[0].id;
+        });
+      };
+
+      const init = async () => {
+        rig = await (await fetch("./rig.json")).json();
+        $("iconSizeInput").value = rig.style.iconSize;
+        $("cardWidthInput").value = rig.style.cardWidth;
+        $("outlineInput").value = rig.style.outlineWidth;
+        initSelects();
+        render();
+      };
+
+      ["choiceA", "choiceB", "choiceC", "iconSizeInput", "cardWidthInput", "outlineInput"].forEach((id) => {
+        $(id).addEventListener("input", render);
+      });
+
+      $("copyButton").addEventListener("click", async () => {
+        $("paramsOutput").select();
+        await navigator.clipboard.writeText($("paramsOutput").value);
+      });
+
+      init();
+    </script>
+  </body>
+</html>

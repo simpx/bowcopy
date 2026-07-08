@@ -1,0 +1,60 @@
+{
+  "id": "touch-controls",
+  "kind": "mobile-control-overlay",
+  "projectContext": "bowbert",
+  "status": "runtime-integrated",
+  "layout": {
+    "zIndex": 5,
+    "joystickWidth": "clamp(104px, 19vmin, 132px)",
+    "joystickLeft": "max(18px, env(safe-area-inset-left))",
+    "joystickBottom": "max(18px, env(safe-area-inset-bottom))",
+    "rightClusterRight": "max(18px, env(safe-area-inset-right))",
+    "rightClusterBottom": "max(18px, env(safe-area-inset-bottom))",
+    "rightClusterGap": "clamp(12px, 2.6vmin, 20px)",
+    "aimZoneWidth": "58%",
+    "portraitAimZoneWidth": "64%",
+    "stickWidth": "clamp(42px, 8vmin, 56px)",
+    "dodgeWidth": "clamp(64px, 11vmin, 78px)",
+    "compactLandscape": {
+      "maxHeightPx": 430,
+      "joystickBottom": "max(12px, env(safe-area-inset-bottom))",
+      "joystickWidth": "clamp(88px, 22vh, 108px)",
+      "dodgeWidth": "clamp(56px, 14vh, 66px)"
+    }
+  },
+  "style": {
+    "ringBorder": "2px solid rgb(218 235 255 / 48%)",
+    "ringBackground": "radial-gradient(circle at center, rgb(248 241 220 / 12%) 0 31%, transparent 32%), rgb(17 23 34 / 44%)",
+    "ringShadow": "0 10px 34px rgb(0 0 0 / 26%)",
+    "stickBorder": "2px solid rgb(248 241 220 / 72%)",
+    "stickBackground": "rgb(248 241 220 / 30%)",
+    "stickShadow": "0 6px 18px rgb(0 0 0 / 22%)",
+    "stickTransitionMs": 80,
+    "dodgeBorder": "2px solid rgb(248 241 220 / 64%)",
+    "dodgeText": "#f8f1dc",
+    "dodgeBackground": "rgb(92 225 185 / 24%)",
+    "dodgeActiveBackground": "rgb(92 225 185 / 42%)",
+    "dodgeShadow": "0 10px 34px rgb(0 0 0 / 24%)",
+    "dodgeFont": "700 clamp(11px, 2.1vmin, 13px) / 1 Inter, ui-sans-serif, system-ui, sans-serif"
+  },
+  "input": {
+    "leftMode": "analog",
+    "rightMode": "direction",
+    "rightCenterMode": "pointer",
+    "radiusFactor": 0.38,
+    "directionDeadZone": 0.12
+  },
+  "copy": {
+    "dodge": "Dodge",
+    "movementLabel": "Movement joystick",
+    "aimLabel": "Aim and fire joystick",
+    "aimZoneLabel": "Aim and fire area"
+  },
+  "runtimeReferences": [
+    "../../../src/data/touchControlsKit.ts",
+    "../../../src/ui/TouchInputOverlay.ts"
+  ],
+  "openItems": [
+    "Fine tune right-side aim zone after more physical phone testing."
+  ]
+}

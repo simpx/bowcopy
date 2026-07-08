@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import spooperGooperBaseUrl from '../../../assets/characters/spooper-gooper/base.png';
 import { SPOOPER_GOOPER_RIG } from '../../characters/spooperGooperRig';
 import type { SimVector } from '../../sim/player';
 import type { SpooperGooperEnemy, SpooperGooperEvent } from '../../sim/enemies';
@@ -7,7 +8,9 @@ import type { SpooperGooperEnemy, SpooperGooperEvent } from '../../sim/enemies';
 interface SpooperGooperVisual {
   readonly container: Phaser.GameObjects.Container;
   readonly shadow: Phaser.GameObjects.Ellipse;
-  readonly body: Phaser.GameObjects.Graphics;
+  readonly artLayer: Phaser.GameObjects.Container;
+  readonly body: Phaser.GameObjects.Image;
+  readonly eyes: Phaser.GameObjects.Graphics;
 }
 
 interface SpooperGooperParticle {
@@ -42,7 +45,11 @@ const normalize = (vector: SimVector): SimVector => {
   return { x: vector.x / length, y: vector.y / length };
 };
 
-export const preloadSpooperGooperAssets = () => undefined;
+export const preloadSpooperGooperAssets = (scene: Phaser.Scene) => {
+  if (!scene.textures.exists(SPOOPER_GOOPER_RIG.base.textureKey)) {
+    scene.load.image(SPOOPER_GOOPER_RIG.base.textureKey, spooperGooperBaseUrl);
+  }
+};
 
 export class SpooperGooperRenderer {
   private readonly visuals = new Map<number, SpooperGooperVisual>();
@@ -113,9 +120,11 @@ export class SpooperGooperRenderer {
       0x07120d,
       0.2
     );
-    const body = this.scene.add.graphics();
-    const container = this.scene.add.container(0, 0, [shadow, body]);
-    const visual = { container, shadow, body };
+    const body = this.scene.add.image(0, 0, SPOOPER_GOOPER_RIG.base.textureKey).setOrigin(0.5);
+    const eyes = this.scene.add.graphics();
+    const artLayer = this.scene.add.container(0, SPOOPER_GOOPER_RIG.base.y, [body, eyes]);
+    const container = this.scene.add.container(0, 0, [shadow, artLayer]);
+    const visual = { container, shadow, artLayer, body, eyes };
 
     this.visuals.set(id, visual);
 
@@ -135,55 +144,43 @@ export class SpooperGooperRenderer {
 
     visual.container.setPosition(enemy.position.x + drift, enemy.position.y - hover);
     visual.container.setDepth(69 + enemy.position.y / 1000);
-    visual.container.setScale(scaleX, scaleY);
     visual.container.setAlpha(enemy.visibility);
 
     visual.shadow.setScale(0.7 + enemy.visibility * 0.3, 1);
     visual.shadow.setAlpha(0.08 + enemy.visibility * 0.16);
 
-    this.drawGhost(visual.body, normalize(enemy.facing), enemy.attackCharge, hitFlash, enemy.vulnerable);
+    visual.artLayer.setPosition(0, SPOOPER_GOOPER_RIG.base.y);
+    visual.artLayer.setScale(SPOOPER_GOOPER_RIG.base.scale * scaleX, SPOOPER_GOOPER_RIG.base.scale * scaleY);
+    visual.body.setTint(hitFlash > 0 ? 0xfff0df : 0xffffff);
+    this.drawGhostEyes(visual.eyes, normalize(enemy.facing), enemy.attackCharge);
   }
 
-  private drawGhost(
+  private drawGhostEyes(
     graphics: Phaser.GameObjects.Graphics,
     facing: SimVector,
-    attackCharge: number,
-    hitFlash: number,
-    vulnerable: boolean
+    attackCharge: number
   ) {
-    const bodyColor = hitFlash > 0 ? 0xffffff : vulnerable ? 0xd9f0ff : 0x9aa8c8;
+    const { width, height } = SPOOPER_GOOPER_RIG.base.imageSize;
+    const offsetX =
+      Phaser.Math.Clamp(facing.x, -1, 1) * width * SPOOPER_GOOPER_RIG.gaze.pupilOffsetScale.x;
+    const offsetY =
+      Phaser.Math.Clamp(facing.y, -1, 1) * height * SPOOPER_GOOPER_RIG.gaze.pupilOffsetScale.y;
 
     graphics.clear();
-    graphics.lineStyle(7, 0x050505, 1);
-    graphics.fillStyle(bodyColor, 0.96);
-    graphics.beginPath();
-    graphics.moveTo(-28, 8);
-    graphics.lineTo(-25, -18);
-    graphics.lineTo(-17, -34);
-    graphics.lineTo(0, -42);
-    graphics.lineTo(17, -34);
-    graphics.lineTo(25, -18);
-    graphics.lineTo(28, 8);
-    graphics.lineTo(20, 28);
-    graphics.lineTo(10, 18);
-    graphics.lineTo(0, 31);
-    graphics.lineTo(-10, 18);
-    graphics.lineTo(-20, 28);
-    graphics.closePath();
-    graphics.fillPath();
-    graphics.strokePath();
+    graphics.fillStyle(0x050505, 1);
 
     for (const name of ['left', 'right'] as const) {
       const eye = SPOOPER_GOOPER_RIG.gaze.eyes[name];
-      const pupilX = eye.x + Phaser.Math.Clamp(facing.x, -1, 1) * SPOOPER_GOOPER_RIG.gaze.pupilOffsetScale.x;
-      const pupilY = eye.y + Phaser.Math.Clamp(facing.y, -1, 1) * SPOOPER_GOOPER_RIG.gaze.pupilOffsetScale.y;
+      const x = (eye.x - 0.5) * width + offsetX;
+      const y = (eye.y - 0.5) * height + offsetY;
+      const pupilWidth = eye.radiusX * width * (1.1 + attackCharge * 0.25);
+      const pupilHeight = eye.radiusY * height * (1.05 + attackCharge * 0.16);
 
-      graphics.lineStyle(4, 0x050505, 1);
-      graphics.fillStyle(0xffffff, 1);
-      graphics.fillEllipse(eye.x, eye.y, eye.radiusX * (2.7 + attackCharge * 0.25), eye.radiusY * (2.7 + attackCharge * 0.1));
-      graphics.strokeEllipse(eye.x, eye.y, eye.radiusX * (2.7 + attackCharge * 0.25), eye.radiusY * (2.7 + attackCharge * 0.1));
-      graphics.fillStyle(0x050505, 1);
-      graphics.fillEllipse(pupilX, pupilY, eye.radiusX * (1.25 + attackCharge * 0.3), eye.radiusY * (1.2 + attackCharge * 0.2));
+      graphics.save();
+      graphics.translateCanvas(x, y);
+      graphics.rotateCanvas(eye.rotation);
+      graphics.fillEllipse(0, 0, pupilWidth, pupilHeight);
+      graphics.restore();
     }
   }
 
