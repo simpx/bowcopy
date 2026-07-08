@@ -1,0 +1,168 @@
+{
+  "generatedAt": "2026-07-08T06:21:12+00:00",
+  "characters": {
+    "bowbert": {
+      "errors": [],
+      "warnings": [
+        "rig.json contains a 'status' field; status belongs in brief.md only",
+        "stray root entries (move candidates to candidates/ or exports/): bowbert-base-ai-v2-alpha.png, bowbert-base-ai-v2-eye-whites.png, bowbert-base-ai-v2-source.png, bowbert-base-ai-v2-trimmed.png, bowbert-body-skill-v1-alpha.png, bowbert-body-skill-v1-source.png, bowbert-body-skill-v1-trimmed.png"
+      ],
+      "info": {
+        "status": "playtested",
+        "baseImageSize": {
+          "width": 854,
+          "height": 878
+        },
+        "renderedSize": {
+          "width": 81.1,
+          "height": 83.4
+        }
+      }
+    },
+    "dart-goober": {
+      "errors": [],
+      "warnings": [
+        "rig.json contains a 'status' field; status belongs in brief.md only",
+        "stray root entries (move candidates to candidates/ or exports/): dart-goober-base-ai-v1-alpha.png, dart-goober-base-ai-v1-source.png, dart-goober-base-ai-v1-trimmed.png"
+      ],
+      "info": {
+        "status": "playtested",
+        "baseImageSize": {
+          "width": 901,
+          "height": 957
+        },
+        "renderedSize": {
+          "width": 85.6,
+          "height": 90.9
+        }
+      }
+    },
+    "dart-tri-goober": {
+      "errors": [],
+      "warnings": [
+        "rig.json contains a 'status' field; status belongs in brief.md only"
+      ],
+      "info": {
+        "status": "playtested",
+        "baseImageSize": {
+          "width": 1254,
+          "height": 1254
+        },
+        "renderedSize": {
+          "width": 120.4,
+          "height": 120.4
+        }
+      }
+    },
+    "kaboomlet": {
+      "errors": [],
+      "warnings": [
+        "base.png: large transparent padding (x 41%, y 35%); crop tighter and update rig scale",
+        "rig.json contains a 'status' field; status belongs in brief.md only"
+      ],
+      "info": {
+        "status": "playtested",
+        "baseImageSize": {
+          "width": 1254,
+          "height": 1254
+        },
+        "renderedSize": {
+          "width": 125.4,
+          "height": 125.4
+        }
+      }
+    },
+    "purple-shroom": {
+      "errors": [
+        "base.png: visible pixels touch the canvas edge (95 edge pixels); art is cut off or background is not transparent"
+      ],
+      "warnings": [
+        "rig.json contains a 'status' field; status belongs in brief.md only"
+      ],
+      "info": {
+        "status": "playtested",
+        "baseImageSize": {
+          "width": 856,
+          "height": 905
+        },
+        "renderedSize": {
+          "width": 76.2,
+          "height": 80.5
+        }
+      }
+    },
+    "red-shroom": {
+      "errors": [
+        "base.png: visible pixels touch the canvas edge (124 edge pixels); art is cut off or background is not transparent"
+      ],
+      "warnings": [
+        "rig.json contains a 'status' field; status belongs in brief.md only"
+      ],
+      "info": {
+        "status": "playtested",
+        "baseImageSize": {
+          "width": 708,
+          "height": 778
+        },
+        "renderedSize": {
+          "width": 72.2,
+          "height": 79.4
+        }
+      }
+    },
+    "slime": {
+      "errors": [],
+      "warnings": [
+        "base.png: large transparent padding (x 45%, y 56%); crop tighter and update rig scale",
+        "rig.json contains a 'status' field; status belongs in brief.md only"
+      ],
+      "info": {
+        "status": "playtested",
+        "baseImageSize": {
+          "width": 1254,
+          "height": 1254
+        },
+        "renderedSize": {
+          "width": 131.7,
+          "height": 131.7
+        }
+      }
+    },
+    "slime-parent": {
+      "errors": [],
+      "warnings": [
+        "base.png: large transparent padding (x 25%, y 43%); crop tighter and update rig scale",
+        "rig.json contains a 'status' field; status belongs in brief.md only"
+      ],
+      "info": {
+        "status": "playtested",
+        "baseImageSize": {
+          "width": 1254,
+          "height": 1254
+        },
+        "renderedSize": {
+          "width": 185.6,
+          "height": 185.6
+        }
+      }
+    },
+    "spooper-gooper": {
+      "errors": [],
+      "warnings": [
+        "base.png: large transparent padding (x 35%, y 31%); crop tighter and update rig scale",
+        "rig.json contains a 'status' field; status belongs in brief.md only"
+      ],
+      "info": {
+        "status": "playtested",
+        "baseImageSize": {
+          "width": 1254,
+          "height": 1254
+        },
+        "renderedSize": {
+          "width": 122.9,
+          "height": 122.9
+        }
+      }
+    }
+  }
+}

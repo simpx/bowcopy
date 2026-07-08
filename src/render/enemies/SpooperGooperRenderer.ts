@@ -4,6 +4,7 @@ import spooperGooperBaseUrl from '../../../assets/characters/spooper-gooper/base
 import { SPOOPER_GOOPER_RIG } from '../../characters/spooperGooperRig';
 import type { SimVector } from '../../sim/player';
 import type { SpooperGooperEnemy, SpooperGooperEvent } from '../../sim/enemies';
+import { HOUSE_BURST_STYLE, ParticleBurstPool } from '../feedback/particleBurst';
 
 interface SpooperGooperVisual {
   readonly container: Phaser.GameObjects.Container;
@@ -13,14 +14,6 @@ interface SpooperGooperVisual {
   readonly eyes: Phaser.GameObjects.Graphics;
 }
 
-interface SpooperGooperParticle {
-  position: SimVector;
-  velocity: SimVector;
-  color: number;
-  radius: number;
-  ageMs: number;
-  durationMs: number;
-}
 
 const HIT_FLASH_MS = 180;
 const PARTICLE_DEPTH = 78;
@@ -30,10 +23,7 @@ const DEATH_COLORS = [0xcfe7ff, 0xffffff, 0x111111] as const;
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
-const randomRange = (min: number, max: number): number => min + Math.random() * (max - min);
 
-const randomColor = (colors: readonly number[]): number =>
-  colors[Math.floor(Math.random() * colors.length)] ?? colors[0] ?? 0xffffff;
 
 const normalize = (vector: SimVector): SimVector => {
   const length = Math.hypot(vector.x, vector.y);
@@ -53,45 +43,45 @@ export const preloadSpooperGooperAssets = (scene: Phaser.Scene) => {
 
 export class SpooperGooperRenderer {
   private readonly visuals = new Map<number, SpooperGooperVisual>();
-  private readonly particles: SpooperGooperParticle[] = [];
-  private particleGraphics?: Phaser.GameObjects.Graphics;
+  private readonly bursts: ParticleBurstPool;
 
-  constructor(private readonly scene: Phaser.Scene) {}
+  constructor(private readonly scene: Phaser.Scene) {
+    this.bursts = new ParticleBurstPool(scene, PARTICLE_DEPTH, { ...HOUSE_BURST_STYLE, ...{ originYOffset: -14, riseMin: 5, riseMax: 20, drag: 0.986, gravity: 0, alpha: 0.72, shrink: 0.42 } });
+  }
 
   create() {
-    this.particleGraphics = this.scene.add.graphics().setDepth(PARTICLE_DEPTH);
+    this.bursts.create();
   }
 
   update(_timeMs: number, deltaMs: number, enemies: readonly SpooperGooperEnemy[]) {
     this.syncEnemies(enemies);
-    this.updateParticles(deltaMs);
+    this.bursts.update(deltaMs);
   }
 
   playEvents(events: readonly SpooperGooperEvent[]) {
     for (const event of events) {
       if (event.type === 'spooper-gooper-appeared' || event.type === 'spooper-gooper-vanished') {
-        this.emitBurst(event.position, 12, APPEAR_COLORS, 22, 64, 4.4, 230);
+        this.bursts.emit(event.position, 12, APPEAR_COLORS, 22, 64, 4.4, 230);
         continue;
       }
 
       if (event.type === 'spooper-gooper-hit') {
-        this.emitBurst(event.position, 8, HIT_COLORS, 34, 84, 3.8, 180);
+        this.bursts.emit(event.position, 8, HIT_COLORS, 34, 84, 3.8, 180);
         continue;
       }
 
       if (event.type === 'spooper-gooper-killed') {
-        this.emitBurst(event.position, 30, DEATH_COLORS, 58, 148, 5.7, 380);
+        this.bursts.emit(event.position, 30, DEATH_COLORS, 58, 148, 5.7, 380);
       }
     }
   }
 
   destroy() {
-    this.particleGraphics?.destroy();
+    this.bursts.destroy();
     for (const visual of this.visuals.values()) {
       visual.container.destroy();
     }
     this.visuals.clear();
-    this.particles.length = 0;
   }
 
   private syncEnemies(enemies: readonly SpooperGooperEnemy[]) {
@@ -181,59 +171,6 @@ export class SpooperGooperRenderer {
       graphics.rotateCanvas(eye.rotation);
       graphics.fillEllipse(0, 0, pupilWidth, pupilHeight);
       graphics.restore();
-    }
-  }
-
-  private emitBurst(
-    position: SimVector,
-    count: number,
-    colors: readonly number[],
-    minSpeed: number,
-    maxSpeed: number,
-    radius: number,
-    durationMs: number
-  ) {
-    for (let index = 0; index < count; index += 1) {
-      const angle = randomRange(0, Math.PI * 2);
-      const speed = randomRange(minSpeed, maxSpeed);
-      this.particles.push({
-        position: { x: position.x + randomRange(-5, 5), y: position.y - 14 + randomRange(-5, 5) },
-        velocity: { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed - randomRange(5, 20) },
-        color: randomColor(colors),
-        radius: randomRange(radius * 0.55, radius),
-        ageMs: 0,
-        durationMs: randomRange(durationMs * 0.72, durationMs * 1.18)
-      });
-    }
-  }
-
-  private updateParticles(deltaMs: number) {
-    const graphics = this.particleGraphics;
-
-    if (!graphics) {
-      return;
-    }
-
-    const deltaSeconds = deltaMs / 1000;
-    graphics.clear();
-
-    for (let index = this.particles.length - 1; index >= 0; index -= 1) {
-      const particle = this.particles[index];
-      particle.ageMs += deltaMs;
-
-      if (particle.ageMs >= particle.durationMs) {
-        this.particles.splice(index, 1);
-        continue;
-      }
-
-      particle.velocity.x *= 0.986;
-      particle.velocity.y *= 0.986;
-      particle.position.x += particle.velocity.x * deltaSeconds;
-      particle.position.y += particle.velocity.y * deltaSeconds;
-
-      const progress = particle.ageMs / particle.durationMs;
-      graphics.fillStyle(particle.color, (1 - progress) * 0.72);
-      graphics.fillCircle(particle.position.x, particle.position.y, particle.radius * (1 - progress * 0.42));
     }
   }
 }

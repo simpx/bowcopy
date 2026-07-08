@@ -1,4 +1,5 @@
 import type { RedShroomCharacterRig } from './rigSchema';
+import { SHROOM_EMBEDDED_EYE_EMOTIONS } from './eyeEmotionTemplates';
 
 export const RED_SHROOM_RIG = {
   id: 'red-shroom',
@@ -29,78 +30,7 @@ export const RED_SHROOM_RIG = {
       right: { x: 0.866, y: 0.535, radiusX: 0.062, radiusY: 0.062, rotation: 0.04 }
     },
     pupilOffsetScale: { x: 0.026, y: 0.018 },
-    emotions: {
-      default: {
-        shape: 'cut-ellipse',
-        eyeTiltAdd: 0.02,
-        eyeScaleX: 1.22,
-        eyeScaleY: 1.02,
-        pupilScale: 1.1,
-        pupilShiftX: 0,
-        pupilShiftY: -0.002,
-        cutSlope: 1.42,
-        cutOffset: -0.42,
-        upperLid: 0,
-        lowerLid: 0
-      },
-      angry: {
-        shape: 'cut-ellipse',
-        eyeTiltAdd: 0.065,
-        eyeScaleX: 1.32,
-        eyeScaleY: 1.08,
-        pupilScale: 1.14,
-        pupilShiftX: 0,
-        pupilShiftY: -0.001,
-        cutSlope: 1.52,
-        cutOffset: -0.44,
-        upperLid: 0,
-        lowerLid: 0
-      },
-      alert: {
-        eyeTiltAdd: 0,
-        eyeScaleX: 0.72,
-        eyeScaleY: 0.72,
-        pupilScale: 0.64,
-        pupilShiftX: 0,
-        pupilShiftY: -0.006,
-        upperLid: 0,
-        lowerLid: 0
-      },
-      aim: {
-        shape: 'cut-ellipse',
-        eyeTiltAdd: 0.04,
-        eyeScaleX: 1.22,
-        eyeScaleY: 1.02,
-        pupilScale: 1.08,
-        pupilShiftX: 0,
-        pupilShiftY: -0.004,
-        cutSlope: 1.5,
-        cutOffset: -0.43,
-        upperLid: 0,
-        lowerLid: 0
-      },
-      hit: {
-        eyeTiltAdd: 0,
-        eyeScaleX: 0.82,
-        eyeScaleY: 0.54,
-        pupilScale: 0.76,
-        pupilShiftX: -0.004,
-        pupilShiftY: -0.006,
-        upperLid: 0.28,
-        lowerLid: 0.12
-      },
-      dizzy: {
-        shape: 'spiral',
-        eyeTiltAdd: 0.12,
-        eyeScaleX: 1.28,
-        eyeScaleY: 1.28,
-        pupilScale: 1.12,
-        pupilShiftX: 0,
-        pupilShiftY: 0,
-        upperLid: 0,
-        lowerLid: 0
-      }
-    }
+    emotions: SHROOM_EMBEDDED_EYE_EMOTIONS
   },
   motion: {
     idleBob: 2.8,

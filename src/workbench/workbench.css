@@ -1,0 +1,155 @@
+:root {
+  color-scheme: dark;
+  --wb-bg: #07110c;
+  --wb-panel: #101c14;
+  --wb-line: #2e4a37;
+  --wb-text: #f7f1d0;
+  --wb-muted: #b8c8ae;
+  --wb-accent: #ffd75d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--wb-bg);
+  color: var(--wb-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+#workbench {
+  display: flex;
+  height: 100vh;
+}
+
+#workbench-stage {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#workbench-stage canvas {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+#workbench-panel {
+  width: 340px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 14px;
+  border-left: 1px solid var(--wb-line);
+  background: var(--wb-panel);
+}
+
+.wb-global h1 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.wb-hint {
+  margin: 0 0 10px;
+  color: var(--wb-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.wb-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.wb-btn {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--wb-line);
+  border-radius: 6px;
+  background: #112017;
+  color: var(--wb-text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wb-btn.active {
+  border-color: var(--wb-accent);
+  background: var(--wb-accent);
+  color: #10140b;
+}
+
+.wb-card {
+  border: 1px solid var(--wb-line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: rgb(0 0 0 / 14%);
+}
+
+.wb-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wb-card-header h2 {
+  margin: 0;
+  font-size: 14.5px;
+}
+
+.wb-chip {
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.wb-qc {
+  margin: 6px 0;
+  color: var(--wb-muted);
+  font-size: 12px;
+}
+
+.wb-qc-ok {
+  color: #8eea7a;
+}
+
+.wb-qc-warn {
+  color: var(--wb-accent);
+}
+
+.wb-qc-error {
+  color: #ff7a7a;
+}
+
+.wb-qc-detail {
+  margin: 0 0 6px;
+  padding-left: 18px;
+  color: #ffb1b1;
+  font-size: 11.5px;
+}
+
+.wb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wb-open-items {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--wb-muted);
+  font-size: 11.5px;
+}
+
+.wb-open-items:empty {
+  display: none;
+}

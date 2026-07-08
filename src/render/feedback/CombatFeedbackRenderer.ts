@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import type { RoomBounds } from '../../sim/rooms';
 import type { SimVector } from '../../sim/player';
+import { HOUSE_BURST_STYLE, ParticleBurstPool } from './particleBurst';
 
 type FeedbackTone = 'wall' | 'hit' | 'death' | 'spawn' | 'dodge' | 'damage' | 'clear';
 
@@ -22,14 +23,6 @@ interface FeedbackPulse {
   ageMs: number;
 }
 
-interface FeedbackParticle {
-  position: SimVector;
-  velocity: SimVector;
-  color: number;
-  radius: number;
-  ageMs: number;
-  durationMs: number;
-}
 
 interface RoomClearPulse {
   readonly bounds: RoomBounds;
@@ -62,8 +55,6 @@ const LABEL_DEPTH = 122;
 
 const randomRange = (min: number, max: number): number => min + Math.random() * (max - min);
 
-const randomColor = (colors: readonly number[]): number =>
-  colors[Math.floor(Math.random() * colors.length)] ?? colors[0] ?? 0xffffff;
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
@@ -83,46 +74,47 @@ const normalize = (vector: SimVector): SimVector => {
 export class CombatFeedbackRenderer {
   private readonly labels: FloatingLabel[] = [];
   private readonly pulses: FeedbackPulse[] = [];
-  private readonly particles: FeedbackParticle[] = [];
   private pulseGraphics?: Phaser.GameObjects.Graphics;
-  private particleGraphics?: Phaser.GameObjects.Graphics;
+  private readonly bursts: ParticleBurstPool;
   private roomClearPulse?: RoomClearPulse;
 
-  constructor(private readonly scene: Phaser.Scene) {}
+  constructor(private readonly scene: Phaser.Scene) {
+    this.bursts = new ParticleBurstPool(scene, PARTICLE_DEPTH, { ...HOUSE_BURST_STYLE, ...{ jitter: 4, originYOffset: 0, riseMin: 12, riseMax: 42, drag: 0.982, gravity: 112, alpha: 0.86, shrink: 0.42 } });
+  }
 
   create() {
     this.pulseGraphics = this.scene.add.graphics().setDepth(PULSE_DEPTH);
-    this.particleGraphics = this.scene.add.graphics().setDepth(PARTICLE_DEPTH);
+    this.bursts.create();
   }
 
   update(deltaMs: number) {
     this.updateLabels(deltaMs);
     this.updatePulses(deltaMs);
-    this.updateParticles(deltaMs);
+    this.bursts.update(deltaMs);
   }
 
   playArrowWall(position: SimVector) {
     this.addPulse(position, 'wall', 4, 24, 2, 180);
     this.addLabel('Thunk', position, 'wall', { x: randomRange(-12, 12), y: -42 }, 360);
-    this.emitBurst(position, 7, [TONE_COLORS.wall], 28, 88, 2.4, 190);
+    this.bursts.emit(position, 7, [TONE_COLORS.wall], 28, 88, 2.4, 190);
   }
 
   playArrowEnemy(position: SimVector, damage: number) {
     this.addPulse(position, 'hit', 6, 30, 3, 210);
     this.addLabel(`-${damage}`, { x: position.x, y: position.y - 20 }, 'hit', { x: 8, y: -48 }, 430);
-    this.emitBurst(position, 9, [TONE_COLORS.hit, 0xfff1b5], 48, 112, 3, 210);
+    this.bursts.emit(position, 9, [TONE_COLORS.hit, 0xfff1b5], 48, 112, 3, 210);
   }
 
   playEnemyDeath(position: SimVector) {
     this.addPulse(position, 'death', 10, 46, 4, 270);
     this.addLabel('Down', { x: position.x, y: position.y - 24 }, 'death', { x: 0, y: -52 }, 470);
-    this.emitBurst(position, 18, [TONE_COLORS.death, TONE_COLORS.hit, 0xa2d07e], 70, 168, 4.8, 340);
+    this.bursts.emit(position, 18, [TONE_COLORS.death, TONE_COLORS.hit, 0xa2d07e], 70, 168, 4.8, 340);
   }
 
   playEnemySpawn(position: SimVector) {
     this.addPulse(position, 'spawn', 18, 42, 2, 300);
     this.addLabel('Pop', { x: position.x, y: position.y - 34 }, 'spawn', { x: 0, y: -30 }, 340);
-    this.emitBurst(position, 8, [TONE_COLORS.spawn, 0xf1c07a], 34, 92, 3.4, 230);
+    this.bursts.emit(position, 8, [TONE_COLORS.spawn, 0xf1c07a], 34, 92, 3.4, 230);
   }
 
   playDodge(position: SimVector, direction: SimVector) {
@@ -139,13 +131,13 @@ export class CombatFeedbackRenderer {
 
   playSporeBreak(position: SimVector) {
     this.addPulse(position, 'dodge', 6, 30, 2, 190);
-    this.emitBurst(position, 12, [TONE_COLORS.dodge, 0xffd0d5, 0xfff1b5], 48, 138, 3.2, 240);
+    this.bursts.emit(position, 12, [TONE_COLORS.dodge, 0xffd0d5, 0xfff1b5], 48, 138, 3.2, 240);
   }
 
   playDamage(position: SimVector, damage: number) {
     this.addPulse(position, 'damage', 18, 54, 4, 260);
     this.addLabel(`-${damage}`, { x: position.x, y: position.y - 48 }, 'damage', { x: -8, y: -44 }, 440);
-    this.emitBurst(position, 14, [TONE_COLORS.damage, 0xffd0a1], 62, 148, 4.6, 290);
+    this.bursts.emit(position, 14, [TONE_COLORS.damage, 0xffd0a1], 62, 148, 4.6, 290);
   }
 
   playRoomClear(bounds: RoomBounds) {
@@ -174,13 +166,13 @@ export class CombatFeedbackRenderer {
               ? { x: bounds.x + bounds.width * (1 - edgeProgress), y: bounds.y + bounds.height - 18 }
               : { x: bounds.x + 18, y: bounds.y + bounds.height * (1 - edgeProgress) };
 
-      this.emitBurst(position, 1, CLEAR_PARTICLE_COLORS, 86, 176, 4.1, 460);
+      this.bursts.emit(position, 1, CLEAR_PARTICLE_COLORS, 86, 176, 4.1, 460);
     }
   }
 
   destroy() {
     this.pulseGraphics?.destroy();
-    this.particleGraphics?.destroy();
+    this.bursts.destroy();
 
     for (const label of this.labels) {
       label.text.destroy();
@@ -188,7 +180,6 @@ export class CombatFeedbackRenderer {
 
     this.labels.length = 0;
     this.pulses.length = 0;
-    this.particles.length = 0;
     this.roomClearPulse = undefined;
   }
 
@@ -238,36 +229,6 @@ export class CombatFeedbackRenderer {
     });
   }
 
-  private emitBurst(
-    position: SimVector,
-    count: number,
-    colors: readonly number[],
-    minSpeed: number,
-    maxSpeed: number,
-    radius: number,
-    durationMs: number
-  ) {
-    for (let index = 0; index < count; index += 1) {
-      const angle = randomRange(0, Math.PI * 2);
-      const speed = randomRange(minSpeed, maxSpeed);
-
-      this.particles.push({
-        position: {
-          x: position.x + randomRange(-4, 4),
-          y: position.y + randomRange(-4, 4)
-        },
-        velocity: {
-          x: Math.cos(angle) * speed,
-          y: Math.sin(angle) * speed - randomRange(12, 42)
-        },
-        color: randomColor(colors),
-        radius: randomRange(radius * 0.55, radius),
-        ageMs: 0,
-        durationMs: randomRange(durationMs * 0.72, durationMs * 1.18)
-      });
-    }
-  }
-
   private emitDirectionalBurst(
     position: SimVector,
     direction: SimVector,
@@ -284,7 +245,7 @@ export class CombatFeedbackRenderer {
       const angle = baseAngle + randomRange(-0.72, 0.72);
       const speed = randomRange(minSpeed, maxSpeed);
 
-      this.particles.push({
+      this.bursts.spawn({
         position: {
           x: position.x - direction.x * randomRange(6, 26),
           y: position.y - direction.y * randomRange(6, 26) - 8
@@ -295,7 +256,6 @@ export class CombatFeedbackRenderer {
         },
         color,
         radius: randomRange(radius * 0.5, radius),
-        ageMs: 0,
         durationMs: randomRange(durationMs * 0.72, durationMs * 1.1)
       });
     }
@@ -384,43 +344,5 @@ export class CombatFeedbackRenderer {
     );
     graphics.fillStyle(TONE_COLORS.clear, alpha * 0.18);
     graphics.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
-  }
-
-  private updateParticles(deltaMs: number) {
-    const graphics = this.particleGraphics;
-
-    if (!graphics) {
-      return;
-    }
-
-    const deltaSeconds = deltaMs / 1000;
-
-    graphics.clear();
-
-    for (let index = this.particles.length - 1; index >= 0; index -= 1) {
-      const particle = this.particles[index];
-
-      particle.ageMs += deltaMs;
-
-      if (particle.ageMs >= particle.durationMs) {
-        this.particles.splice(index, 1);
-        continue;
-      }
-
-      particle.velocity.x *= 0.982;
-      particle.velocity.y = particle.velocity.y * 0.982 + 112 * deltaSeconds;
-      particle.position.x += particle.velocity.x * deltaSeconds;
-      particle.position.y += particle.velocity.y * deltaSeconds;
-
-      const progress = clamp01(particle.ageMs / particle.durationMs);
-      const alpha = 1 - progress;
-
-      graphics.fillStyle(particle.color, alpha * 0.86);
-      graphics.fillCircle(
-        particle.position.x,
-        particle.position.y,
-        particle.radius * (1 - progress * 0.42)
-      );
-    }
   }
 }

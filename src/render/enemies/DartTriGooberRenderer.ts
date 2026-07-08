@@ -9,6 +9,7 @@ import {
 } from '../characters/layeredCharacterConfig';
 import type { DartGooberEnemy, DartGooberEvent } from '../../sim/enemies';
 import type { SimVector } from '../../sim/player';
+import { HOUSE_BURST_STYLE, ParticleBurstPool } from '../feedback/particleBurst';
 
 interface DartTriGooberEyeVisual {
   readonly container: Phaser.GameObjects.Container;
@@ -25,14 +26,6 @@ interface DartTriGooberVisual {
   readonly muzzleGlow: Phaser.GameObjects.Arc;
 }
 
-interface DartTriGooberParticle {
-  position: SimVector;
-  velocity: SimVector;
-  color: number;
-  radius: number;
-  ageMs: number;
-  durationMs: number;
-}
 
 const BODY_SCALE = DART_TRI_GOOBER_CHARACTER.base.scale;
 const HIT_FLASH_MS = 170;
@@ -46,10 +39,7 @@ const EYE_PUPIL_COLOR = 0x050505;
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
-const randomRange = (min: number, max: number): number => min + Math.random() * (max - min);
 
-const randomColor = (colors: readonly number[]): number =>
-  colors[Math.floor(Math.random() * colors.length)] ?? colors[0] ?? 0xffffff;
 
 const normalize = (vector: SimVector): SimVector => {
   const length = Math.hypot(vector.x, vector.y);
@@ -72,52 +62,52 @@ export const preloadDartTriGooberAssets = (scene: Phaser.Scene) => {
 
 export class DartTriGooberRenderer {
   private readonly visuals = new Map<number, DartTriGooberVisual>();
-  private readonly particles: DartTriGooberParticle[] = [];
-  private particleGraphics?: Phaser.GameObjects.Graphics;
+  private readonly bursts: ParticleBurstPool;
 
-  constructor(private readonly scene: Phaser.Scene) {}
+  constructor(private readonly scene: Phaser.Scene) {
+    this.bursts = new ParticleBurstPool(scene, PARTICLE_DEPTH, { ...HOUSE_BURST_STYLE, ...{ riseMax: 28 } });
+  }
 
   create() {
-    this.particleGraphics = this.scene.add.graphics().setDepth(PARTICLE_DEPTH);
+    this.bursts.create();
   }
 
   update(timeMs: number, deltaMs: number, enemies: readonly DartGooberEnemy[]) {
     this.syncEnemies(timeMs, enemies);
-    this.updateParticles(deltaMs);
+    this.bursts.update(deltaMs);
   }
 
   playEvents(events: readonly DartGooberEvent[]) {
     for (const event of events) {
       if (event.type === 'dart-goober-spawned') {
-        this.emitBurst(event.position, 12, SPAWN_COLORS, 36, 88, 4.4, 240);
+        this.bursts.emit(event.position, 12, SPAWN_COLORS, 36, 88, 4.4, 240);
         continue;
       }
 
       if (event.type === 'dart-goober-hit') {
-        this.emitBurst(event.position, 6, HIT_COLORS, 32, 74, 3.1, 170);
+        this.bursts.emit(event.position, 6, HIT_COLORS, 32, 74, 3.1, 170);
         continue;
       }
 
       if (event.type === 'dart-goober-killed') {
-        this.emitBurst(event.position, 24, DEATH_COLORS, 58, 142, 5.4, 360);
+        this.bursts.emit(event.position, 24, DEATH_COLORS, 58, 142, 5.4, 360);
         continue;
       }
 
       if (event.type === 'enemy-dart-fired') {
-        this.emitBurst(event.origin, 5, FIRE_COLORS, 28, 72, 2.6, 150);
+        this.bursts.emit(event.origin, 5, FIRE_COLORS, 28, 72, 2.6, 150);
       }
     }
   }
 
   destroy() {
-    this.particleGraphics?.destroy();
+    this.bursts.destroy();
 
     for (const visual of this.visuals.values()) {
       visual.container.destroy();
     }
 
     this.visuals.clear();
-    this.particles.length = 0;
   }
 
   private syncEnemies(timeMs: number, enemies: readonly DartGooberEnemy[]) {
@@ -404,67 +394,5 @@ export class DartTriGooberRenderer {
     }
 
     return clipped;
-  }
-
-  private emitBurst(
-    position: SimVector,
-    count: number,
-    colors: readonly number[],
-    minSpeed: number,
-    maxSpeed: number,
-    radius: number,
-    durationMs: number
-  ) {
-    for (let index = 0; index < count; index += 1) {
-      const angle = randomRange(0, Math.PI * 2);
-      const speed = randomRange(minSpeed, maxSpeed);
-
-      this.particles.push({
-        position: {
-          x: position.x + randomRange(-5, 5),
-          y: position.y - 10 + randomRange(-5, 5)
-        },
-        velocity: {
-          x: Math.cos(angle) * speed,
-          y: Math.sin(angle) * speed - randomRange(8, 28)
-        },
-        color: randomColor(colors),
-        radius: randomRange(radius * 0.55, radius),
-        ageMs: 0,
-        durationMs: randomRange(durationMs * 0.72, durationMs * 1.18)
-      });
-    }
-  }
-
-  private updateParticles(deltaMs: number) {
-    const graphics = this.particleGraphics;
-
-    if (!graphics) {
-      return;
-    }
-
-    const deltaSeconds = deltaMs / 1000;
-
-    graphics.clear();
-
-    for (let index = this.particles.length - 1; index >= 0; index -= 1) {
-      const particle = this.particles[index];
-
-      particle.ageMs += deltaMs;
-
-      if (particle.ageMs >= particle.durationMs) {
-        this.particles.splice(index, 1);
-        continue;
-      }
-
-      particle.velocity.x *= 0.985;
-      particle.velocity.y = particle.velocity.y * 0.985 + 120 * deltaSeconds;
-      particle.position.x += particle.velocity.x * deltaSeconds;
-      particle.position.y += particle.velocity.y * deltaSeconds;
-
-      const progress = particle.ageMs / particle.durationMs;
-      graphics.fillStyle(particle.color, (1 - progress) * 0.82);
-      graphics.fillCircle(particle.position.x, particle.position.y, particle.radius * (1 - progress * 0.45));
-    }
   }
 }

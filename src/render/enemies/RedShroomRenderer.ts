@@ -10,6 +10,7 @@ import {
 } from '../characters/layeredCharacterConfig';
 import type { RedShroomEnemy, RedShroomEvent, ShroomVariant } from '../../sim/enemies';
 import type { SimVector } from '../../sim/player';
+import { HOUSE_BURST_STYLE, ParticleBurstPool } from '../feedback/particleBurst';
 
 interface RedShroomEyeVisual {
   readonly container: Phaser.GameObjects.Container;
@@ -27,14 +28,6 @@ interface RedShroomVisual {
   readonly chargeGlow: Phaser.GameObjects.Arc;
 }
 
-interface RedShroomParticle {
-  position: SimVector;
-  velocity: SimVector;
-  color: number;
-  radius: number;
-  ageMs: number;
-  durationMs: number;
-}
 
 const HIT_FLASH_MS = 190;
 const PARTICLE_DEPTH = 78;
@@ -79,34 +72,35 @@ export const preloadRedShroomAssets = (scene: Phaser.Scene) => {
 
 export class RedShroomRenderer {
   private readonly visuals = new Map<number, RedShroomVisual>();
-  private readonly particles: RedShroomParticle[] = [];
-  private particleGraphics?: Phaser.GameObjects.Graphics;
+  private readonly bursts: ParticleBurstPool;
 
-  constructor(private readonly scene: Phaser.Scene) {}
+  constructor(private readonly scene: Phaser.Scene) {
+    this.bursts = new ParticleBurstPool(scene, PARTICLE_DEPTH, { ...HOUSE_BURST_STYLE, ...{ originYOffset: -20, drag: 0.984, gravity: 0 } });
+  }
 
   create() {
-    this.particleGraphics = this.scene.add.graphics().setDepth(PARTICLE_DEPTH);
+    this.bursts.create();
   }
 
   update(timeMs: number, deltaMs: number, enemies: readonly RedShroomEnemy[]) {
     this.syncEnemies(timeMs, enemies);
-    this.updateParticles(deltaMs);
+    this.bursts.update(deltaMs);
   }
 
   playEvents(events: readonly RedShroomEvent[]) {
     for (const event of events) {
       if (event.type === 'red-shroom-spawned') {
-        this.emitBurst(event.position, 14, SPAWN_COLORS, 38, 92, 4.8, 260);
+        this.bursts.emit(event.position, 14, SPAWN_COLORS, 38, 92, 4.8, 260);
         continue;
       }
 
       if (event.type === 'red-shroom-hit') {
-        this.emitBurst(event.position, 8, HIT_COLORS, 38, 84, 3.8, 190);
+        this.bursts.emit(event.position, 8, HIT_COLORS, 38, 84, 3.8, 190);
         continue;
       }
 
       if (event.type === 'red-shroom-killed') {
-        this.emitBurst(event.position, 30, DEATH_COLORS, 70, 162, 5.8, 380);
+        this.bursts.emit(event.position, 30, DEATH_COLORS, 70, 162, 5.8, 380);
         continue;
       }
 
@@ -117,14 +111,13 @@ export class RedShroomRenderer {
   }
 
   destroy() {
-    this.particleGraphics?.destroy();
+    this.bursts.destroy();
 
     for (const visual of this.visuals.values()) {
       visual.container.destroy();
     }
 
     this.visuals.clear();
-    this.particles.length = 0;
   }
 
   private syncEnemies(timeMs: number, enemies: readonly RedShroomEnemy[]) {
@@ -461,36 +454,6 @@ export class RedShroomRenderer {
     return clipped;
   }
 
-  private emitBurst(
-    position: SimVector,
-    count: number,
-    colors: readonly number[],
-    minSpeed: number,
-    maxSpeed: number,
-    radius: number,
-    durationMs: number
-  ) {
-    for (let index = 0; index < count; index += 1) {
-      const angle = randomRange(0, Math.PI * 2);
-      const speed = randomRange(minSpeed, maxSpeed);
-
-      this.particles.push({
-        position: {
-          x: position.x + randomRange(-5, 5),
-          y: position.y - 20 + randomRange(-5, 5)
-        },
-        velocity: {
-          x: Math.cos(angle) * speed,
-          y: Math.sin(angle) * speed - randomRange(8, 30)
-        },
-        color: randomColor(colors),
-        radius: randomRange(radius * 0.55, radius),
-        ageMs: 0,
-        durationMs: randomRange(durationMs * 0.72, durationMs * 1.18)
-      });
-    }
-  }
-
   private emitDirectionalBurst(
     position: SimVector,
     count: number,
@@ -512,7 +475,7 @@ export class RedShroomRenderer {
               : Math.PI * 0.25;
       const speed = randomRange(minSpeed, maxSpeed);
 
-      this.particles.push({
+      this.bursts.spawn({
         position: {
           x: position.x + randomRange(-4, 4),
           y: position.y + randomRange(-4, 4)
@@ -523,47 +486,8 @@ export class RedShroomRenderer {
         },
         color: randomColor(colors),
         radius: randomRange(radius * 0.55, radius),
-        ageMs: 0,
         durationMs: randomRange(durationMs * 0.72, durationMs * 1.18)
       });
-    }
-  }
-
-  private updateParticles(deltaMs: number) {
-    const graphics = this.particleGraphics;
-
-    if (!graphics) {
-      return;
-    }
-
-    const deltaSeconds = deltaMs / 1000;
-
-    graphics.clear();
-
-    for (let index = this.particles.length - 1; index >= 0; index -= 1) {
-      const particle = this.particles[index];
-
-      particle.ageMs += deltaMs;
-
-      if (particle.ageMs >= particle.durationMs) {
-        this.particles.splice(index, 1);
-        continue;
-      }
-
-      particle.velocity.x *= 0.984;
-      particle.velocity.y *= 0.984;
-      particle.position.x += particle.velocity.x * deltaSeconds;
-      particle.position.y += particle.velocity.y * deltaSeconds;
-
-      const progress = particle.ageMs / particle.durationMs;
-      const alpha = 1 - progress;
-
-      graphics.fillStyle(particle.color, alpha * 0.82);
-      graphics.fillCircle(
-        particle.position.x,
-        particle.position.y,
-        particle.radius * (1 - progress * 0.45)
-      );
     }
   }
 }

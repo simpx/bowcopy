@@ -4,6 +4,7 @@ import kaboomletBaseUrl from '../../../assets/characters/kaboomlet/base.png';
 import { KABOOMLET_RIG } from '../../characters/kaboomletRig';
 import type { KaboomletEnemy, KaboomletEvent } from '../../sim/enemies';
 import type { SimVector } from '../../sim/player';
+import { HOUSE_BURST_STYLE, ParticleBurstPool } from '../feedback/particleBurst';
 
 interface KaboomletVisual {
   readonly container: Phaser.GameObjects.Container;
@@ -13,14 +14,6 @@ interface KaboomletVisual {
   readonly eyes: Phaser.GameObjects.Graphics;
 }
 
-interface KaboomletParticle {
-  position: SimVector;
-  velocity: SimVector;
-  color: number;
-  radius: number;
-  ageMs: number;
-  durationMs: number;
-}
 
 interface ExplosionRing {
   position: SimVector;
@@ -48,10 +41,7 @@ const BLAST_CORE = 0xfff8df;
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
-const randomRange = (min: number, max: number): number => min + Math.random() * (max - min);
 
-const randomColor = (colors: readonly number[]): number =>
-  colors[Math.floor(Math.random() * colors.length)] ?? colors[0] ?? 0xffffff;
 
 const normalize = (vector: SimVector): SimVector => {
   const length = Math.hypot(vector.x, vector.y);
@@ -71,39 +61,43 @@ export const preloadKaboomletAssets = (scene: Phaser.Scene) => {
 
 export class KaboomletRenderer {
   private readonly visuals = new Map<number, KaboomletVisual>();
-  private readonly particles: KaboomletParticle[] = [];
   private readonly explosionRings: ExplosionRing[] = [];
   private readonly explosionClouds: ExplosionCloud[] = [];
   private warningGraphics?: Phaser.GameObjects.Graphics;
-  private particleGraphics?: Phaser.GameObjects.Graphics;
+  private readonly bursts: ParticleBurstPool;
+  private explosionGraphics?: Phaser.GameObjects.Graphics;
 
-  constructor(private readonly scene: Phaser.Scene) {}
+  constructor(private readonly scene: Phaser.Scene) {
+    this.bursts = new ParticleBurstPool(scene, PARTICLE_DEPTH, { ...HOUSE_BURST_STYLE, ...{ originYOffset: -12, riseMax: 32, drag: 0.982, gravity: 110 } });
+  }
 
   create() {
     this.warningGraphics = this.scene.add.graphics().setDepth(PARTICLE_DEPTH - 2);
-    this.particleGraphics = this.scene.add.graphics().setDepth(PARTICLE_DEPTH);
+    this.explosionGraphics = this.scene.add.graphics().setDepth(PARTICLE_DEPTH);
+    this.bursts.create();
   }
 
   update(timeMs: number, deltaMs: number, enemies: readonly KaboomletEnemy[]) {
     this.syncEnemies(timeMs, enemies);
     this.drawWarningRings(timeMs, enemies);
-    this.updateParticles(deltaMs);
+    this.updateExplosionEffects(deltaMs);
+    this.bursts.update(deltaMs);
   }
 
   playEvents(events: readonly KaboomletEvent[]) {
     for (const event of events) {
       if (event.type === 'kaboomlet-spawned') {
-        this.emitBurst(event.position, 12, SPAWN_COLORS, 32, 82, 4.6, 230);
+        this.bursts.emit(event.position, 12, SPAWN_COLORS, 32, 82, 4.6, 230);
         continue;
       }
 
       if (event.type === 'kaboomlet-hit') {
-        this.emitBurst(event.position, 8, HIT_COLORS, 34, 84, 3.8, 180);
+        this.bursts.emit(event.position, 8, HIT_COLORS, 34, 84, 3.8, 180);
         continue;
       }
 
       if (event.type === 'kaboomlet-killed') {
-        this.emitBurst(event.position, 24, EXPLOSION_COLORS, 54, 136, 5.4, 340);
+        this.bursts.emit(event.position, 24, EXPLOSION_COLORS, 54, 136, 5.4, 340);
         continue;
       }
 
@@ -119,19 +113,19 @@ export class KaboomletRenderer {
           ageMs: 0,
           durationMs: 230
         });
-        this.emitBurst(event.position, 36, EXPLOSION_COLORS, 78, 220, 6.2, 420);
+        this.bursts.emit(event.position, 36, EXPLOSION_COLORS, 78, 220, 6.2, 420);
       }
     }
   }
 
   destroy() {
     this.warningGraphics?.destroy();
-    this.particleGraphics?.destroy();
+    this.explosionGraphics?.destroy();
+    this.bursts.destroy();
     for (const visual of this.visuals.values()) {
       visual.container.destroy();
     }
     this.visuals.clear();
-    this.particles.length = 0;
     this.explosionRings.length = 0;
     this.explosionClouds.length = 0;
   }
@@ -229,29 +223,6 @@ export class KaboomletRenderer {
     }
   }
 
-  private emitBurst(
-    position: SimVector,
-    count: number,
-    colors: readonly number[],
-    minSpeed: number,
-    maxSpeed: number,
-    radius: number,
-    durationMs: number
-  ) {
-    for (let index = 0; index < count; index += 1) {
-      const angle = randomRange(0, Math.PI * 2);
-      const speed = randomRange(minSpeed, maxSpeed);
-      this.particles.push({
-        position: { x: position.x + randomRange(-5, 5), y: position.y - 12 + randomRange(-5, 5) },
-        velocity: { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed - randomRange(8, 32) },
-        color: randomColor(colors),
-        radius: randomRange(radius * 0.55, radius),
-        ageMs: 0,
-        durationMs: randomRange(durationMs * 0.72, durationMs * 1.18)
-      });
-    }
-  }
-
   private drawWarningRings(timeMs: number, enemies: readonly KaboomletEnemy[]) {
     const graphics = this.warningGraphics;
 
@@ -295,14 +266,13 @@ export class KaboomletRenderer {
     }
   }
 
-  private updateParticles(deltaMs: number) {
-    const graphics = this.particleGraphics;
+  private updateExplosionEffects(deltaMs: number) {
+    const graphics = this.explosionGraphics;
 
     if (!graphics) {
       return;
     }
 
-    const deltaSeconds = deltaMs / 1000;
     graphics.clear();
 
     for (let index = this.explosionClouds.length - 1; index >= 0; index -= 1) {
@@ -321,32 +291,15 @@ export class KaboomletRenderer {
     for (let index = this.explosionRings.length - 1; index >= 0; index -= 1) {
       const ring = this.explosionRings[index];
       ring.ageMs += deltaMs;
+
       if (ring.ageMs >= ring.durationMs) {
         this.explosionRings.splice(index, 1);
         continue;
       }
+
       const progress = ring.ageMs / ring.durationMs;
       graphics.lineStyle(7 * (1 - progress), 0xffcf57, 0.55 * (1 - progress));
       graphics.strokeCircle(ring.position.x, ring.position.y, ring.radius * progress);
-    }
-
-    for (let index = this.particles.length - 1; index >= 0; index -= 1) {
-      const particle = this.particles[index];
-      particle.ageMs += deltaMs;
-
-      if (particle.ageMs >= particle.durationMs) {
-        this.particles.splice(index, 1);
-        continue;
-      }
-
-      particle.velocity.x *= 0.982;
-      particle.velocity.y = particle.velocity.y * 0.982 + 110 * deltaSeconds;
-      particle.position.x += particle.velocity.x * deltaSeconds;
-      particle.position.y += particle.velocity.y * deltaSeconds;
-
-      const progress = particle.ageMs / particle.durationMs;
-      graphics.fillStyle(particle.color, (1 - progress) * 0.82);
-      graphics.fillCircle(particle.position.x, particle.position.y, particle.radius * (1 - progress * 0.45));
     }
   }
 

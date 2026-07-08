@@ -40,6 +40,33 @@ npm run dev -- --host 0.0.0.0
 npm run build
 ```
 
+## 角色工作台(Workbench)
+
+`workbench.html` 是给人做最终 review 的 all-in-one 页面,由**游戏运行时同一份** sim + renderer 驱动,review 看到的就是实机效果:
+
+```bash
+npm run dev
+# 打开 http://localhost:5173/workbench.html
+```
+
+- 全部角色同屏渲染,鼠标位置即"玩家位置",所有角色的注视/瞄准实时跟随。
+- 每个角色卡片提供 受击 / 击杀 / 重生(走真实的箭矢命中路径),玩家角色提供 翻滚 / 射箭 / 巡逻开关。
+- 面板直接读取每个角色文件夹的 `brief.md`(status、openItems)和 QC 报告。
+- 支持暂停 / 0.25x 慢放,便于逐帧审阅形变和特效。
+
+配套的严格 QC(纯标准库,任何环境可跑):
+
+```bash
+python3 tools/qc_characters.py
+```
+
+按本项目角色契约检查:透明背景、内容不得贴画布边、rig.json 尺寸与实际一致、brief 状态必须有对应证据(comparison.png / playtest 截图)、根目录候选文件卫生、手机端渲染尺寸,并生成 `assets/characters/qc-report.json` 供工作台展示。
+
+可复用模板:
+
+- `src/characters/eyeEmotionTemplates.ts`:三种已验证眼型的情绪参数模板(round-external / angry-embedded / shroom-embedded),新角色从模板起步再覆盖。
+- `src/render/feedback/particleBurst.ts`:全项目共用的 doodle 风格粒子 burst(各角色通过 style 参数保留自己的手感)。
+
 ## 参考资料
 
 所有从视频整理出来的资料放在 `refs/`：
