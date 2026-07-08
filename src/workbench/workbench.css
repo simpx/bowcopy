@@ -213,3 +213,20 @@ body {
   font-size: 11.5px;
   color: var(--wb-muted);
 }
+
+.wb-comparison {
+  margin-top: 8px;
+}
+
+.wb-comparison summary {
+  cursor: pointer;
+  font-size: 11.5px;
+  color: var(--wb-muted);
+}
+
+.wb-comparison img {
+  max-width: 100%;
+  margin-top: 6px;
+  border: 1px solid var(--wb-line);
+  border-radius: 6px;
+}

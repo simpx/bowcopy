@@ -179,6 +179,83 @@ def alpha_bbox(image: PngImage) -> tuple[int, int, int, int] | None:
     return (min_x, min_y, max_x, max_y)
 
 
+def sample_rgb(image: PngImage, x: int, y: int) -> tuple[int, int, int] | None:
+    """Returns the RGB of a visible pixel, or None for transparent ones."""
+    if image.pixels is None:
+        return None
+    channels = image.channels
+    index = (y * image.width + x) * channels
+    if image.has_alpha and image.pixels[index + channels - 1] <= ALPHA_VISIBLE:
+        return None
+    if channels >= 3:
+        return (image.pixels[index], image.pixels[index + 1], image.pixels[index + 2])
+    value = image.pixels[index]
+    return (value, value, value)
+
+
+def dominant_colors(image: PngImage, max_colors: int = 6) -> list[tuple[tuple[int, int, int], float]]:
+    """Top quantized colors of visible pixels as (rgb, weight 0..1)."""
+    if image.pixels is None:
+        return []
+    counts: dict[tuple[int, int, int], int] = {}
+    step = max(1, max(image.width, image.height) // 220)
+    total = 0
+    for y in range(0, image.height, step):
+        for x in range(0, image.width, step):
+            rgb = sample_rgb(image, x, y)
+            if rgb is None:
+                continue
+            key = (rgb[0] >> 4, rgb[1] >> 4, rgb[2] >> 4)
+            counts[key] = counts.get(key, 0) + 1
+            total += 1
+    if total == 0:
+        return []
+    ranked = sorted(counts.items(), key=lambda item: -item[1])[:max_colors]
+    return [(((r << 4) + 8, (g << 4) + 8, (b << 4) + 8), count / total) for (r, g, b), count in ranked]
+
+
+PALETTE_DISTANCE_WARN = 72.0
+
+
+def check_palette_against_reference(
+    folder: Path,
+    base_image_name: str,
+    locked_reference: str,
+    warnings: list[str],
+    info: dict,
+) -> None:
+    """Warns when the accepted base art's dominant colors stray from the
+    locked reference. The reference may include background colors, so the
+    comparison is one-directional: every dominant base color should appear
+    somewhere in the reference."""
+    reference_path = folder / locked_reference
+    base_path = folder / base_image_name
+    if not reference_path.exists() or not base_path.exists():
+        return
+    reference = decode_png(reference_path)
+    base = decode_png(base_path)
+    if not reference or not base or reference.pixels is None or base.pixels is None:
+        return
+    reference_colors = dominant_colors(reference, max_colors=10)
+    base_colors = dominant_colors(base, max_colors=6)
+    if not reference_colors or not base_colors:
+        return
+
+    def distance(a: tuple[int, int, int], b: tuple[int, int, int]) -> float:
+        return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2) ** 0.5
+
+    weighted = 0.0
+    for color, weight in base_colors:
+        nearest = min(distance(color, ref_color) for ref_color, _ in reference_colors)
+        weighted += nearest * weight
+    info["paletteDriftFromReference"] = round(weighted, 1)
+    if weighted > PALETTE_DISTANCE_WARN:
+        warnings.append(
+            f"{base_image_name}: dominant colors drift from locked reference "
+            f"(score {weighted:.0f} > {PALETTE_DISTANCE_WARN:.0f}); re-check palette fidelity"
+        )
+
+
 def parse_frontmatter(text: str) -> dict[str, object]:
     if not text.startswith("---\n"):
         return {}
@@ -317,9 +394,11 @@ def audit_character(folder: Path) -> dict:
     rig_path = folder / "rig.json"
 
     status = "unknown"
+    locked_reference = ""
     if brief_path.exists():
         frontmatter = parse_frontmatter(brief_path.read_text(encoding="utf-8"))
         status = str(frontmatter.get("status", "unknown"))
+        locked_reference = str(frontmatter.get("lockedReference", "") or "")
         info["status"] = status
         check_status_evidence(folder, status, errors, warnings)
     else:
@@ -333,6 +412,9 @@ def audit_character(folder: Path) -> dict:
             rig = {}
         if rig:
             check_base_image(folder, rig, errors, warnings, info)
+            base_image = (rig.get("base") or {}).get("image")
+            if base_image and locked_reference:
+                check_palette_against_reference(folder, str(base_image), locked_reference, warnings, info)
             if "status" in rig:
                 warnings.append("rig.json contains a 'status' field; status belongs in brief.md only")
     else:

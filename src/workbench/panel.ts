@@ -152,6 +152,16 @@ const buildSlotCard = (slot: WorkbenchSlotHandle): HTMLElement => {
     card.append(actions);
   }
 
+  const comparison = el('details', 'wb-comparison');
+  const comparisonSummary = el('summary', undefined, '对比图(参考 vs 已验收)');
+  const comparisonImage = document.createElement('img');
+
+  comparisonImage.loading = 'lazy';
+  comparisonImage.src = `/assets/characters/${slot.id}/comparison.png`;
+  comparisonImage.addEventListener('error', () => comparison.remove());
+  comparison.append(comparisonSummary, comparisonImage);
+  card.append(comparison);
+
   const openItems = el('ul', 'wb-open-items');
 
   card.append(openItems);

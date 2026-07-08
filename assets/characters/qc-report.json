@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-08T06:21:12+00:00",
+  "generatedAt": "2026-07-08T06:47:29+00:00",
   "characters": {
     "bowbert": {
       "errors": [],
@@ -16,7 +16,8 @@
         "renderedSize": {
           "width": 81.1,
           "height": 83.4
-        }
+        },
+        "paletteDriftFromReference": 16.5
       }
     },
     "dart-goober": {
@@ -34,7 +35,8 @@
         "renderedSize": {
           "width": 85.6,
           "height": 90.9
-        }
+        },
+        "paletteDriftFromReference": 0.0
       }
     },
     "dart-tri-goober": {
@@ -51,7 +53,8 @@
         "renderedSize": {
           "width": 120.4,
           "height": 120.4
-        }
+        },
+        "paletteDriftFromReference": 11.8
       }
     },
     "kaboomlet": {
@@ -69,7 +72,8 @@
         "renderedSize": {
           "width": 125.4,
           "height": 125.4
-        }
+        },
+        "paletteDriftFromReference": 5.5
       }
     },
     "purple-shroom": {
@@ -88,7 +92,8 @@
         "renderedSize": {
           "width": 76.2,
           "height": 80.5
-        }
+        },
+        "paletteDriftFromReference": 0.0
       }
     },
     "red-shroom": {
@@ -107,7 +112,8 @@
         "renderedSize": {
           "width": 72.2,
           "height": 79.4
-        }
+        },
+        "paletteDriftFromReference": 5.3
       }
     },
     "slime": {
@@ -125,7 +131,8 @@
         "renderedSize": {
           "width": 131.7,
           "height": 131.7
-        }
+        },
+        "paletteDriftFromReference": 31.6
       }
     },
     "slime-parent": {
@@ -143,7 +150,8 @@
         "renderedSize": {
           "width": 185.6,
           "height": 185.6
-        }
+        },
+        "paletteDriftFromReference": 20.0
       }
     },
     "spooper-gooper": {
@@ -161,7 +169,8 @@
         "renderedSize": {
           "width": 122.9,
           "height": 122.9
-        }
+        },
+        "paletteDriftFromReference": 1.7
       }
     }
   }
