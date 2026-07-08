@@ -16,17 +16,31 @@ import {
 import type { SimVector } from '../sim/player';
 import { createWorkbenchSlots, type WorkbenchCell, type WorkbenchSlot } from './slots';
 
-export const WORKBENCH_GRID = {
+export interface WorkbenchGrid {
+  readonly columns: number;
+  readonly cellWidth: number;
+  readonly cellHeight: number;
+}
+
+const DEFAULT_GRID: WorkbenchGrid = {
   columns: 4,
-  rows: 2,
   cellWidth: 380,
   cellHeight: 340
-} as const;
+};
 
-export const WORKBENCH_SIZE = {
-  width: WORKBENCH_GRID.columns * WORKBENCH_GRID.cellWidth,
-  height: WORKBENCH_GRID.rows * WORKBENCH_GRID.cellHeight
-} as const;
+const FOCUS_GRID: WorkbenchGrid = {
+  columns: 1,
+  cellWidth: 640,
+  cellHeight: 520
+};
+
+export const getWorkbenchGrid = (focusId: string | undefined): WorkbenchGrid =>
+  focusId ? FOCUS_GRID : DEFAULT_GRID;
+
+export const getWorkbenchSize = (grid: WorkbenchGrid, slotCount: number) => ({
+  width: grid.columns * grid.cellWidth,
+  height: Math.ceil(slotCount / grid.columns) * grid.cellHeight
+});
 
 const CELL_BORDER = 22;
 
@@ -56,9 +70,14 @@ export class WorkbenchScene extends Phaser.Scene {
   private targetMarker?: Phaser.GameObjects.Graphics;
   private simTimeMs = 0;
   private speedFactor = 1;
+  private readonly grid: WorkbenchGrid;
 
-  constructor(private readonly onReady: (controller: WorkbenchController) => void) {
+  constructor(
+    private readonly onReady: (controller: WorkbenchController) => void,
+    private readonly focusId?: string
+  ) {
     super('WorkbenchScene');
+    this.grid = getWorkbenchGrid(focusId);
   }
 
   preload() {
@@ -78,7 +97,9 @@ export class WorkbenchScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#0b120d');
     this.cameras.main.setRoundPixels(true);
 
-    this.slots = createWorkbenchSlots();
+    this.slots = createWorkbenchSlots().filter(
+      (slot) => !this.focusId || slot.id === this.focusId
+    );
     this.drawCellFrames();
 
     this.feedback = new CombatFeedbackRenderer(this);
@@ -145,20 +166,20 @@ export class WorkbenchScene extends Phaser.Scene {
   }
 
   private getCell(index: number): WorkbenchCell {
-    const column = index % WORKBENCH_GRID.columns;
-    const row = Math.floor(index / WORKBENCH_GRID.columns);
-    const x = column * WORKBENCH_GRID.cellWidth;
-    const y = row * WORKBENCH_GRID.cellHeight;
+    const column = index % this.grid.columns;
+    const row = Math.floor(index / this.grid.columns);
+    const x = column * this.grid.cellWidth;
+    const y = row * this.grid.cellHeight;
     const bounds = {
       x,
       y,
-      width: WORKBENCH_GRID.cellWidth,
-      height: WORKBENCH_GRID.cellHeight,
+      width: this.grid.cellWidth,
+      height: this.grid.cellHeight,
       border: CELL_BORDER
     };
     const center = {
-      x: x + WORKBENCH_GRID.cellWidth / 2,
-      y: y + WORKBENCH_GRID.cellHeight / 2
+      x: x + this.grid.cellWidth / 2,
+      y: y + this.grid.cellHeight / 2
     };
 
     return {

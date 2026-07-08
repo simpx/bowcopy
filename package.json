@@ -6,12 +6,15 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "studio:capture": "node tools/capture_states.mjs",
+    "studio:qc": "python3 tools/qc_characters.py"
   },
   "dependencies": {
     "phaser": "^3.90.0"
   },
   "devDependencies": {
+    "playwright-core": "^1.61.1",
     "typescript": "^5.8.3",
     "vite": "^7.0.0"
   }
