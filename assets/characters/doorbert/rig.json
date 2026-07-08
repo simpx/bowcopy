@@ -1,0 +1,63 @@
+{
+  "id": "doorbert",
+  "kind": "enemy",
+  "projectContext": "bowbert",
+  "base": {
+    "image": "base.png"
+  },
+  "notes": "stub: values land after reference lock; runtime section appears at rigging",
+  "runtime": {
+    "id": "doorbert",
+    "base": {
+      "source": "fixed-ai-image",
+      "textureKey": "doorbert-base-ai-v1",
+      "imageAsset": "assets/characters/doorbert/base.png",
+      "imageSize": {
+        "width": 884,
+        "height": 1132
+      },
+      "scale": 0.115,
+      "y": -22,
+      "shadow": {
+        "width": 72,
+        "height": 18,
+        "y": 30
+      }
+    },
+    "gaze": {
+      "eyes": {
+        "left": {
+          "x": 0.3338,
+          "y": 0.1668,
+          "radiusX": 0.0644,
+          "radiusY": 0.0495,
+          "rotation": -0.2498,
+          "cuts": []
+        },
+        "right": {
+          "x": 0.6704,
+          "y": 0.1745,
+          "radiusX": 0.0637,
+          "radiusY": 0.0491,
+          "rotation": -0.4891,
+          "cuts": []
+        }
+      },
+      "pupilOffsetScale": {
+        "x": 0.28,
+        "y": 0.2
+      },
+      "emotions": {
+        "template": "standard"
+      }
+    },
+    "motion": {
+      "idleBob": 2.8,
+      "idleSquash": 0.02,
+      "chargeSquash": 0.12,
+      "releaseSquash": 0.16,
+      "hitScaleX": 0.08,
+      "hitScaleY": 0.05
+    }
+  }
+}

@@ -1,16 +1,17 @@
 ---
-status: brief
+status: rigged
 kind: enemy
 projectContext: bowbert
-lockedReference: null
-sourceReferences: []
+lockedReference: source/reference-01.png
+sourceReferences:
+  - source/reference-01.png
+  - source/candidate-02.png
 openItems:
-  - Concept art candidates needed in source/; lock one reference to advance.
   - Decide reflected-arrow visual (v1 reuses the enemy dart projectile; a dedicated bounced-arrow look is a later polish).
   - Tune parry window / recover window / reflect damage after integration.
 ---
 
-# Parry Plank
+# Backboard
 
 Role:
 - Anti-ranged zone-denial enemy: a living wooden plank that punishes careless shooting by bouncing arrows straight back.
@@ -29,7 +30,7 @@ Behavior (new `parry` pattern) — a fixed, learnable rhythm; state reads come f
 Integration notes (kit contract fits as-is):
 - `EnemyKit.update()` already receives the arrow list and returns consumed arrow ids — parry consumes arrows there.
 - Reflection reuses `services.enemyDarts` (EnemyDartProjectileSystem) with reversed velocity; no new projectile system.
-- New sim system `src/sim/enemies` parry pattern; kit `src/game/enemies/parryPlankKit.ts`; encounter kind `parry-plank`.
+- New sim system `src/sim/enemies` parry pattern; kit `src/game/enemies/backboardKit.ts`; encounter kind `backboard`.
 
 Visual target (pre-reference direction; final target set after lock):
 - A weathered wooden plank/board standing upright on stubby legs, thick doodle outline, wood grain and a knot or two; family resemblance to the goober wood palette.

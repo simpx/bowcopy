@@ -1,0 +1,66 @@
+{
+  "id": "switcheroo",
+  "kind": "enemy",
+  "projectContext": "bowbert",
+  "base": {
+    "image": "base.png"
+  },
+  "notes": "stub: values land after reference lock; runtime section appears at rigging",
+  "runtime": {
+    "id": "switcheroo",
+    "base": {
+      "source": "fixed-ai-image",
+      "textureKey": "switcheroo-base-ai-v1",
+      "imageAsset": "assets/characters/switcheroo/base.png",
+      "imageSize": {
+        "width": 913,
+        "height": 1011
+      },
+      "scale": 0.07,
+      "y": -14,
+      "shadow": {
+        "width": 40,
+        "height": 12,
+        "y": 26
+      }
+    },
+    "gaze": {
+      "eyes": {
+        "left": {
+          "x": 0.3291,
+          "y": 0.648,
+          "radiusX": 0.0816,
+          "radiusY": 0.0729,
+          "rotation": 1.5528,
+          "cuts": []
+        },
+        "right": {
+          "x": 0.6766,
+          "y": 0.6481,
+          "radiusX": 0.0816,
+          "radiusY": 0.0732,
+          "rotation": -1.3937,
+          "cuts": []
+        }
+      },
+      "pupilOffsetScale": {
+        "x": 0.28,
+        "y": 0.2
+      },
+      "emotions": {
+        "template": "standard"
+      }
+    },
+    "motion": {
+      "hoverBob": 5,
+      "hoverDrift": 14,
+      "appearMs": 360,
+      "visibleMs": 1100,
+      "attackAnticipationMs": 460,
+      "disappearMs": 330,
+      "repositionMs": 520,
+      "hitScaleX": 0.08,
+      "hitScaleY": 0.05
+    }
+  }
+}

@@ -1,15 +1,16 @@
 ---
-status: brief
+status: rigged
 kind: enemy
 projectContext: bowbert
-lockedReference: null
-sourceReferences: []
+lockedReference: source/reference-01.png
+sourceReferences:
+  - source/reference-01.png
+  - source/candidate-02.png
 openItems:
-  - Concept art candidates needed in source/; lock one reference to advance.
   - Tune swap cadence, telegraph duration, player-priority weight, and swap radius after integration.
 ---
 
-# Swap Imp
+# Switcheroo
 
 Role:
 - Disruptor: a mischievous imp that periodically swaps positions with someone in range — repositioning Bowbert into danger is its whole attack.
@@ -17,13 +18,13 @@ Role:
 Behavior (new `swap` pattern):
 - skitter: nervous short darts, keeps middle distance, never approaches directly.
 - windup (telegraph ~0.6s): both ends of the swap are marked — the imp flashes and the chosen target gets a matching marker, giving the player a beat to react.
-- swap: instant position exchange. Target selection within radius: Bowbert weighted higher (~60%), otherwise a random sibling imp; nothing in range → the windup fizzles and it skips straight to cooldown (decided 2026-07-08).
+- swap: instant position exchange. Target selection within radius: Bowbert weighted higher (~60%), otherwise a random sibling Switcheroo; nothing in range → the windup fizzles and it skips straight to cooldown (decided 2026-07-08).
 - cooldown (~3–5s), then repeat. No contact damage in v1 — the threat is disorientation.
 
 Integration notes (self-contained, no cross-kit services needed):
-- One-encounter-at-a-time means swap targets are only Bowbert + sibling imps — all state the kit already owns (player position via services, siblings via its own sim).
+- One-encounter-at-a-time means swap targets are only Bowbert + sibling Switcheroos — all state the kit already owns (player position via services, siblings via its own sim).
 - Swapping Bowbert = the kit needs to move the player once; check whether services expose a player-position setter — if not, this is the one small service addition (flag at kit-writing time).
-- New sim `swap` pattern; kit `src/game/enemies/swapImpKit.ts`; encounter kind `swap-imp`.
+- New sim `swap` pattern; kit `src/game/enemies/switcherooKit.ts`; encounter kind `switcheroo`.
 
 Visual target (pre-reference direction):
 - Small floating/skittering imp, rounded teardrop body, tiny limbs, one curl or antenna; purple/magenta palette to read as "trickster magic" against the earthy cast.
@@ -33,7 +34,7 @@ Decomposition:
 - base.png: imp body with baked blank white round eye sockets, transparent background.
 - Runtime eyes: standard template (alert during windup, scared right after a swap for comedy, default otherwise).
 - Runtime motion: skitter bob + tilt, windup vibrate squash, post-swap landing squash. No sprite sheets.
-- Runtime VFX: mini PORTALS at both swap endpoints (the shared portal module designed for mimic-door), brief afterimage at the vacated spot (ghost-afterimage pattern from BowbertRenderer dodge ghosts), matching target marker ring (pulse pattern from CombatFeedbackRenderer).
+- Runtime VFX: mini PORTALS at both swap endpoints (the shared portal module designed for doorbert), brief afterimage at the vacated spot (ghost-afterimage pattern from BowbertRenderer dodge ghosts), matching target marker ring (pulse pattern from CombatFeedbackRenderer).
 
 Reuse plan (checked assets/index.json):
 - No projectiles needed.

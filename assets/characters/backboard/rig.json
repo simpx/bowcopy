@@ -1,0 +1,65 @@
+{
+  "id": "backboard",
+  "kind": "enemy",
+  "projectContext": "bowbert",
+  "base": {
+    "image": "base.png"
+  },
+  "notes": "stub: values land after reference lock; runtime section appears at rigging",
+  "runtime": {
+    "id": "backboard",
+    "base": {
+      "source": "fixed-ai-image",
+      "textureKey": "backboard-base-ai-v1",
+      "imageAsset": "assets/characters/backboard/base.png",
+      "imageSize": {
+        "width": 643,
+        "height": 1168
+      },
+      "scale": 0.095,
+      "y": -20,
+      "shadow": {
+        "width": 44,
+        "height": 14,
+        "y": 26
+      }
+    },
+    "gaze": {
+      "eyes": {
+        "left": {
+          "x": 0.2928,
+          "y": 0.3414,
+          "radiusX": 0.1284,
+          "radiusY": 0.0675,
+          "rotation": 1.5785,
+          "cuts": []
+        },
+        "right": {
+          "x": 0.7044,
+          "y": 0.3414,
+          "radiusX": 0.1284,
+          "radiusY": 0.0675,
+          "rotation": -1.5364,
+          "cuts": []
+        }
+      },
+      "pupilOffsetScale": {
+        "x": 0.28,
+        "y": 0.2
+      },
+      "emotions": {
+        "template": "standard"
+      }
+    },
+    "motion": {
+      "idleBob": 2,
+      "walkBob": 2,
+      "walkSquash": 0.065,
+      "idleSquash": 0.018,
+      "hitScaleX": 0.08,
+      "hitScaleY": 0.04,
+      "walkTilt": 0.05,
+      "velocityTilt": 0.08
+    }
+  }
+}
