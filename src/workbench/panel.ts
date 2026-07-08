@@ -1,4 +1,6 @@
 import { fetchCharacterBrief, fetchQcReport } from './characterInfo';
+import { buildRigEditor } from './rigEditor';
+import { getTunableRigs } from './rigRegistry';
 import type { WorkbenchController, WorkbenchSlotHandle } from './WorkbenchScene';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -126,7 +128,29 @@ const buildSlotCard = (slot: WorkbenchSlotHandle): HTMLElement => {
     }
   }
 
-  card.append(actions);
+  const tunables = getTunableRigs(slot.id);
+
+  if (tunables.length > 0) {
+    const editorHost = el('div', 'wb-rig-host');
+    let built = false;
+    const toggle = button('调参', () => {
+      if (!built) {
+        for (const tunable of tunables) {
+          buildRigEditor(editorHost, tunable, () => slot.respawn());
+        }
+
+        built = true;
+      }
+
+      editorHost.classList.toggle('open');
+    });
+
+    actions.append(toggle);
+    card.append(actions);
+    card.append(editorHost);
+  } else {
+    card.append(actions);
+  }
 
   const openItems = el('ul', 'wb-open-items');
 
