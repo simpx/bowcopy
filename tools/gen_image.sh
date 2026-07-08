@@ -31,12 +31,14 @@ done
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 
+# NOTE: -i/--image is variadic and would swallow a trailing positional
+# prompt, so the prompt must come before the reference flags.
 codex exec \
   --skip-git-repo-check \
   -s workspace-write \
   -C "$WORKDIR" \
-  "${REF_ARGS[@]}" \
   "Use your image generation tool to create exactly one image and save it in the current directory as out.png. Do nothing else. Image description: ${PROMPT}${STYLE_NOTE}" \
+  "${REF_ARGS[@]}" \
   >/dev/null
 
 if [ ! -f "$WORKDIR/out.png" ]; then
