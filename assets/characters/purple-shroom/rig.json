@@ -261,99 +261,30 @@
       }
     },
     "gaze": {
-      "mode": "embedded-eye-pupils",
-      "archetype": "angry-embedded",
       "eyes": {
         "left": {
-          "x": 0.17024545454545456,
-          "y": 0.5506566200215286,
-          "radiusX": 0.06128181818181818,
-          "radiusY": 0.0565016146393972,
-          "rotation": -0.03
+          "x": 0.1697,
+          "y": 0.5428,
+          "radiusX": 0.119,
+          "radiusY": 0.1037,
+          "rotation": 0.7485,
+          "cuts": []
         },
         "right": {
-          "x": 0.8326727272727272,
-          "y": 0.5506566200215286,
-          "radiusX": 0.06128181818181818,
-          "radiusY": 0.0565016146393972,
-          "rotation": 0.03
+          "x": 0.8299,
+          "y": 0.5471,
+          "radiusX": 0.1186,
+          "radiusY": 0.1031,
+          "rotation": -0.6116,
+          "cuts": []
         }
       },
       "pupilOffsetScale": {
-        "x": 0.024318181818181822,
-        "y": 0.01656081808396125
+        "x": 0.28,
+        "y": 0.2
       },
       "emotions": {
-        "default": {
-          "shape": "cut-ellipse",
-          "eyeTiltAdd": 0.025,
-          "eyeScaleX": 1.22,
-          "eyeScaleY": 1.02,
-          "pupilScale": 1.1,
-          "pupilShiftX": 0,
-          "pupilShiftY": -0.002,
-          "cutSlope": 1.38,
-          "cutOffset": -0.42,
-          "upperLid": 0,
-          "lowerLid": 0
-        },
-        "angry": {
-          "shape": "cut-ellipse",
-          "eyeTiltAdd": 0.075,
-          "eyeScaleX": 1.34,
-          "eyeScaleY": 1.08,
-          "pupilScale": 1.14,
-          "pupilShiftX": 0,
-          "pupilShiftY": -0.001,
-          "cutSlope": 1.48,
-          "cutOffset": -0.44,
-          "upperLid": 0,
-          "lowerLid": 0
-        },
-        "alert": {
-          "eyeTiltAdd": 0,
-          "eyeScaleX": 0.72,
-          "eyeScaleY": 0.72,
-          "pupilScale": 0.64,
-          "pupilShiftX": 0,
-          "pupilShiftY": -0.006,
-          "upperLid": 0,
-          "lowerLid": 0
-        },
-        "aim": {
-          "shape": "cut-ellipse",
-          "eyeTiltAdd": 0.045,
-          "eyeScaleX": 1.22,
-          "eyeScaleY": 1.02,
-          "pupilScale": 1.06,
-          "pupilShiftX": 0,
-          "pupilShiftY": -0.004,
-          "cutSlope": 1.48,
-          "cutOffset": -0.43,
-          "upperLid": 0,
-          "lowerLid": 0
-        },
-        "hit": {
-          "eyeTiltAdd": 0,
-          "eyeScaleX": 0.82,
-          "eyeScaleY": 0.54,
-          "pupilScale": 0.76,
-          "pupilShiftX": -0.004,
-          "pupilShiftY": -0.006,
-          "upperLid": 0.28,
-          "lowerLid": 0.12
-        },
-        "dizzy": {
-          "shape": "spiral",
-          "eyeTiltAdd": 0.12,
-          "eyeScaleX": 1.28,
-          "eyeScaleY": 1.28,
-          "pupilScale": 1.12,
-          "pupilShiftX": 0,
-          "pupilShiftY": 0,
-          "upperLid": 0,
-          "lowerLid": 0
-        }
+        "template": "standard"
       }
     },
     "motion": {

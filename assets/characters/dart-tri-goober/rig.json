@@ -184,79 +184,40 @@
       }
     },
     "gaze": {
-      "mode": "embedded-eye-pupils",
-      "archetype": "angry-embedded",
       "eyes": {
         "left": {
-          "x": 0.286,
-          "y": 0.533,
-          "radiusX": 0.067,
-          "radiusY": 0.054,
-          "rotation": -0.58
+          "x": 0.28,
+          "y": 0.5273,
+          "radiusX": 0.0928,
+          "radiusY": 0.0886,
+          "rotation": 0.5533,
+          "cuts": [
+            {
+              "slope": 0.1501,
+              "offset": -0.8044
+            }
+          ]
         },
         "right": {
-          "x": 0.752,
-          "y": 0.516,
-          "radiusX": 0.064,
-          "radiusY": 0.052,
-          "rotation": 0.58
+          "x": 0.7479,
+          "y": 0.5065,
+          "radiusX": 0.0903,
+          "radiusY": 0.0899,
+          "rotation": -0.533,
+          "cuts": [
+            {
+              "slope": -0.2126,
+              "offset": -0.6967
+            }
+          ]
         }
       },
       "pupilOffsetScale": {
-        "x": 0.018,
-        "y": 0.012
+        "x": 0.28,
+        "y": 0.2
       },
       "emotions": {
-        "default": {
-          "shape": "cut-ellipse",
-          "eyeTiltAdd": 0,
-          "eyeScaleX": 1.02,
-          "eyeScaleY": 1.255,
-          "pupilScale": 1.12,
-          "pupilShiftX": 0,
-          "pupilShiftY": -0.006,
-          "cutSlope": 2.6,
-          "cutOffset": -0.675,
-          "upperLid": 0,
-          "lowerLid": 0
-        },
-        "angry": {
-          "shape": "cut-ellipse",
-          "eyeTiltAdd": -0.015,
-          "eyeScaleX": 1.4,
-          "eyeScaleY": 1.42,
-          "pupilScale": 1.16,
-          "pupilShiftX": 0,
-          "pupilShiftY": 0.012,
-          "cutSlope": 1.72,
-          "cutOffset": -0.46,
-          "upperLid": 0,
-          "lowerLid": 0
-        },
-        "aim": {
-          "shape": "cut-ellipse",
-          "eyeTiltAdd": 0.01,
-          "eyeScaleX": 1.18,
-          "eyeScaleY": 1.2,
-          "pupilScale": 1.02,
-          "pupilShiftX": 0,
-          "pupilShiftY": 0.006,
-          "cutSlope": 1.85,
-          "cutOffset": -0.38,
-          "upperLid": 0,
-          "lowerLid": 0
-        },
-        "hit": {
-          "shape": "ellipse",
-          "eyeTiltAdd": 0.025,
-          "eyeScaleX": 0.78,
-          "eyeScaleY": 0.52,
-          "pupilScale": 0.68,
-          "pupilShiftX": -0.008,
-          "pupilShiftY": -0.006,
-          "upperLid": 0.36,
-          "lowerLid": 0.18
-        }
+        "template": "standard"
       }
     },
     "motion": {

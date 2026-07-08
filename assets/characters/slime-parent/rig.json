@@ -159,23 +159,28 @@
     "gaze": {
       "eyes": {
         "left": {
-          "x": 0.237,
-          "y": 0.53,
-          "radiusX": 0.052,
-          "radiusY": 0.052,
-          "rotation": 0
+          "x": 0.2372,
+          "y": 0.5303,
+          "radiusX": 0.0782,
+          "radiusY": 0.0725,
+          "rotation": -1.5013,
+          "cuts": []
         },
         "right": {
-          "x": 0.779,
-          "y": 0.532,
-          "radiusX": 0.052,
-          "radiusY": 0.052,
-          "rotation": 0
+          "x": 0.7789,
+          "y": 0.5319,
+          "radiusX": 0.0763,
+          "radiusY": 0.0708,
+          "rotation": 1.6537,
+          "cuts": []
         }
       },
       "pupilOffsetScale": {
-        "x": 0.018,
-        "y": 0.012
+        "x": 0.28,
+        "y": 0.2
+      },
+      "emotions": {
+        "template": "standard"
       }
     },
     "motion": {
