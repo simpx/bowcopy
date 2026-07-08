@@ -7,7 +7,7 @@
 ### 阶段 1:创意 → 设定(人机高频交互)
 
 1. 讨论创意,确定角色的角色定位、行为模式(goober / shroom / hopper / bomb / ghost 或新模式)、眼型(三选一)、攻击与特效。
-2. AI 生成概念图(或人提供截图),候选放进 `assets/characters/<id>/source/`。
+2. AI 生成概念图(`tools/gen_image.sh`,prompt 按 prompt-rules 写、附风格参考;或人提供截图),候选放进 `assets/characters/<id>/source/`。
 3. 人选定参考图后,AI 把决定落盘到 `brief.md` frontmatter:`lockedReference`、`status: reference-locked`。
 4. **决策必须落文件,不依赖聊天记录。**
 
@@ -56,6 +56,7 @@ npm run dev
 | `npm run studio:capture -- <id>` | 状态截图(AI 自审用);`--all` 全量 |
 | `python3 tools/index_assets.py` | 重建复用资产索引 `assets/index.json` |
 | `python3 tools/fit_eyes.py <id>` | 从 base.png 拟合眼位容器几何(新角色眼位不手调) |
+| `tools/gen_image.sh "<prompt>" <out.png> [风格参考图…]` | AI 生图(经本机 codex 订阅的 image_generation 工具);附现役角色 base.png 作风格锚定 |
 | `node tools/sync_rigs.mjs` | 把仍写在 TS 里的 rig 值导出到 rig.json(引导用) |
 | `npm run build` | 类型检查 + 构建(接入后的硬性门槛) |
 | `/?encounter=<kind>` | 游戏内调试指定遭遇;`&effect=explosion\|spore\|damage`、`&split=1`、`&variant=red\|purple` |

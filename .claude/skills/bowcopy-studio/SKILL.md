@@ -29,6 +29,7 @@ Read `docs/studio.md` first — it is the authoritative workflow shared by every
 - Self-review screenshots (your eyes): `npm run studio:capture -- <id>`
 - Rebuild reuse index: `python3 tools/index_assets.py`
 - Fit eye containers from base.png: `python3 tools/fit_eyes.py <id>` (new characters get eye geometry from this, not by hand)
+- Generate images: `tools/gen_image.sh "<prompt>" <out.png> [style refs...]` (codex-subscription image tool; attach existing base.png files as style anchors; obey prompt-rules.md eye-white contract)
 - Human review page: `npm run dev` then `/workbench.html` (or `?focus=<id>`)
 - Integration check: `npm run build`, then screenshot `/?encounter=<kind>`
 
