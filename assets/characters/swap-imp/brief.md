@@ -33,7 +33,7 @@ Decomposition:
 - base.png: imp body with baked blank white round eye sockets, transparent background.
 - Runtime eyes: standard template (alert during windup, scared right after a swap for comedy, default otherwise).
 - Runtime motion: skitter bob + tilt, windup vibrate squash, post-swap landing squash. No sprite sheets.
-- Runtime VFX: twin linked bursts at both swap endpoints (particleBurst), brief afterimage at the vacated spot (reuse the ghost-afterimage pattern from BowbertRenderer dodge ghosts), matching target marker ring (pulse pattern from CombatFeedbackRenderer).
+- Runtime VFX: mini PORTALS at both swap endpoints (the shared portal module designed for mimic-door), brief afterimage at the vacated spot (ghost-afterimage pattern from BowbertRenderer dodge ghosts), matching target marker ring (pulse pattern from CombatFeedbackRenderer).
 
 Reuse plan (checked assets/index.json):
 - No projectiles needed.

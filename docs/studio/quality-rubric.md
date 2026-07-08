@@ -2,6 +2,12 @@
 
 Use this rubric when auditing a Bowbert character folder.
 
+## Base Image Reusability
+
+- The base image is ONE simple, state-free picture: no baked emotion, no baked stance, no baked effects.
+- State changes are expressed through runtime eyes and external runtime effects (glow, portals, particles, markers) only.
+- Attachment layers are reserved for genuinely separate mounted parts (Bowbert's bow), never for state animation.
+
 ## Reference Match
 
 - The locked reference path exists inside the character folder.

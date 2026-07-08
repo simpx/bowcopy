@@ -15,11 +15,16 @@ openItems:
 Role:
 - Anti-ranged zone-denial enemy: a living wooden plank that punishes careless shooting by bouncing arrows straight back.
 
-Behavior (new `parry` pattern):
-- drift: slow sideways shuffle, no threat.
-- brace (telegraph ~0.4s): plants feet, squashes down, edge begins to glow — the "stop shooting now" beat.
-- parry (~1.2s): turns broadside with a shiver; any arrow that hits is consumed and fired back along its incoming path as an enemy projectile that damages Bowbert. The plank takes no damage while parrying.
-- recover (~1.5s): stance drops, fully vulnerable — the punish window.
+Behavior (new `parry` pattern) — a fixed, learnable rhythm; state reads come from eyes + effects only (project principle, 2026-07-08):
+
+| state | duration | deformation | eyes | VFX |
+| --- | --- | --- | --- | --- |
+| drift | ~2–3s | slow shuffle wobble | default | none |
+| brace | ~0.4s | plant + squash down | aim (slit, locked on) | edge glow ramps up |
+| parry | ~1.2s | broadside stretch + shiver, faces Bowbert | angry (slanted lids) | edge glow full; sparks on each reflected arrow |
+| recover | ~1.5s | sag, slow rebound | dizzy | glow dies, dust puff |
+
+- Arrows hitting during parry are consumed and fired back along their incoming path as enemy projectiles; the plank takes no damage while parrying. Arrows during drift/brace/recover damage it normally.
 
 Integration notes (kit contract fits as-is):
 - `EnemyKit.update()` already receives the arrow list and returns consumed arrow ids — parry consumes arrows there.
@@ -28,7 +33,7 @@ Integration notes (kit contract fits as-is):
 
 Visual target (pre-reference direction; final target set after lock):
 - A weathered wooden plank/board standing upright on stubby legs, thick doodle outline, wood grain and a knot or two; family resemblance to the goober wood palette.
-- Readable stance change: broadside-on when parrying (wider silhouette), edge glow.
+- Neutral, innocent resting face (round sockets) — the parry 'face change' to angry lids is the strongest state signal, so the base must NOT bake anger in.
 
 Decomposition:
 - base.png: plank body with baked blank white eye sockets (round pair), transparent background.
