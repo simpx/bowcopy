@@ -2,7 +2,6 @@
   "id": "spooper-gooper",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "playtested",
   "sourceReferences": [
     "source/reference-01.png",
     "source/video-appear-reference.jpg",

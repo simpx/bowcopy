@@ -2,7 +2,6 @@
   "id": "red-shroom",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "playtested",
   "sourceReferences": [
     "source/reference-01.png",
     "source/reference-01-source.png"
@@ -13,8 +12,8 @@
     "image": "base.png",
     "sourceImage": "base-source.png",
     "imageSize": {
-      "width": 708,
-      "height": 778
+      "width": 732,
+      "height": 802
     },
     "scale": 0.102,
     "anchor": {
@@ -240,8 +239,8 @@
       "textureKey": "red-shroom-ai-v2-base",
       "imageAsset": "assets/characters/red-shroom/base.png",
       "imageSize": {
-        "width": 708,
-        "height": 778
+        "width": 732,
+        "height": 802
       },
       "scale": 0.102,
       "y": -27,
@@ -266,23 +265,23 @@
       "archetype": "angry-embedded",
       "eyes": {
         "left": {
-          "x": 0.135,
-          "y": 0.535,
-          "radiusX": 0.062,
-          "radiusY": 0.062,
+          "x": 0.1469672131147541,
+          "y": 0.5339526184538653,
+          "radiusX": 0.0599672131147541,
+          "radiusY": 0.06014463840399002,
           "rotation": -0.04
         },
         "right": {
-          "x": 0.866,
-          "y": 0.535,
-          "radiusX": 0.062,
-          "radiusY": 0.062,
+          "x": 0.8540000000000001,
+          "y": 0.5339526184538653,
+          "radiusX": 0.0599672131147541,
+          "radiusY": 0.06014463840399002,
           "rotation": 0.04
         }
       },
       "pupilOffsetScale": {
-        "x": 0.026,
-        "y": 0.018
+        "x": 0.025147540983606553,
+        "y": 0.017461346633416457
       },
       "emotions": {
         "default": {

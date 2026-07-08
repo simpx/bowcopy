@@ -7,3 +7,8 @@ refs/raw/
 .DS_Store
 node_modules/
 dist/
+
+# studio 生成物(可随时用 tools/ 重新生成)
+assets/characters/*/playtest/states/
+assets/characters/qc-report.json
+assets/index.json

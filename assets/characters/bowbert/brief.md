@@ -36,11 +36,11 @@ Source:
 - `source/bow-aiming-reference.png`
 
 Generated candidates:
-- `base.png`: current accepted runtime body, copied from `bowbert-base-ai-v2-eye-whites.png`.
-- `base-source.png`: retained AI source, copied from `bowbert-base-ai-v2-source.png`.
-- `bowbert-base-ai-v2-eye-whites.png`: previous accepted runtime filename, kept for provenance.
-- `bowbert-base-ai-v2-trimmed.png`: earlier accepted base with baked black pupils before pupil removal.
-- `bowbert-body-skill-v1-trimmed.png`: rejected procedural/body-skill candidate kept for comparison.
+- `base.png`: current accepted runtime body, copied from `candidates/bowbert-base-ai-v2-eye-whites.png`.
+- `base-source.png`: retained AI source, copied from `candidates/bowbert-base-ai-v2-source.png`.
+- `candidates/bowbert-base-ai-v2-eye-whites.png`: previous accepted runtime filename, kept for provenance.
+- `candidates/bowbert-base-ai-v2-trimmed.png`: earlier accepted base with baked black pupils before pupil removal.
+- `candidates/bowbert-body-skill-v1-trimmed.png`: rejected procedural/body-skill candidate kept for comparison.
 
 Decomposition:
 - base.png: fixed player body with baked white eye sockets and stable upright pose.

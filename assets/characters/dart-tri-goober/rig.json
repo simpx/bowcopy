@@ -2,7 +2,6 @@
   "id": "dart-tri-goober",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "playtested",
   "sourceReferences": [
     "source/reference-01.png"
   ],

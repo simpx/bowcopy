@@ -48,7 +48,7 @@ Accept a candidate only when it satisfies the locked reference, the layer contra
 - `rig.json` points to missing files or leaves accepted asset paths/image sizes as `null`.
 - Confirmed audio, projectile, attachment, or motion values live only in chat or preview code.
 - `comparison.png` is missing after art is accepted.
-- `tuning.html` cannot preview the relevant runtime states for the character behavior.
+- The workbench focus page (`/workbench.html?focus=<id>`) cannot show the relevant runtime states for the character behavior.
 
 ## Retry Guidance
 

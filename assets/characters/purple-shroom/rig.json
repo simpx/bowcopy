@@ -2,7 +2,6 @@
   "id": "purple-shroom",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "playtested",
   "sourceReferences": [
     "source/reference-01.png",
     "source/reference-01-source.png"
@@ -13,8 +12,8 @@
     "image": "base.png",
     "sourceImage": "base-source.png",
     "imageSize": {
-      "width": 856,
-      "height": 905
+      "width": 880,
+      "height": 929
     },
     "scale": 0.089,
     "anchor": {
@@ -240,8 +239,8 @@
       "textureKey": "purple-shroom-ai-v1-base",
       "imageAsset": "assets/characters/purple-shroom/base.png",
       "imageSize": {
-        "width": 856,
-        "height": 905
+        "width": 880,
+        "height": 929
       },
       "scale": 0.089,
       "y": -30,
@@ -266,23 +265,23 @@
       "archetype": "angry-embedded",
       "eyes": {
         "left": {
-          "x": 0.161,
-          "y": 0.552,
-          "radiusX": 0.063,
-          "radiusY": 0.058,
+          "x": 0.17024545454545456,
+          "y": 0.5506566200215286,
+          "radiusX": 0.06128181818181818,
+          "radiusY": 0.0565016146393972,
           "rotation": -0.03
         },
         "right": {
-          "x": 0.842,
-          "y": 0.552,
-          "radiusX": 0.063,
-          "radiusY": 0.058,
+          "x": 0.8326727272727272,
+          "y": 0.5506566200215286,
+          "radiusX": 0.06128181818181818,
+          "radiusY": 0.0565016146393972,
           "rotation": 0.03
         }
       },
       "pupilOffsetScale": {
-        "x": 0.025,
-        "y": 0.017
+        "x": 0.024318181818181822,
+        "y": 0.01656081808396125
       },
       "emotions": {
         "default": {

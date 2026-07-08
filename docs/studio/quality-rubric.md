@@ -29,7 +29,7 @@ Use this rubric when auditing a Bowbert character folder.
 - Projectiles and attachments have their own files and rig entries when confirmed.
 - A tuning page shows reference, base, and rig.
 - Bowbert runtime motion is represented as squash/stretch, bob, tilt, recoil, charge/release, hit, projectile origin, and VFX data, not as sprite-sheet frames.
-- `tuning.html` previews the character's relevant project states: idle/walk for moving actors, charge/release for attackers, dizzy for shrooms, recoil/bow for Bowbert.
+- The workbench focus page and `npm run studio:capture -- <id>` show the character's relevant project states: idle/walk for moving actors, charge/release for attackers, dizzy for shrooms, recoil/bow for Bowbert.
 
 ## Spore Mushroom Check
 

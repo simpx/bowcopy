@@ -2,7 +2,6 @@
   "id": "slime",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "playtested",
   "sourceReferences": [
     "source/reference-01.png",
     "source/reference-02.png",

@@ -58,6 +58,12 @@ npm run dev
 | `npm run build` | 类型检查 + 构建(接入后的硬性门槛) |
 | `/?encounter=<kind>` | 游戏内调试指定遭遇;`&effect=explosion\|spore\|damage`、`&split=1`、`&variant=red\|purple` |
 
+## 参考文档(按环节阅读)
+
+- `docs/studio/prompt-rules.md`:生图 prompt packet 写法。
+- `docs/studio/qc-failures.md`:已知的美术失败模式,验收生成图前必读。
+- `docs/studio/quality-rubric.md`:交人 review 前角色要达到的质量线。
+
 ## 唯一事实源约定
 
 | 内容 | 位置 |

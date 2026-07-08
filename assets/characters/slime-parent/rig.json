@@ -2,7 +2,6 @@
   "id": "slime-parent",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "playtested",
   "sourceReferences": [
     "source/reference-01.png",
     "source/video-large-reference.png"

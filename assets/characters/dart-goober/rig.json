@@ -2,7 +2,6 @@
   "id": "dart-goober",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "playtested",
   "sourceReferences": [
     "source/reference-01.png",
     "source/reference-01-source.png"

@@ -2,7 +2,6 @@
   "id": "kaboomlet",
   "kind": "enemy",
   "projectContext": "bowbert",
-  "status": "playtested",
   "sourceReferences": [
     "source/reference-01.png",
     "source/video-approach-contact-reference.jpg",

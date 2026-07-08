@@ -73,20 +73,18 @@ MVP 可在 `assets/prototype-video-crops/` 临时使用视频抠图来验证复�
 
 - `base.png`：AI 生成或重绘后的基础角色图，通常包含身体、轮廓、眼白等稳定部分。
 - `attachments/`：可以随 runtime 放置或旋转的附件，例如弓、帽子、特殊装饰。
-- `rig.json`：角色的 scale、anchor、hitbox、shadow、runtime gaze、motion、attack/vfx 等参数。
-- `tuning.html`：角色专用调参页面，用来观察眼神、动作、附件和特效。
+- `rig.json`：角色参数,其中 `runtime` 段是游戏直接读取的唯一事实源(scale、gaze、motion、attack/vfx 等);调参在工作台页面完成并写回。
 - `playtest/`：实机截图、对比图和 review 证据。
 
 原则是：base 图负责稳定外形，runtime 负责眼神、表情、弹性动作、攻击特效和反馈。这样可以避免为每个动作都画完整 sprite，同时保留比较强的手感和表情变化。
 
 ## 随仓库保存的 Skills
 
-项目相关的 Codex skills 已放在 `.codex/skills/`：
+Claude Code 与 Codex 共用同一套 studio SOP:
 
-- `.codex/skills/generate2dcharacter/`：负责单个角色的素材生成、rig、tuning、质量检查和 Bowbert 风格约束。
-- `.codex/skills/bowbert-character-studio/`：负责 Bowbert 项目的端到端角色生产流程，从设定图、资产目录、runtime 接入到 playtest 状态管理。
-
-这些 skill 是本仓库生产流程的一部分，不是通用游戏开发模板。它们记录了这个项目踩过的坑，比如武器不要烘进主角 base、孢子/拖尾不要烘进蘑菇 base、goober 类敌人的斜切眼白要在 base 阶段确定等。
+- 权威工作流:`docs/studio.md`;项目约定速查:`CLAUDE.md`。
+- skill 入口(两边内容相同):`.claude/skills/bowcopy-studio/` 与 `.codex/skills/bowcopy-studio/`。
+- 生产知识(踩坑记录,如武器不烘进主角 base、孢子/拖尾不烘进蘑菇 base、斜切眼白在 base 阶段确定):`docs/studio/prompt-rules.md`、`docs/studio/qc-failures.md`、`docs/studio/quality-rubric.md`。
 
 ## 计划中的游戏结构
 

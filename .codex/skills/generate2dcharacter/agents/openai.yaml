@@ -1,4 +1,0 @@
-interface:
-  display_name: "Bowbert Character Assets"
-  short_description: "Bowbert runtime character folders"
-  default_prompt: "Use $generate2dcharacter to create a self-contained Bowbert character folder from my locked reference."
