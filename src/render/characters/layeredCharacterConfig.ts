@@ -12,12 +12,10 @@ import redShroomBaseUrl from '../../../assets/characters/red-shroom/base.png';
 import redShroomSporeUrl from '../../../assets/characters/red-shroom/projectiles/spore.png';
 
 export type {
-  AttachedEyeTuning,
   CharacterAttachmentSource,
   CharacterBaseSource,
-  CharacterGazeMode,
-  EmbeddedEyeTuning,
-  EyeEmotionTuning,
+  EyeContainerTuning,
+  EyeExpression,
   EyeName,
   FixedImageLayer
 } from '../../characters/rigSchema';
@@ -70,8 +68,4 @@ export const PURPLE_SHROOM_CHARACTER = {
   }
 } as const;
 
-export type BowbertEyeEmotion = keyof typeof BOWBERT_CHARACTER.gaze.emotions;
-export type DartGooberEyeEmotion = keyof typeof DART_GOOBER_CHARACTER.gaze.emotions;
-export type DartTriGooberEyeEmotion = keyof typeof DART_TRI_GOOBER_CHARACTER.gaze.emotions;
-export type RedShroomEyeEmotion = keyof typeof RED_SHROOM_CHARACTER.gaze.emotions;
-export type PurpleShroomEyeEmotion = keyof typeof PURPLE_SHROOM_CHARACTER.gaze.emotions;
+export type { EyeEmotionName } from '../../characters/eyeEmotionTemplates';

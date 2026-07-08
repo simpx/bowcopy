@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 
 import spooperGooperBaseUrl from '../../../assets/characters/spooper-gooper/base.png';
+import { resolveEyeExpressions } from '../../characters/eyeEmotionTemplates';
 import { SPOOPER_GOOPER_RIG } from '../../characters/spooperGooperRig';
 import type { SimVector } from '../../sim/player';
 import type { SpooperGooperEnemy, SpooperGooperEvent } from '../../sim/enemies';
+import { drawRuntimeEye, mixExpressions } from '../eyes/runtimeEye';
 import { HOUSE_BURST_STYLE, ParticleBurstPool } from '../feedback/particleBurst';
 
 interface SpooperGooperVisual {
@@ -150,27 +152,30 @@ export class SpooperGooperRenderer {
     facing: SimVector,
     attackCharge: number
   ) {
-    const { width, height } = SPOOPER_GOOPER_RIG.base.imageSize;
-    const offsetX =
-      Phaser.Math.Clamp(facing.x, -1, 1) * width * SPOOPER_GOOPER_RIG.gaze.pupilOffsetScale.x;
-    const offsetY =
-      Phaser.Math.Clamp(facing.y, -1, 1) * height * SPOOPER_GOOPER_RIG.gaze.pupilOffsetScale.y;
+    const expressions = resolveEyeExpressions(SPOOPER_GOOPER_RIG.gaze.emotions);
+    const expression = mixExpressions(
+      expressions.default,
+      expressions.angry ?? expressions.default,
+      attackCharge
+    );
 
     graphics.clear();
-    graphics.fillStyle(0x050505, 1);
 
     for (const name of ['left', 'right'] as const) {
-      const eye = SPOOPER_GOOPER_RIG.gaze.eyes[name];
-      const x = (eye.x - 0.5) * width + offsetX;
-      const y = (eye.y - 0.5) * height + offsetY;
-      const pupilWidth = eye.radiusX * width * (1.1 + attackCharge * 0.25);
-      const pupilHeight = eye.radiusY * height * (1.05 + attackCharge * 0.16);
-
-      graphics.save();
-      graphics.translateCanvas(x, y);
-      graphics.rotateCanvas(eye.rotation);
-      graphics.fillEllipse(0, 0, pupilWidth, pupilHeight);
-      graphics.restore();
+      drawRuntimeEye(
+        graphics,
+        name,
+        SPOOPER_GOOPER_RIG.gaze.eyes[name],
+        SPOOPER_GOOPER_RIG.base.imageSize,
+        expression,
+        {
+          facingX: facing.x,
+          facingY: facing.y,
+          offsetScaleX: SPOOPER_GOOPER_RIG.gaze.pupilOffsetScale.x,
+          offsetScaleY: SPOOPER_GOOPER_RIG.gaze.pupilOffsetScale.y,
+          timeMs: 0
+        }
+      );
     }
   }
 }

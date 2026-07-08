@@ -1,58 +1,111 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { appendFileSync, existsSync, readFileSync, statSync } from 'node:fs';
+import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { defineConfig, type Plugin } from 'vite';
+import type { ServerResponse } from 'node:http';
+
+import { defineConfig, type Connect, type Plugin } from 'vite';
 
 const REPO_ROOT = dirname(fileURLToPath(import.meta.url));
 
 /**
- * Dev-only endpoint used by the workbench tuning panel:
- *   POST /__studio/rig/<character-id>  (body: the runtime rig object)
- * writes the body into assets/characters/<id>/rig.json under "runtime",
- * which is the single source of truth the game imports.
+ * Review-note endpoint used by the workbench cards (dev and preview servers):
+ *   POST /__studio/note/<character-id>  (body: { note: string })
+ * appends the note to assets/characters/review-inbox.md — a git-ignored
+ * scratch inbox of raw human review feedback: free-text comments and rig
+ * tuning proposals alike. Humans never write rig.json/brief.md directly;
+ * the AI reads the inbox and selectively applies accepted changes.
  */
-const studioRigWriteback = (): Plugin => ({
-  name: 'bowcopy-studio-rig-writeback',
-  configureServer(server) {
-    server.middlewares.use('/__studio/rig', (req, res) => {
-      const id = (req.url ?? '').split('?')[0].replace(/^\//, '');
-      const rigPath = join(REPO_ROOT, 'assets', 'characters', id, 'rig.json');
+const handleReviewNote = (req: Connect.IncomingMessage, res: ServerResponse) => {
+  const id = (req.url ?? '').split('?')[0].replace(/^\//, '');
+  const characterDir = join(REPO_ROOT, 'assets', 'characters', id);
+  const inboxPath = join(REPO_ROOT, 'assets', 'characters', 'review-inbox.md');
 
-      if (req.method !== 'POST' || !/^[a-z0-9-]+$/.test(id) || !existsSync(rigPath)) {
-        res.statusCode = 404;
-        res.end(JSON.stringify({ ok: false, error: 'unknown character or bad request' }));
-        return;
+  // 'eye-templates' is a pseudo-target for feedback on the shared eye assets.
+  if (
+    req.method !== 'POST' ||
+    !/^[a-z0-9-]+$/.test(id) ||
+    (id !== 'eye-templates' && !existsSync(characterDir))
+  ) {
+    res.statusCode = 404;
+    res.end(JSON.stringify({ ok: false, error: 'unknown character or bad request' }));
+    return;
+  }
+
+  const chunks: Buffer[] = [];
+
+  req.on('data', (chunk: Buffer) => chunks.push(chunk));
+  req.on('end', () => {
+    try {
+      const { note } = JSON.parse(Buffer.concat(chunks).toString('utf-8')) as { note?: unknown };
+
+      if (typeof note !== 'string' || note.trim().length === 0) {
+        throw new Error('body must be { note: string } with a non-empty note');
       }
 
-      const chunks: Buffer[] = [];
+      const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      const entry = `- [${stamp}] ${id}: ${note.trim().replace(/\s+/g, ' ')}`;
+      const header = existsSync(inboxPath)
+        ? ''
+        : '# Review inbox(生成物,不进 git)\n\n人工评审的原始意见,待讨论后才形成决策落进 brief.md/rig.json。\n\n';
 
-      req.on('data', (chunk: Buffer) => chunks.push(chunk));
-      req.on('end', () => {
-        try {
-          const runtime = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+      appendFileSync(inboxPath, `${header}${entry}\n`, 'utf-8');
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify({ ok: true, entry }));
+    } catch (error) {
+      res.statusCode = 400;
+      res.end(JSON.stringify({ ok: false, error: String(error) }));
+    }
+  });
+};
 
-          if (!runtime || typeof runtime !== 'object' || runtime.id !== id) {
-            throw new Error('body must be the runtime rig object with a matching id');
-          }
+const ASSET_CONTENT_TYPES: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.json': 'application/json',
+  '.md': 'text/markdown; charset=utf-8'
+};
 
-          const rigJson = JSON.parse(readFileSync(rigPath, 'utf-8'));
+/**
+ * Preview-only static serving for /assets/characters/*: the dev server serves
+ * repo files natively, but `vite preview` only serves dist/, which would 404
+ * the workbench's base.png / comparison.png / brief.md / qc-report.json.
+ */
+const handleCharacterAsset = (
+  req: Connect.IncomingMessage,
+  res: ServerResponse,
+  next: Connect.NextFunction
+) => {
+  const relative = decodeURIComponent((req.url ?? '').split('?')[0]).replace(/^\//, '');
+  const filePath = join(REPO_ROOT, 'assets', 'characters', relative);
 
-          rigJson.runtime = runtime;
-          writeFileSync(rigPath, `${JSON.stringify(rigJson, null, 2)}\n`, 'utf-8');
-          res.setHeader('content-type', 'application/json');
-          res.end(JSON.stringify({ ok: true }));
-        } catch (error) {
-          res.statusCode = 400;
-          res.end(JSON.stringify({ ok: false, error: String(error) }));
-        }
-      });
-    });
+  if (req.method !== 'GET' || relative.includes('..') || !existsSync(filePath) || !statSync(filePath).isFile()) {
+    next();
+    return;
+  }
+
+  res.setHeader(
+    'content-type',
+    ASSET_CONTENT_TYPES[extname(filePath).toLowerCase()] ?? 'application/octet-stream'
+  );
+  res.end(readFileSync(filePath));
+};
+
+const studioReviewInbox = (): Plugin => ({
+  name: 'bowcopy-studio-review-inbox',
+  configureServer(server) {
+    server.middlewares.use('/__studio/note', handleReviewNote);
+  },
+  configurePreviewServer(server) {
+    server.middlewares.use('/__studio/note', handleReviewNote);
+    server.middlewares.use('/assets/characters', handleCharacterAsset);
   }
 });
 
 export default defineConfig({
-  plugins: [studioRigWriteback()],
+  plugins: [studioReviewInbox()],
   build: {
     outDir: 'dist',
     sourcemap: true,

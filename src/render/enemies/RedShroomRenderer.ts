@@ -3,20 +3,13 @@ import Phaser from 'phaser';
 import {
   PURPLE_SHROOM_CHARACTER,
   RED_SHROOM_CHARACTER,
-  type EmbeddedEyeTuning,
-  type EyeEmotionTuning,
-  type EyeName,
-  type RedShroomEyeEmotion
+  type EyeName
 } from '../characters/layeredCharacterConfig';
+import { resolveEyeExpressions } from '../../characters/eyeEmotionTemplates';
+import { drawRuntimeEye } from '../eyes/runtimeEye';
 import type { RedShroomEnemy, RedShroomEvent, ShroomVariant } from '../../sim/enemies';
 import type { SimVector } from '../../sim/player';
 import { HOUSE_BURST_STYLE, ParticleBurstPool } from '../feedback/particleBurst';
-
-interface RedShroomEyeVisual {
-  readonly container: Phaser.GameObjects.Container;
-  readonly pupil: Phaser.GameObjects.Graphics;
-  readonly tuning: EmbeddedEyeTuning;
-}
 
 interface RedShroomVisual {
   readonly variant: ShroomVariant;
@@ -24,7 +17,7 @@ interface RedShroomVisual {
   readonly shadow: Phaser.GameObjects.Ellipse;
   readonly artLayer: Phaser.GameObjects.Container;
   readonly body: Phaser.GameObjects.Image;
-  readonly eyes: Record<EyeName, RedShroomEyeVisual>;
+  readonly eyes: Phaser.GameObjects.Graphics;
   readonly chargeGlow: Phaser.GameObjects.Arc;
 }
 
@@ -36,7 +29,6 @@ const SPAWN_COLORS = [0xffd9a5, 0xff5a68, 0xffffff] as const;
 const HIT_COLORS = [0xfff1b5, 0xff5a68] as const;
 const BURST_COLORS = [0xff4d54, 0xff8a7b, 0xfff1d0] as const;
 const DEATH_COLORS = [0xff4d54, 0xf5e38a, 0x111111] as const;
-const EYE_PUPIL_COLOR = 0x050505;
 const SHROOM_CHARACTERS = {
   red: RED_SHROOM_CHARACTER,
   purple: PURPLE_SHROOM_CHARACTER
@@ -140,7 +132,7 @@ export class RedShroomRenderer {
   }
 
   private createVisual(id: number, variant: ShroomVariant): RedShroomVisual {
-    const { base, gaze } = SHROOM_CHARACTERS[variant];
+    const { base } = SHROOM_CHARACTERS[variant];
     const shadow = this.scene.add.ellipse(
       0,
       base.shadow.y,
@@ -152,14 +144,8 @@ export class RedShroomRenderer {
     const body = this.scene.add
       .image(0, 0, base.textureKey)
       .setOrigin(0.5);
-    const eyes = Object.fromEntries(
-      EYE_NAMES.map((name) => [name, this.createEye(gaze.eyes[name], variant)])
-    ) as Record<EyeName, RedShroomEyeVisual>;
-    const artLayer = this.scene.add.container(
-      0,
-      base.y,
-      [body, ...EYE_NAMES.map((name) => eyes[name].container)]
-    );
+    const eyes = this.scene.add.graphics();
+    const artLayer = this.scene.add.container(0, base.y, [body, eyes]);
     const chargeGlow = this.scene.add.circle(0, -42, 12, 0xff4d54, 0);
     const container = this.scene.add.container(0, 0, [shadow, artLayer, chargeGlow]);
     const visual = {
@@ -214,7 +200,7 @@ export class RedShroomRenderer {
     );
     visual.artLayer.setScale(scaleX, scaleY);
     visual.body.setTint(hitFlash > 0 ? 0xfff0df : 0xffffff);
-    this.updateEyes(visual.eyes, enemy.variant, facing, emotion, timeMs);
+    this.drawEyes(visual.eyes, enemy.variant, facing, emotion, timeMs);
 
     visual.chargeGlow.setPosition(0, character.spores.originOffsetY);
     visual.chargeGlow.setScale(0.4 + charge * 1.2 + release * 0.7);
@@ -232,7 +218,7 @@ export class RedShroomRenderer {
     charge: number,
     hitFlash: number,
     release: number
-  ): RedShroomEyeEmotion {
+  ): string {
     if (hitFlash > 0.08) {
       return 'hit';
     }
@@ -248,210 +234,28 @@ export class RedShroomRenderer {
     return enemy.phase === 'charging' ? 'angry' : 'default';
   }
 
-  private createEye(tuning: EmbeddedEyeTuning, variant: ShroomVariant): RedShroomEyeVisual {
-    const { width, height } = SHROOM_CHARACTERS[variant].base.imageSize;
-    const container = this.scene.add.container(
-      (tuning.x - 0.5) * width,
-      (tuning.y - 0.5) * height
-    );
-    const pupil = this.scene.add.graphics();
-
-    container.add(pupil);
-
-    return {
-      container,
-      pupil,
-      tuning
-    };
-  }
-
-  private updateEyes(
-    eyes: Record<EyeName, RedShroomEyeVisual>,
+  private drawEyes(
+    graphics: Phaser.GameObjects.Graphics,
     variant: ShroomVariant,
     facing: SimVector,
-    eyeEmotion: RedShroomEyeEmotion,
+    emotionName: string,
     timeMs: number
   ) {
     const character = SHROOM_CHARACTERS[variant];
-    const emotion = character.gaze.emotions[eyeEmotion];
-    const { width, height } = character.base.imageSize;
-    const offsetX =
-      Phaser.Math.Clamp(facing.x, -1, 1) * width * character.gaze.pupilOffsetScale.x +
-      emotion.pupilShiftX * width;
-    const offsetY =
-      Phaser.Math.Clamp(facing.y, -1, 1) * height * character.gaze.pupilOffsetScale.y +
-      emotion.pupilShiftY * height;
+    const expressions = resolveEyeExpressions(character.gaze.emotions);
+    const expression = expressions[emotionName] ?? expressions.default;
 
-    for (const name of EYE_NAMES) {
-      this.updateEye(eyes[name], variant, name, emotion, offsetX, offsetY, timeMs);
-    }
-  }
-
-  private updateEye(
-    eye: RedShroomEyeVisual,
-    variant: ShroomVariant,
-    name: EyeName,
-    emotion: EyeEmotionTuning,
-    offsetX: number,
-    offsetY: number,
-    timeMs: number
-  ) {
-    const { width, height } = SHROOM_CHARACTERS[variant].base.imageSize;
-    const side = name === 'left' ? -1 : 1;
-    const tiltDirection = emotion.eyeTiltMode === 'same' ? 1 : side;
-    const lidCompression = 1 - (emotion.upperLid + emotion.lowerLid) * 0.24;
-    const pupilWidth = eye.tuning.radiusX * width * 2 * emotion.pupilScale * emotion.eyeScaleX;
-    const pupilHeight =
-      eye.tuning.radiusY *
-      height *
-      2 *
-      emotion.pupilScale *
-      emotion.eyeScaleY *
-      Phaser.Math.Clamp(lidCompression, 0.45, 1);
-
-    eye.container.setRotation(eye.tuning.rotation + tiltDirection * emotion.eyeTiltAdd);
-    eye.pupil.setPosition(offsetX, offsetY);
-    this.drawEyePupil(eye.pupil, name, emotion, pupilWidth, pupilHeight, timeMs);
-  }
-
-  private drawEyePupil(
-    graphics: Phaser.GameObjects.Graphics,
-    name: EyeName,
-    emotion: EyeEmotionTuning,
-    width: number,
-    height: number,
-    timeMs: number
-  ) {
     graphics.clear();
 
-    if (emotion.shape === 'spiral') {
-      this.drawSpiralPupil(graphics, width, height, timeMs);
-      return;
-    }
-
-    if (emotion.shape === 'x') {
-      this.drawXPupil(graphics, width, height);
-      return;
-    }
-
-    graphics.fillStyle(EYE_PUPIL_COLOR, 1);
-
-    if (emotion.shape !== 'cut-ellipse') {
-      graphics.fillEllipse(0, 0, width, height);
-      return;
-    }
-
-    this.drawCutEllipsePupil(
-      graphics,
-      name,
-      width,
-      height,
-      emotion.cutSlope ?? 1.6,
-      emotion.cutOffset ?? -0.42
-    );
-  }
-
-  private drawSpiralPupil(
-    graphics: Phaser.GameObjects.Graphics,
-    width: number,
-    height: number,
-    timeMs: number
-  ) {
-    const radius = Math.min(width, height) * 0.62;
-    const points: Phaser.Types.Math.Vector2Like[] = [];
-    const phase = timeMs * 0.006;
-
-    for (let index = 0; index < 42; index += 1) {
-      const progress = index / 41;
-      const angle = progress * Math.PI * 2.55 + phase;
-      const localRadius = radius * (0.18 + progress * 0.82);
-
-      points.push({
-        x: Math.cos(angle) * localRadius,
-        y: Math.sin(angle) * localRadius
+    for (const name of EYE_NAMES) {
+      drawRuntimeEye(graphics, name, character.gaze.eyes[name], character.base.imageSize, expression, {
+        facingX: facing.x,
+        facingY: facing.y,
+        offsetScaleX: character.gaze.pupilOffsetScale.x,
+        offsetScaleY: character.gaze.pupilOffsetScale.y,
+        timeMs
       });
     }
-
-    graphics.lineStyle(Math.max(16, radius * 0.2), EYE_PUPIL_COLOR, 1);
-    graphics.strokePoints(points, false, false);
-  }
-
-  private drawXPupil(graphics: Phaser.GameObjects.Graphics, width: number, height: number) {
-    const halfWidth = width * 0.42;
-    const halfHeight = height * 0.42;
-
-    graphics.lineStyle(Math.max(4, Math.min(width, height) * 0.16), EYE_PUPIL_COLOR, 1);
-    graphics.lineBetween(-halfWidth, -halfHeight, halfWidth, halfHeight);
-    graphics.lineBetween(halfWidth, -halfHeight, -halfWidth, halfHeight);
-  }
-
-  private drawCutEllipsePupil(
-    graphics: Phaser.GameObjects.Graphics,
-    name: EyeName,
-    width: number,
-    height: number,
-    cutSlope: number,
-    cutOffset: number
-  ) {
-    const inner = name === 'left' ? 1 : -1;
-    const rx = width / 2;
-    const ry = height / 2;
-    const ellipsePoints: Phaser.Types.Math.Vector2Like[] = [];
-
-    for (let index = 0; index < 72; index += 1) {
-      const angle = (Math.PI * 2 * index) / 72;
-      ellipsePoints.push({ x: Math.cos(angle), y: Math.sin(angle) });
-    }
-
-    const points = this.clipNormalizedEllipse(ellipsePoints, cutSlope, cutOffset).map(
-      (point) => new Phaser.Math.Vector2(point.x * rx * inner, point.y * ry)
-    );
-
-    graphics.fillStyle(EYE_PUPIL_COLOR, 1);
-    graphics.fillPoints(points, true, true);
-  }
-
-  private clipNormalizedEllipse(
-    points: Phaser.Types.Math.Vector2Like[],
-    cutSlope: number,
-    cutOffset: number
-  ): Phaser.Types.Math.Vector2Like[] {
-    const clipped: Phaser.Types.Math.Vector2Like[] = [];
-    const isInside = (point: Phaser.Types.Math.Vector2Like) =>
-      point.y - cutSlope * point.x - cutOffset >= 0;
-    const getIntersection = (
-      start: Phaser.Types.Math.Vector2Like,
-      end: Phaser.Types.Math.Vector2Like
-    ): Phaser.Types.Math.Vector2Like => {
-      const startDistance = start.y - cutSlope * start.x - cutOffset;
-      const endDistance = end.y - cutSlope * end.x - cutOffset;
-      const ratio =
-        Math.abs(startDistance - endDistance) > 0.000001
-          ? startDistance / (startDistance - endDistance)
-          : 0;
-
-      return {
-        x: start.x + (end.x - start.x) * ratio,
-        y: start.y + (end.y - start.y) * ratio
-      };
-    };
-
-    for (let index = 0; index < points.length; index += 1) {
-      const current = points[index];
-      const next = points[(index + 1) % points.length];
-      const currentInside = isInside(current);
-      const nextInside = isInside(next);
-
-      if (currentInside && nextInside) {
-        clipped.push(next);
-      } else if (currentInside && !nextInside) {
-        clipped.push(getIntersection(current, next));
-      } else if (!currentInside && nextInside) {
-        clipped.push(getIntersection(current, next), next);
-      }
-    }
-
-    return clipped;
   }
 
   private emitDirectionalBurst(

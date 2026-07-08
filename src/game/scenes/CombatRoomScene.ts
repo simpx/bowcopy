@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { GAME_SIZE } from '../constants';
 import { applyHiDpiCanvas } from '../renderScale';
 import { DesktopInputAdapter } from '../../input/DesktopInputAdapter';
+import { TouchInputAdapter } from '../../input/TouchInputAdapter';
 import { InputController } from '../../input/InputController';
 import { PlayerHealth } from '../PlayerHealth';
 import { DungeonMinimap } from '../../ui/DungeonMinimap';
@@ -87,6 +88,7 @@ export class CombatRoomScene extends Phaser.Scene {
   private readonly enemyDarts = new EnemyDartProjectileSystem();
   private readonly shroomSpores = new ShroomSporeProjectileSystem();
   private desktopInput?: DesktopInputAdapter;
+  private touchInput?: TouchInputAdapter;
   private dungeonMinimap?: DungeonMinimap;
   private heartsHud?: HeartsHud;
   private touchOverlay?: TouchInputOverlay;
@@ -175,6 +177,7 @@ export class CombatRoomScene extends Phaser.Scene {
     this.bootstrapDebugFeedback();
 
     this.desktopInput = new DesktopInputAdapter(this, this.inputController, () => this.player.state.position);
+    this.touchInput = new TouchInputAdapter(this, this.inputController);
     this.createHeartsHud();
     this.createDungeonMinimap();
     this.createTouchInput();
@@ -188,6 +191,7 @@ export class CombatRoomScene extends Phaser.Scene {
 
   update(time: number, delta: number) {
     this.desktopInput?.update();
+    this.touchInput?.update();
     this.updateDebugPlayerDemo(delta);
 
     const snapshot = this.inputController.consumeSnapshot();
@@ -869,6 +873,8 @@ export class CombatRoomScene extends Phaser.Scene {
     this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize);
     this.desktopInput?.dispose();
     this.desktopInput = undefined;
+    this.touchInput?.dispose();
+    this.touchInput = undefined;
     this.heartsHud?.dispose();
     this.heartsHud = undefined;
     this.dungeonMinimap?.dispose();

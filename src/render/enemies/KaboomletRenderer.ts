@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 
 import kaboomletBaseUrl from '../../../assets/characters/kaboomlet/base.png';
+import { resolveEyeExpressions } from '../../characters/eyeEmotionTemplates';
 import { KABOOMLET_RIG } from '../../characters/kaboomletRig';
 import type { KaboomletEnemy, KaboomletEvent } from '../../sim/enemies';
 import type { SimVector } from '../../sim/player';
+import { drawRuntimeEye, mixExpressions } from '../eyes/runtimeEye';
 import { HOUSE_BURST_STYLE, ParticleBurstPool } from '../feedback/particleBurst';
 
 interface KaboomletVisual {
@@ -201,25 +203,23 @@ export class KaboomletRenderer {
     facing: SimVector,
     armedProgress: number
   ) {
-    const { width, height } = KABOOMLET_RIG.base.imageSize;
-    const offsetX = Phaser.Math.Clamp(facing.x, -1, 1) * width * KABOOMLET_RIG.gaze.pupilOffsetScale.x;
-    const offsetY = Phaser.Math.Clamp(facing.y, -1, 1) * height * KABOOMLET_RIG.gaze.pupilOffsetScale.y;
+    const expressions = resolveEyeExpressions(KABOOMLET_RIG.gaze.emotions);
+    const expression = mixExpressions(
+      expressions.default,
+      expressions.scared ?? expressions.default,
+      armedProgress
+    );
 
     graphics.clear();
-    graphics.fillStyle(0x050505, 1);
 
     for (const name of ['left', 'right'] as const) {
-      const eye = KABOOMLET_RIG.gaze.eyes[name];
-      const x = (eye.x - 0.5) * width + offsetX;
-      const y = (eye.y - 0.5) * height + offsetY;
-      const pupilWidth = eye.radiusX * width * (1.2 + armedProgress * 0.28);
-      const pupilHeight = eye.radiusY * height * (1.14 + armedProgress * 0.2);
-
-      graphics.save();
-      graphics.translateCanvas(x, y);
-      graphics.rotateCanvas(eye.rotation);
-      graphics.fillEllipse(0, 0, pupilWidth, pupilHeight);
-      graphics.restore();
+      drawRuntimeEye(graphics, name, KABOOMLET_RIG.gaze.eyes[name], KABOOMLET_RIG.base.imageSize, expression, {
+        facingX: facing.x,
+        facingY: facing.y,
+        offsetScaleX: KABOOMLET_RIG.gaze.pupilOffsetScale.x,
+        offsetScaleY: KABOOMLET_RIG.gaze.pupilOffsetScale.y,
+        timeMs: 0
+      });
     }
   }
 

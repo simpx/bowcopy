@@ -2,12 +2,11 @@ import Phaser from 'phaser';
 
 import {
   BOWBERT_CHARACTER,
-  type AttachedEyeTuning,
-  type BowbertEyeEmotion,
   type CharacterAttachmentSource,
-  type EyeEmotionTuning,
   type EyeName
 } from '../characters/layeredCharacterConfig';
+import { resolveEyeExpressions } from '../../characters/eyeEmotionTemplates';
+import { drawRuntimeEye } from '../eyes/runtimeEye';
 import type { BowbertPlayerState, SimVector } from '../../sim/player';
 import {
   BOWBERT_BRANCH_BOW_TUNING,
@@ -20,13 +19,6 @@ const HIT_FLASH_MS = 170;
 const HIT_SQUASH_MS = 210;
 const GHOST_LIFETIME_MS = 210;
 const GHOST_CADENCE_MS = 34;
-
-interface EyeVisual {
-  readonly container: Phaser.GameObjects.Container;
-  readonly pupil: Phaser.GameObjects.Ellipse;
-  readonly outerRadiusPx: number;
-  readonly basePupilDiameterPx: number;
-}
 
 interface GhostAfterimage {
   readonly image: Phaser.GameObjects.Image;
@@ -62,7 +54,7 @@ export class BowbertRenderer {
   private shadow?: Phaser.GameObjects.Ellipse;
   private body?: Phaser.GameObjects.Image;
   private eyeLayer?: Phaser.GameObjects.Container;
-  private readonly eyes: Partial<Record<EyeName, EyeVisual>> = {};
+  private eyeGraphics?: Phaser.GameObjects.Graphics;
   private bowTexture?: Phaser.Textures.CanvasTexture;
   private bow?: Phaser.GameObjects.Image;
   private readonly ghosts: GhostAfterimage[] = [];
@@ -81,11 +73,8 @@ export class BowbertRenderer {
     this.eyeLayer = HAS_RUNTIME_EYES ? this.scene.add.container(0, base.y) : undefined;
 
     if (this.eyeLayer) {
-      for (const name of EYE_NAMES) {
-        const eye = this.createEye(BOWBERT_CHARACTER.gaze.eyes[name]);
-        this.eyes[name] = eye;
-        this.eyeLayer.add(eye.container);
-      }
+      this.eyeGraphics = this.scene.add.graphics();
+      this.eyeLayer.add(this.eyeGraphics);
     }
 
     this.bowTexture = this.createBowTexture();
@@ -188,30 +177,11 @@ export class BowbertRenderer {
     return texture;
   }
 
-  private createEye(tuning: AttachedEyeTuning): EyeVisual {
-    const { width, height } = BOWBERT_CHARACTER.base.imageSize;
-    const outerRadiusPx = tuning.outerRadius * width;
-    const outerDiameterPx = outerRadiusPx * 2;
-    const whiteDiameterPx = outerDiameterPx * tuning.whiteRatio;
-    const pupilDiameterPx = whiteDiameterPx * tuning.pupilRatio;
-    const eyeX = (tuning.x - 0.5) * width;
-    const eyeY = (tuning.y - 0.5) * height;
-    const pupil = this.scene.add.ellipse(0, 0, pupilDiameterPx, pupilDiameterPx, EYE_PUPIL_COLOR, 1);
-    const container = this.scene.add.container(eyeX, eyeY, [pupil]);
-
-    return {
-      container,
-      pupil,
-      outerRadiusPx,
-      basePupilDiameterPx: pupilDiameterPx
-    };
-  }
-
   private getEyeEmotion(
     state: BowbertPlayerState,
     hitFlash: number,
     hitSquash: number
-  ): BowbertEyeEmotion {
+  ): string {
     if (hitFlash > 0.05 || hitSquash > 0.05) {
       return 'hit';
     }
@@ -227,45 +197,36 @@ export class BowbertRenderer {
     return 'default';
   }
 
-  private updateEyes(aim: SimVector, eyeEmotion: BowbertEyeEmotion) {
-    const emotion = BOWBERT_CHARACTER.gaze.emotions[eyeEmotion];
+  private updateEyes(aim: SimVector, eyeEmotion: string) {
+    if (!this.eyeGraphics) {
+      return;
+    }
+
+    const gaze = BOWBERT_CHARACTER.gaze;
+    const expressions = resolveEyeExpressions(gaze.emotions);
+    const expression = expressions[eyeEmotion] ?? expressions.default;
     const aimLength = Math.hypot(aim.x, aim.y);
     const aimScale = aimLength > 1 ? 1 / aimLength : 1;
 
+    this.eyeGraphics.clear();
+
     for (const name of EYE_NAMES) {
-      const eye = this.eyes[name];
-
-      if (!eye) {
-        continue;
-      }
-
-      this.updateEye(eye, aim, aimScale, emotion);
+      drawRuntimeEye(
+        this.eyeGraphics,
+        name,
+        gaze.eyes[name],
+        BOWBERT_CHARACTER.base.imageSize,
+        expression,
+        {
+          facingX: aim.x * aimScale,
+          facingY: aim.y * aimScale,
+          offsetScaleX: gaze.pupilOffsetScale.x,
+          offsetScaleY: gaze.pupilOffsetScale.y,
+          timeMs: 0
+        },
+        EYE_PUPIL_COLOR
+      );
     }
-  }
-
-  private updateEye(
-    eye: EyeVisual,
-    aim: SimVector,
-    aimScale: number,
-    emotion: EyeEmotionTuning
-  ) {
-    const offsetBasis = eye.outerRadiusPx * 2;
-    const lidCompression = 1 - (emotion.upperLid + emotion.lowerLid) * 0.24;
-    const pupilWidth = eye.basePupilDiameterPx * emotion.pupilScale * emotion.eyeScaleX;
-    const pupilHeight =
-      eye.basePupilDiameterPx *
-      emotion.pupilScale *
-      emotion.eyeScaleY *
-      Phaser.Math.Clamp(lidCompression, 0.45, 1);
-
-    eye.pupil.setPosition(
-      aim.x * aimScale * offsetBasis * BOWBERT_CHARACTER.gaze.pupilOffsetScale.x +
-        emotion.pupilShiftX * offsetBasis,
-      aim.y * aimScale * offsetBasis * BOWBERT_CHARACTER.gaze.pupilOffsetScale.y +
-        emotion.pupilShiftY * offsetBasis
-    );
-    eye.pupil.setSize(pupilWidth, pupilHeight);
-    eye.pupil.setRotation(emotion.eyeTiltAdd);
   }
 
   private updateBow(timeMs: number, aim: SimVector, state: BowbertPlayerState, recoil: number) {

@@ -12,3 +12,6 @@ dist/
 assets/characters/*/playtest/states/
 assets/characters/qc-report.json
 assets/index.json
+
+# 人工评审的原始意见暂存(中间产物,决策才进 brief.md)
+assets/characters/review-inbox.md

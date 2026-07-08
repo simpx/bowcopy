@@ -22,7 +22,7 @@ AI 依次执行,不需要人在场:
 3. **填 rig**:runtime 数值写进 `assets/characters/<id>/rig.json` 的 `runtime` 段(**唯一事实源**,游戏直接 import)。
 4. **机器 QC**:`npm run studio:qc`——透明背景、贴边、尺寸一致性、状态证据、色板偏移、目录卫生。错误必须清零。
 5. **自我目检**:`npm run studio:capture -- <id>`——用真实 runtime 渲染 spawn / move / attack / hit / death 各状态截图到 `playtest/states/`,AI 自己看图对照 quality rubric,不合格就返工。
-6. **交人验收**:人打开 workbench(见下),看的就是实机效果;可在页面里直接微调数值并保存。
+6. **交人验收**:人打开 workbench(见下),看的就是实机效果;人在页面里试调数值、写文字意见,以**修改建议**的形式进入 review inbox,由 AI 评估后选择性写回。
 
 产出:完整的角色文件夹 + 通过 QC + 状态截图证据。
 
@@ -42,8 +42,9 @@ npm run dev
 ```
 
 - 所有角色由**游戏同一份 sim + renderer** 驱动;鼠标 = 玩家位置,注视/瞄准实时跟随。
-- 每卡片:受击 / 击杀 / 重生(真实命中路径)、状态 chip(brief.md)、QC 结果、对比图、遗留事项。
-- **调参**:展开数值面板,改动即时生效,`保存到 rig.json` 直接写回唯一事实源——人微调不经过 AI 转录。
+- 每卡片:受击 / 击杀 / 重生(真实命中路径)、状态 chip(brief.md)、QC 结果、对比图、遗留事项、评审意见输入框。
+- **调参 = 提建议,不直接改文件**:展开数值面板,改动即时生效(仅本页预览);`提交修改建议` 把改动差异(哪个值从多少到多少)追加进 `assets/characters/review-inbox.md`。文字意见同样进 inbox。
+- **写回权在 AI**:人从不直接写 rig.json / brief.md。AI 读 inbox,逐条评估(采纳 / 调整后采纳 / 否决并说明),把采纳的改动写进 rig.json,结论性的决定才进 brief.md。inbox 是中间产物,不进 git,处理完即清。
 - 暂停 / 0.25x 慢放逐帧看形变与特效。
 
 ## 命令速查
@@ -54,6 +55,7 @@ npm run dev
 | `npm run studio:qc` | 严格 QC,生成 `assets/characters/qc-report.json` |
 | `npm run studio:capture -- <id>` | 状态截图(AI 自审用);`--all` 全量 |
 | `python3 tools/index_assets.py` | 重建复用资产索引 `assets/index.json` |
+| `python3 tools/fit_eyes.py <id>` | 从 base.png 拟合眼位容器几何(新角色眼位不手调) |
 | `node tools/sync_rigs.mjs` | 把仍写在 TS 里的 rig 值导出到 rig.json(引导用) |
 | `npm run build` | 类型检查 + 构建(接入后的硬性门槛) |
 | `/?encounter=<kind>` | 游戏内调试指定遭遇;`&effect=explosion\|spore\|damage`、`&split=1`、`&variant=red\|purple` |
@@ -63,6 +65,7 @@ npm run dev
 - `docs/studio/prompt-rules.md`:生图 prompt packet 写法。
 - `docs/studio/qc-failures.md`:已知的美术失败模式,验收生成图前必读。
 - `docs/studio/quality-rubric.md`:交人 review 前角色要达到的质量线。
+- `docs/studio/eyes.md`:眼睛系统唯一设计定义(眼睛/眼位/眼神三层、归一化容器几何、模板引用语义),动任何眼睛相关代码前必读。
 
 ## 唯一事实源约定
 
@@ -70,7 +73,7 @@ npm run dev
 | --- | --- |
 | runtime 数值(scale/眼/动作/攻击) | `assets/characters/<id>/rig.json` 的 `runtime` 段 |
 | 状态与遗留事项 | `brief.md` frontmatter(`status` 只存这里) |
-| 眼神情绪模板 | `src/characters/eyeEmotionTemplates.ts` |
+| 眼睛模板(round/cut,情绪全集) | `src/characters/eyeEmotionTemplates.ts`(rig 只存引用+覆盖) |
 | 粒子 burst 风格 | `src/render/feedback/particleBurst.ts` |
 | 敌人游戏接入 | `src/game/enemies/<id>Kit.ts` + 注册表 |
 | 可复用资产清单 | `assets/index.json`(生成物) |

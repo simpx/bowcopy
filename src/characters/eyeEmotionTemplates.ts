@@ -1,269 +1,135 @@
-import type { EyeEmotionTuning } from './rigSchema';
+import type { EyeExpression, EyeTemplateName } from './rigSchema';
 
 /**
- * Accepted eye-emotion templates for this project's three proven eye
- * archetypes. Every character in Bowcopy expresses emotion through runtime
- * eyes over a fixed base image, so new characters should START from one of
- * these sets instead of inventing values:
+ * The project's single reusable eye asset (docs/studio/eyes.md), designed by
+ * hand — NOT generated. Every character references it via rig.json
+ * (`gaze.emotions.template: "standard"`); characters do not fork expression
+ * values, only their container geometry (socket fit) is per-character.
  *
- * - `ROUND_EXTERNAL_EYE_EMOTIONS`  -> gaze mode `attached-eye-pupils` (Bowbert)
- * - `ANGRY_EMBEDDED_EYE_EMOTIONS`  -> gaze mode `embedded-eye-pupils` (goobers)
- * - `SHROOM_EMBEDDED_EYE_EMOTIONS` -> gaze mode `embedded-eye-pupils` + dizzy (shrooms)
+ * One template serves every socket shape because the pupil's rest position
+ * is the centroid of the clipped container (eyeGeometry.ts): a teardrop or
+ * crescent socket automatically seats the pupil lower — expressions carry
+ * zero socket compensation.
  *
- * The values below are the accepted, playtested sets referenced by the
- * canonical rigs (bowbertRig / dartGooberRig / redShroomRig). Variants
- * (dart-tri-goober, purple-shroom) tune their own copies; use
- * `withEyeEmotionOverrides` when a variant only needs to nudge a few fields.
+ * State catalog (fixed behavioral semantics; a new state may only be added
+ * when a behavior actually triggers it):
+ *
+ * - default: at rest, wandering.
+ * - aim:     tracking / lining up an attack — horizontal slit pupil.
+ * - alert:   startled — pupils snap small.
+ * - angry:   aggression — slanted upper lids (expression cuts), deep at the
+ *            inner corner, enlarged glare.
+ * - hit:     pain — classic cartoon X eyes.
+ * - scared:  dilated pupils (panic, about to explode).
+ * - dizzy:   stunned spiral.
+ *
+ * All quantities are eye-local container units. Expression cuts are authored
+ * for the LEFT eye and mirrored automatically for the right.
+ *
+ * Review surface: the workbench overview page renders the template inside
+ * both socket shapes ("眼睛模板" section); per-character sheets show the
+ * same states on the real base art.
  */
 
-/** Bowbert-style attached round external eyes: big white circles mounted on the body edge, black round pupils. */
-export const ROUND_EXTERNAL_EYE_EMOTIONS = {
+const STANDARD: Record<string, EyeExpression> = {
   default: {
-    eyeTiltAdd: 0,
-    eyeScaleX: 1,
-    eyeScaleY: 1,
-    pupilScale: 1,
+    style: 'dot',
+    tiltAdd: 0,
+    pupilRadiusX: 0.52,
+    pupilRadiusY: 0.52,
     pupilShiftX: 0,
     pupilShiftY: 0,
     upperLid: 0,
     lowerLid: 0
   },
   aim: {
-    eyeTiltAdd: 0,
-    eyeScaleX: 0.96,
-    eyeScaleY: 0.96,
-    pupilScale: 0.98,
+    style: 'dot',
+    tiltAdd: 0,
+    pupilRadiusX: 0.46,
+    pupilRadiusY: 0.3,
     pupilShiftX: 0,
-    pupilShiftY: -0.004,
+    pupilShiftY: 0,
     upperLid: 0,
     lowerLid: 0
-  },
-  focused: {
-    eyeTiltAdd: 0,
-    eyeScaleX: 1.12,
-    eyeScaleY: 0.68,
-    pupilScale: 0.92,
-    pupilShiftX: 0,
-    pupilShiftY: -0.002,
-    upperLid: 0.18,
-    lowerLid: 0.04
   },
   alert: {
-    eyeTiltAdd: 0,
-    eyeScaleX: 0.82,
-    eyeScaleY: 0.82,
-    pupilScale: 0.72,
+    style: 'dot',
+    tiltAdd: 0,
+    pupilRadiusX: 0.3,
+    pupilRadiusY: 0.3,
     pupilShiftX: 0,
-    pupilShiftY: -0.006,
-    upperLid: 0,
-    lowerLid: 0
-  },
-  scared: {
-    eyeTiltAdd: 0,
-    eyeScaleX: 0.68,
-    eyeScaleY: 0.68,
-    pupilScale: 0.58,
-    pupilShiftX: 0,
-    pupilShiftY: -0.012,
-    upperLid: 0,
-    lowerLid: 0
-  },
-  confused: {
-    eyeTiltAdd: 0.18,
-    eyeScaleX: 0.92,
-    eyeScaleY: 1.08,
-    pupilScale: 0.9,
-    pupilShiftX: 0.004,
-    pupilShiftY: -0.002,
-    upperLid: 0.02,
-    lowerLid: 0
-  },
-  squint: {
-    eyeTiltAdd: 0,
-    eyeScaleX: 1.04,
-    eyeScaleY: 0.34,
-    pupilScale: 0.74,
-    pupilShiftX: 0,
-    pupilShiftY: 0.012,
-    upperLid: 0.56,
-    lowerLid: 0.12
-  },
-  hit: {
-    eyeTiltAdd: 0,
-    eyeScaleX: 0.9,
-    eyeScaleY: 0.58,
-    pupilScale: 0.82,
-    pupilShiftX: -0.004,
-    pupilShiftY: -0.006,
-    upperLid: 0.22,
-    lowerLid: 0.1
-  }
-} as const satisfies Record<string, EyeEmotionTuning>;
-
-/** Dart Goober-style angry embedded eyes: slanted white sockets baked into the base, black cut-ellipse gaze fill. */
-export const ANGRY_EMBEDDED_EYE_EMOTIONS = {
-  default: {
-    shape: 'cut-ellipse',
-    eyeTiltAdd: 0,
-    eyeScaleX: 1.32,
-    eyeScaleY: 1.35,
-    pupilScale: 1.12,
-    pupilShiftX: 0,
-    pupilShiftY: 0.01,
-    cutSlope: 1.6,
-    cutOffset: -0.42,
+    pupilShiftY: -0.08,
     upperLid: 0,
     lowerLid: 0
   },
   angry: {
-    shape: 'cut-ellipse',
-    eyeTiltAdd: -0.015,
-    eyeScaleX: 1.4,
-    eyeScaleY: 1.42,
-    pupilScale: 1.16,
+    style: 'dot',
+    tiltAdd: 0.05,
+    pupilRadiusX: 0.62,
+    pupilRadiusY: 0.62,
     pupilShiftX: 0,
-    pupilShiftY: 0.012,
-    cutSlope: 1.72,
-    cutOffset: -0.46,
+    pupilShiftY: 0.06,
     upperLid: 0,
-    lowerLid: 0
+    lowerLid: 0,
+    cuts: [{ slope: 0.6, offset: -0.22 }]
   },
-  alert: {
-    eyeTiltAdd: 0,
-    eyeScaleX: 0.82,
-    eyeScaleY: 0.9,
-    pupilScale: 0.62,
+  hit: {
+    style: 'x',
+    tiltAdd: 0,
+    pupilRadiusX: 0.5,
+    pupilRadiusY: 0.5,
     pupilShiftX: 0,
     pupilShiftY: 0,
     upperLid: 0,
     lowerLid: 0
   },
   scared: {
-    eyeTiltAdd: 0.01,
-    eyeScaleX: 0.66,
-    eyeScaleY: 0.76,
-    pupilScale: 0.46,
-    pupilShiftX: -0.006,
-    pupilShiftY: -0.014,
-    upperLid: 0.04,
-    lowerLid: 0.02
-  },
-  hit: {
-    eyeTiltAdd: 0.02,
-    eyeScaleX: 0.82,
-    eyeScaleY: 0.56,
-    pupilScale: 0.68,
-    pupilShiftX: -0.008,
-    pupilShiftY: -0.006,
-    upperLid: 0.36,
-    lowerLid: 0.18
-  },
-  aim: {
-    shape: 'cut-ellipse',
-    eyeTiltAdd: 0.01,
-    eyeScaleX: 1.18,
-    eyeScaleY: 1.2,
-    pupilScale: 1.02,
+    style: 'dot',
+    tiltAdd: 0,
+    pupilRadiusX: 0.72,
+    pupilRadiusY: 0.72,
     pupilShiftX: 0,
-    pupilShiftY: 0.006,
-    cutSlope: 1.85,
-    cutOffset: -0.38,
+    pupilShiftY: 0.04,
     upperLid: 0,
-    lowerLid: 0
-  }
-} as const satisfies Record<string, EyeEmotionTuning>;
-
-/** Shroom-style embedded eyes: cut-ellipse angry gaze plus a spiral dizzy state used while releasing spores. */
-export const SHROOM_EMBEDDED_EYE_EMOTIONS = {
-  default: {
-    shape: 'cut-ellipse',
-    eyeTiltAdd: 0.02,
-    eyeScaleX: 1.22,
-    eyeScaleY: 1.02,
-    pupilScale: 1.1,
-    pupilShiftX: 0,
-    pupilShiftY: -0.002,
-    cutSlope: 1.42,
-    cutOffset: -0.42,
-    upperLid: 0,
-    lowerLid: 0
-  },
-  angry: {
-    shape: 'cut-ellipse',
-    eyeTiltAdd: 0.065,
-    eyeScaleX: 1.32,
-    eyeScaleY: 1.08,
-    pupilScale: 1.14,
-    pupilShiftX: 0,
-    pupilShiftY: -0.001,
-    cutSlope: 1.52,
-    cutOffset: -0.44,
-    upperLid: 0,
-    lowerLid: 0
-  },
-  alert: {
-    eyeTiltAdd: 0,
-    eyeScaleX: 0.72,
-    eyeScaleY: 0.72,
-    pupilScale: 0.64,
-    pupilShiftX: 0,
-    pupilShiftY: -0.006,
-    upperLid: 0,
-    lowerLid: 0
-  },
-  aim: {
-    shape: 'cut-ellipse',
-    eyeTiltAdd: 0.04,
-    eyeScaleX: 1.22,
-    eyeScaleY: 1.02,
-    pupilScale: 1.08,
-    pupilShiftX: 0,
-    pupilShiftY: -0.004,
-    cutSlope: 1.5,
-    cutOffset: -0.43,
-    upperLid: 0,
-    lowerLid: 0
-  },
-  hit: {
-    eyeTiltAdd: 0,
-    eyeScaleX: 0.82,
-    eyeScaleY: 0.54,
-    pupilScale: 0.76,
-    pupilShiftX: -0.004,
-    pupilShiftY: -0.006,
-    upperLid: 0.28,
     lowerLid: 0.12
   },
   dizzy: {
-    shape: 'spiral',
-    eyeTiltAdd: 0.12,
-    eyeScaleX: 1.28,
-    eyeScaleY: 1.28,
-    pupilScale: 1.12,
+    style: 'spiral',
+    tiltAdd: 0,
+    pupilRadiusX: 0.55,
+    pupilRadiusY: 0.55,
     pupilShiftX: 0,
     pupilShiftY: 0,
     upperLid: 0,
     lowerLid: 0
   }
-} as const satisfies Record<string, EyeEmotionTuning>;
+};
+
+export const EYE_TEMPLATES: Record<EyeTemplateName, Record<string, EyeExpression>> = {
+  standard: STANDARD
+};
+
+/** Union of state names available to behavior code. */
+export type EyeEmotionName = keyof typeof STANDARD;
 
 /**
- * Derive a variant emotion set from a template: replaces whole emotion
- * entries and/or nudges individual fields of existing ones.
+ * Resolve a rig's emotion reference into concrete expressions: template
+ * states merged with per-character overrides (unknown override states start
+ * from the template's default). Overrides are an escape hatch — the design
+ * default is a bare reference with none.
  */
-export const withEyeEmotionOverrides = <T extends Record<string, EyeEmotionTuning>>(
-  template: T,
-  overrides: { [K in keyof T]?: Partial<EyeEmotionTuning> } & Record<string, Partial<EyeEmotionTuning>>
-): Record<string, EyeEmotionTuning> => {
-  const result: Record<string, EyeEmotionTuning> = { ...template };
+export const resolveEyeExpressions = (emotions: {
+  readonly template: string;
+  readonly overrides?: Record<string, unknown>;
+}): Record<string, EyeExpression> => {
+  const template = EYE_TEMPLATES[emotions.template as EyeTemplateName] ?? EYE_TEMPLATES.standard;
+  const resolved: Record<string, EyeExpression> = { ...template };
 
-  for (const [emotion, patch] of Object.entries(overrides)) {
-    const base = result[emotion];
+  for (const [state, override] of Object.entries(emotions.overrides ?? {})) {
+    const base = resolved[state] ?? template.default;
 
-    result[emotion] = base
-      ? { ...base, ...patch }
-      : ({ ...patch } as EyeEmotionTuning);
+    resolved[state] = { ...base, ...(override as Partial<EyeExpression>) };
   }
 
-  return result;
+  return resolved;
 };

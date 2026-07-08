@@ -12,6 +12,7 @@ Read `docs/studio.md` first — it is the authoritative workflow shared by every
 - Characters here are: emotion via runtime eyes, fixed base image, motion via squash/stretch deformation (no sprite sheets), attachments as separate layers.
 - `assets/characters/<id>/rig.json` `runtime` section is the single source of truth for runtime values. Never re-introduce literals in `src/characters/*Rig.ts`.
 - `brief.md` frontmatter holds `status` and decisions. Decisions land in files, never only in chat.
+- Humans never write rig.json/brief.md directly. Workbench tuning and comments land as proposals in `assets/characters/review-inbox.md` (git-ignored scratch); the AI evaluates each item (accept / adjust / reject with reason), applies accepted changes, and clears the inbox.
 - Reuse before generating: check `assets/index.json` (rebuild with `python3 tools/index_assets.py`), eye templates in `src/characters/eyeEmotionTemplates.ts`, burst styles in `src/render/feedback/particleBurst.ts`.
 - Review evidence must come from the real runtime: workbench pages and capture screenshots, not hand-drawn previews.
 
@@ -20,12 +21,14 @@ Read `docs/studio.md` first — it is the authoritative workflow shared by every
 - `docs/studio/prompt-rules.md` — how to write image-generation prompt packets.
 - `docs/studio/qc-failures.md` — known art failure modes; read before accepting generated art.
 - `docs/studio/quality-rubric.md` — the bar a character must meet before human review.
+- `docs/studio/eyes.md` — the eye system (eye/socket/expression layers, normalized container geometry, template references); read before touching any eye code or gaze values.
 
 ## Commands
 
 - QC (must be error-free before review): `npm run studio:qc`
 - Self-review screenshots (your eyes): `npm run studio:capture -- <id>`
 - Rebuild reuse index: `python3 tools/index_assets.py`
+- Fit eye containers from base.png: `python3 tools/fit_eyes.py <id>` (new characters get eye geometry from this, not by hand)
 - Human review page: `npm run dev` then `/workbench.html` (or `?focus=<id>`)
 - Integration check: `npm run build`, then screenshot `/?encounter=<kind>`
 
@@ -35,5 +38,5 @@ Read `docs/studio.md` first — it is the authoritative workflow shared by every
 2. Generate base art per prompt packet; accepted art becomes `base.png` + `comparison.png`; keep rejects in `candidates/`.
 3. Fill `rig.json` `runtime` starting from the closest existing character's runtime section and eye template.
 4. Run QC + capture; inspect your own screenshots against `docs/studio/quality-rubric.md`; iterate until clean.
-5. Hand off for human review in the workbench; the human may tune values in-page (saved to rig.json).
+5. Hand off for human review in the workbench; the human tunes values in-page (preview only) and submits proposals + comments to `review-inbox.md`; the AI processes the inbox and selectively applies changes to rig.json.
 6. Integrate: write `src/game/enemies/<id>Kit.ts` modeled on an existing kit, register it in `src/game/enemies/index.ts`, map a room theme in `CombatRoomScene`, build, capture `/?encounter=<kind>` evidence into `playtest/`, advance `status`.

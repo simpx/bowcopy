@@ -2,9 +2,11 @@ import Phaser from 'phaser';
 
 import slimeParentBaseUrl from '../../../assets/characters/slime-parent/base.png';
 import slimeBaseUrl from '../../../assets/characters/slime/base.png';
+import { resolveEyeExpressions } from '../../characters/eyeEmotionTemplates';
 import { SLIME_PARENT_RIG } from '../../characters/slimeParentRig';
 import { SLIME_RIG } from '../../characters/slimeRig';
 import type { SimVector } from '../../sim/player';
+import { drawRuntimeEye } from '../eyes/runtimeEye';
 import type { SlimeEnemy, SlimeEvent, SlimeRole } from '../../sim/enemies';
 import { HOUSE_BURST_STYLE, ParticleBurstPool } from '../feedback/particleBurst';
 
@@ -180,25 +182,19 @@ export class SlimeRenderer {
     facing: SimVector,
     jumping: boolean
   ) {
-    const { width, height } = rig.base.imageSize;
-    const offsetX = Phaser.Math.Clamp(facing.x, -1, 1) * width * rig.gaze.pupilOffsetScale.x;
-    const offsetY =
-      Phaser.Math.Clamp(facing.y, -1, 1) * height * rig.gaze.pupilOffsetScale.y -
-      (jumping ? height * 0.004 : 0);
+    const expressions = resolveEyeExpressions(rig.gaze.emotions);
+    const expression = (jumping ? expressions.alert : undefined) ?? expressions.default;
 
     graphics.clear();
-    graphics.fillStyle(0x050505, 1);
 
     for (const name of ['left', 'right'] as const) {
-      const eye = rig.gaze.eyes[name];
-      const x = (eye.x - 0.5) * width + offsetX;
-      const y = (eye.y - 0.5) * height + offsetY;
-
-      graphics.save();
-      graphics.translateCanvas(x, y);
-      graphics.rotateCanvas(eye.rotation);
-      graphics.fillEllipse(0, 0, eye.radiusX * width * 1.05, eye.radiusY * height * 1.0);
-      graphics.restore();
+      drawRuntimeEye(graphics, name, rig.gaze.eyes[name], rig.base.imageSize, expression, {
+        facingX: facing.x,
+        facingY: facing.y,
+        offsetScaleX: rig.gaze.pupilOffsetScale.x,
+        offsetScaleY: rig.gaze.pupilOffsetScale.y,
+        timeMs: 0
+      });
     }
   }
 

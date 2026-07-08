@@ -70,6 +70,7 @@ export class WorkbenchScene extends Phaser.Scene {
   private targetMarker?: Phaser.GameObjects.Graphics;
   private simTimeMs = 0;
   private speedFactor = 1;
+  private pointerSeen = false;
   private readonly grid: WorkbenchGrid;
 
   constructor(
@@ -111,6 +112,15 @@ export class WorkbenchScene extends Phaser.Scene {
 
     this.targetMarker = this.add.graphics().setDepth(400);
 
+    // On touch devices there is no hovering mouse; until the first real
+    // pointer event, aim the slots at the stage center instead of (0, 0).
+    this.input.once(Phaser.Input.Events.POINTER_MOVE, () => {
+      this.pointerSeen = true;
+    });
+    this.input.once(Phaser.Input.Events.POINTER_DOWN, () => {
+      this.pointerSeen = true;
+    });
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.disposeSlots());
     this.events.once(Phaser.Scenes.Events.DESTROY, () => this.disposeSlots());
 
@@ -127,7 +137,9 @@ export class WorkbenchScene extends Phaser.Scene {
     this.simTimeMs += scaledDelta;
 
     const pointer = this.input.activePointer;
-    const target: SimVector = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+    const target: SimVector = this.pointerSeen
+      ? this.cameras.main.getWorldPoint(pointer.x, pointer.y)
+      : { x: this.scale.width / 2, y: this.scale.height * 0.6 };
 
     for (const slot of this.slots) {
       slot.update(this.simTimeMs, scaledDelta, target);

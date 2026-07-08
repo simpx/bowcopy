@@ -37,7 +37,7 @@ Boundary notes:
 Acceptance checks:
 - Silhouette, posture, palette, and focal features match the locked reference.
 - Runtime-changing black gaze/fills are reserved for runtime.
-- Embedded-eye characters have reference-correct white eye sockets/eye whites baked into `base.png`; attached-eye characters document the eye attachment instead.
+- Characters have reference-correct white eye sockets/eye whites baked into `base.png` (all eyes are embedded; see docs/studio/eyes.md).
 - Transparent PNG, tight crop with enough room for protrusions.
 ```
 
@@ -51,32 +51,18 @@ Use for the stable character body.
 - Runtime owns gaze fills, pupils, spirals, hit marks, squash/stretch, recoil, trails, particles, projectile motion, and timing.
 - Accepted base art becomes `base.png`; keep earlier useful candidates as `base-source.png` or `exports/*`.
 
-### Embedded-Eye Character
+### Eyes (all characters are embedded-eye)
 
-Use for Goober-like masks, mushroom faces, and enemies whose eyes sit inside the body shape.
+Every character bakes its eye whites into `base.png`; runtime draws only pupils, lids, and expression fills (docs/studio/eyes.md). The socket container geometry is fitted from the image by `tools/fit_eyes.py`, so the whites must be machine-fittable:
 
-- `base.png` includes final blank white eye sockets or eye whites in the reference-correct silhouette.
-- Runtime draws black cut-ellipse gaze, pupils, spirals, X marks, hit squashes, or other expression fills over those whites.
-- Slanted white socket shapes are fixed body art, not runtime expression art.
-
-Prompt phrase:
-
-```text
-Bake the reference-correct blank white eye sockets into the base body. Reserve the black changing gaze and expression fills for Bowbert runtime layering.
-```
-
-### Attached-Eye Character
-
-Use for Bowbert-like edge-mounted round eyes.
-
-- `base.png` contains the stable body and face area.
-- Eye whites may be attachments when the whole eye assembly sits over the body edge.
-- Runtime pupils move inside those attached eyes.
+- `base.png` includes final blank white eye sockets/eye whites in the reference-correct silhouette — no baked pupils, spirals, or highlights inside them.
+- Eye whites are solid near-pure white (>= RGB 215), closed shapes with clean outlines, and must not touch or blend into any other white/near-white region of the body.
+- Slanted/cut white socket shapes (angry teardrops, crescent lids) are fixed body art; the runtime container reproduces them as ellipse + cut lines.
 
 Prompt phrase:
 
 ```text
-Create the stable upright body base for the character. The large edge-mounted eye assemblies are handled as runtime attachments with tunable pupil gaze.
+Bake the reference-correct blank white eye sockets into the base body: solid pure-white, cleanly outlined, empty of pupils. Reserve all black gaze and expression fills for runtime layering.
 ```
 
 ### Attachment
@@ -113,7 +99,7 @@ Create a reusable transparent-background projectile core matching the locked ref
 
 Layer contract:
 - Front-facing stable body base.
-- Baked white eye sockets only when this version uses a body-integrated eye base; otherwise eye assemblies are attachments.
+- Baked white eye sockets (all characters are embedded-eye; see docs/studio/eyes.md).
 - Bow is a runtime attachment with placement and recoil values in `rig.json`.
 
 Generation prompt:
@@ -122,7 +108,7 @@ Generation prompt:
 Acceptance checks:
 - Body reads as the same Bowbert character at mobile scale.
 - Bow is represented by runtime attachment data, not by the body base.
-- Eye workflow is documented as attached-eye or embedded-eye before runtime tuning.
+- Eye sockets are machine-fittable (`tools/fit_eyes.py`) before runtime tuning.
 
 ### Dart Goober
 

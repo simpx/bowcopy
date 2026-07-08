@@ -4,9 +4,6 @@ export type CharacterAttachmentSource =
   | 'procedural-canvas'
   | 'baked-into-base'
   | 'fixed-ai-image';
-export type CharacterGazeMode = 'attached-eye-pupils' | 'embedded-eye-pupils' | 'baked-static-eyes';
-export type CharacterEyeArchetype = 'round-external' | 'angry-embedded';
-
 export type EyeName = 'left' | 'right';
 
 export interface FixedImageRigLayer {
@@ -30,51 +27,56 @@ export interface FixedImageLayer extends FixedImageRigLayer {
   readonly imageUrl: string;
 }
 
-export interface AttachedEyeTuning {
-  readonly x: number;
-  readonly y: number;
-  readonly outerRadius: number;
-  readonly whiteRatio: number;
-  readonly pupilRatio: number;
+/**
+ * Eye geometry per docs/studio/eyes.md. Purely geometric — no semantic
+ * "kind"/"archetype" fields: an angry eye is just an ellipse with a cut.
+ * Coordinates are normalized to the base image; cuts live in the eye-local
+ * frame where the container is |u| <= 1 ∩ (u.y - slope*u.x - offset >= 0).
+ */
+export interface EyeCut {
+  readonly slope: number;
+  readonly offset: number;
 }
 
-export interface EmbeddedEyeTuning {
+export interface EyeContainerTuning {
   readonly x: number;
   readonly y: number;
   readonly radiusX: number;
   readonly radiusY: number;
   readonly rotation: number;
+  readonly cuts: readonly EyeCut[];
 }
 
-export interface EyeEmotionTuning {
-  readonly shape?: 'ellipse' | 'cut-ellipse' | 'spiral' | 'x';
-  readonly eyeTiltAdd: number;
-  readonly eyeTiltMode?: 'mirrored' | 'same';
-  readonly eyeScaleX: number;
-  readonly eyeScaleY: number;
-  readonly pupilScale: number;
+/**
+ * Emotion expression, every quantity in eye-local (container) units.
+ * `cuts` are temporary lid cuts (docs/studio/eyes.md: an eyelid is an
+ * animated cut, an angry socket is a permanent one). Expression cuts are
+ * authored for the LEFT eye and mirrored (x-flip) for the right eye.
+ */
+export interface EyeExpression {
+  readonly style?: 'dot' | 'spiral' | 'x';
+  readonly tiltAdd: number;
+  readonly tiltMode?: 'mirrored' | 'same';
+  readonly pupilRadiusX: number;
+  readonly pupilRadiusY: number;
   readonly pupilShiftX: number;
   readonly pupilShiftY: number;
-  readonly cutSlope?: number;
-  readonly cutOffset?: number;
   readonly upperLid: number;
   readonly lowerLid: number;
+  readonly cuts?: readonly EyeCut[];
 }
 
-export interface AttachedEyeGazeRig {
-  readonly mode: 'attached-eye-pupils';
-  readonly archetype: 'round-external';
-  readonly eyes: Record<EyeName, AttachedEyeTuning>;
-  readonly pupilOffsetScale: { readonly x: number; readonly y: number };
-  readonly emotions: Record<string, EyeEmotionTuning>;
-}
+export type EyeTemplateName = 'standard';
 
-export interface EmbeddedEyeGazeRig {
-  readonly mode: 'embedded-eye-pupils';
-  readonly archetype: 'angry-embedded';
-  readonly eyes: Record<EyeName, EmbeddedEyeTuning>;
+/** Eyes are shared assets: rigs reference a template and override sparingly. */
+export interface GazeRig {
+  readonly eyes: Record<EyeName, EyeContainerTuning>;
+  /** Gaze tracking strength, eye-local units. */
   readonly pupilOffsetScale: { readonly x: number; readonly y: number };
-  readonly emotions: Record<string, EyeEmotionTuning>;
+  readonly emotions: {
+    readonly template: EyeTemplateName;
+    readonly overrides?: Record<string, Partial<EyeExpression>>;
+  };
 }
 
 export interface BowbertMotionRig {
@@ -145,7 +147,7 @@ export interface BowbertCharacterRig {
     readonly eyes: { readonly source: CharacterAttachmentSource; readonly role: string };
     readonly bow: { readonly source: CharacterAttachmentSource; readonly role: string };
   };
-  readonly gaze: AttachedEyeGazeRig;
+  readonly gaze: GazeRig;
   readonly motion: BowbertMotionRig;
 }
 
@@ -157,7 +159,7 @@ export interface DartGooberCharacterRig {
   readonly attachments: {
     readonly eyes: { readonly source: CharacterAttachmentSource; readonly role: string };
   };
-  readonly gaze: EmbeddedEyeGazeRig;
+  readonly gaze: GazeRig;
   readonly motion: DartGooberMotionRig;
   readonly attack: DartGooberAttackRig;
 }
@@ -171,7 +173,7 @@ export interface RedShroomCharacterRig {
     readonly eyes: { readonly source: CharacterAttachmentSource; readonly role: string };
     readonly spores: { readonly source: CharacterAttachmentSource; readonly role: string };
   };
-  readonly gaze: EmbeddedEyeGazeRig;
+  readonly gaze: GazeRig;
   readonly motion: RedShroomMotionRig;
   readonly spores: RedShroomSporeRig;
 }
