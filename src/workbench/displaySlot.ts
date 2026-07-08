@@ -187,8 +187,10 @@ export const createDisplaySlots = (): DisplaySlot[] => [
   new DisplaySlot('doorbert', 'Doorbert', DOORBERT_RIG as unknown as DisplayRig, doorbertBaseUrl)
 ];
 
-export const preloadDisplaySlotAssets = (scene: Phaser.Scene) => {
+export const preloadDisplaySlotAssets = (scene: Phaser.Scene, focusId?: string) => {
   for (const slot of createDisplaySlots()) {
-    slot.preload(scene);
+    if (!focusId || slot.id === focusId) {
+      slot.preload(scene);
+    }
   }
 };

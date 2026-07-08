@@ -83,17 +83,39 @@ export class WorkbenchScene extends Phaser.Scene {
   }
 
   preload() {
-    preloadBowbertPlayerAssets(this);
-    preloadArrowProjectileAssets(this);
-    preloadEnemyDartProjectileAssets(this);
-    preloadShroomSporeProjectileAssets(this);
-    preloadDartGooberAssets(this);
-    preloadDartTriGooberAssets(this);
-    preloadRedShroomAssets(this);
-    preloadKaboomletAssets(this);
-    preloadSlimeAssets(this);
-    preloadSpooperGooperAssets(this);
-    preloadDisplaySlotAssets(this);
+    // In focus mode only the focused slot's textures are fetched — base
+    // images are hundreds of KB each and a focus page needs exactly one.
+    const need = (...ids: string[]) => !this.focusId || ids.includes(this.focusId);
+
+    if (need('bowbert')) {
+      preloadBowbertPlayerAssets(this);
+      preloadArrowProjectileAssets(this);
+    }
+
+    if (need('dart-goober', 'dart-tri-goober')) {
+      preloadDartGooberAssets(this);
+      preloadDartTriGooberAssets(this);
+      preloadEnemyDartProjectileAssets(this);
+    }
+
+    if (need('red-shroom', 'purple-shroom')) {
+      preloadRedShroomAssets(this);
+      preloadShroomSporeProjectileAssets(this);
+    }
+
+    if (need('kaboomlet')) {
+      preloadKaboomletAssets(this);
+    }
+
+    if (need('slime')) {
+      preloadSlimeAssets(this);
+    }
+
+    if (need('spooper-gooper')) {
+      preloadSpooperGooperAssets(this);
+    }
+
+    preloadDisplaySlotAssets(this, this.focusId);
   }
 
   create() {
