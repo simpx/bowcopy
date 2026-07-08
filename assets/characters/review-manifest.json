@@ -182,13 +182,19 @@
           "id": "split",
           "label": "Live split into children",
           "url": "../../?encounter=slime-parent&split=1"
+        },
+        {
+          "id": "parent-damage",
+          "label": "Forced parent contact damage",
+          "url": "../../?encounter=slime-parent&effect=damage"
         }
       ],
       "media": [
         { "id": "comparison", "label": "Comparison", "image": "slime-parent/comparison.png" },
         { "id": "base", "label": "Base", "image": "slime-parent/base.png" },
         { "id": "runtime", "label": "Runtime", "image": "slime-parent/playtest/runtime-encounter.png" },
-        { "id": "split", "label": "Split Runtime", "image": "slime-parent/playtest/runtime-split.png" }
+        { "id": "split", "label": "Split Runtime", "image": "slime-parent/playtest/runtime-split.png" },
+        { "id": "video-runtime", "label": "Video Runtime Comparison", "image": "slime-parent/playtest/video-runtime-comparison.png" }
       ],
       "openItems": [
         "Tune parent jump timing, hitbox, split child count, spawn radius, and room density during gameplay balancing.",
@@ -208,12 +214,19 @@
           "id": "hopper",
           "label": "Live child hopper",
           "url": "../../?encounter=slime"
+        },
+        {
+          "id": "damage",
+          "label": "Forced child contact damage",
+          "url": "../../?encounter=slime&effect=damage"
         }
       ],
       "media": [
         { "id": "comparison", "label": "Comparison", "image": "slime/comparison.png" },
         { "id": "base", "label": "Base", "image": "slime/base.png" },
-        { "id": "runtime", "label": "Runtime", "image": "slime/playtest/runtime-encounter.png" }
+        { "id": "runtime", "label": "Runtime", "image": "slime/playtest/runtime-encounter.png" },
+        { "id": "damage", "label": "Damage Runtime", "image": "slime/playtest/runtime-damage.png" },
+        { "id": "video-runtime", "label": "Video Runtime Comparison", "image": "slime/playtest/video-runtime-comparison.png" }
       ],
       "openItems": [
         "Tune child jump cadence, hitbox, and split-cluster readability during gameplay balancing.",

@@ -537,6 +537,23 @@ export class CombatRoomScene extends Phaser.Scene {
         continue;
       }
 
+      if (event.type === 'slime-damaged-player') {
+        if (this.player.state.dodge.invulnerableMs > 0) {
+          this.feedbackRenderer?.playDodge(this.player.state.position, this.player.state.dodge.direction);
+          this.shakeCamera('dodge');
+          continue;
+        }
+
+        this.player.markHit();
+        this.playerHealth.damage(event.damage);
+        this.sfx?.playPlayerDamage(event.position, event.damage);
+        this.heartsHud?.update(this.playerHealth.state);
+        this.heartsHud?.flashDamage();
+        this.feedbackRenderer?.playDamage(this.player.state.position, event.damage);
+        this.shakeCamera('damage');
+        continue;
+      }
+
       if (event.type === 'slime-hit') {
         if (event.hp > 0) {
           this.sfx?.playShroomHit(event.position, event.damage);
@@ -1053,6 +1070,10 @@ export class CombatRoomScene extends Phaser.Scene {
       }
     }
 
+    if ((debugEncounter === 'slime' || debugEncounter === 'slime-parent') && this.shouldForceDebugSlimeDamage()) {
+      this.forceDebugSlimeDamagePreview(debugEncounter);
+    }
+
     if (debugEncounter === 'kaboomlet' && this.shouldForceDebugKaboomletExplosion()) {
       this.forceDebugKaboomletExplosionPreview();
     }
@@ -1070,6 +1091,10 @@ export class CombatRoomScene extends Phaser.Scene {
 
   private shouldForceDebugKaboomletExplosion(): boolean {
     return new URLSearchParams(window.location.search).get('effect') === 'explosion';
+  }
+
+  private shouldForceDebugSlimeDamage(): boolean {
+    return new URLSearchParams(window.location.search).get('effect') === 'damage';
   }
 
   private shouldForceDebugShroomSpore(): boolean {
@@ -1197,6 +1222,42 @@ export class CombatRoomScene extends Phaser.Scene {
     this.handleSlimeEvents(frame.events);
     this.slimeRenderer?.playEvents(frame.events);
     this.slimeRenderer?.update(2100, 16, this.slimes.getActiveEnemies());
+  }
+
+  private forceDebugSlimeDamagePreview(encounterKind: EncounterKind) {
+    const targetRole = encounterKind === 'slime-parent' ? 'parent' : 'child';
+    const playerPosition = this.player.state.position;
+    const slime = this.slimes.getActiveEnemies().find((enemy) => enemy.role === targetRole);
+
+    if (!slime) {
+      return;
+    }
+
+    slime.position = {
+      x: playerPosition.x + 12,
+      y: playerPosition.y + 2
+    };
+    slime.velocity = { x: 0, y: 0 };
+    slime.facing = { x: -1, y: 0 };
+    slime.phase = 'landing';
+    slime.phaseElapsedMs = 0;
+    slime.phaseDurationMs = 170;
+    slime.spawnProgress = 1;
+    slime.jumpProgress = 1;
+    slime.airHeight = 0;
+    slime.moveAmount = 0;
+    slime.squash = targetRole === 'parent' ? 0.18 : 0.2;
+
+    const frame = this.slimes.update(
+      16,
+      this.currentRoomDefinition.bounds,
+      playerPosition,
+      []
+    );
+
+    this.handleSlimeEvents(frame.events);
+    this.slimeRenderer?.playEvents(frame.events);
+    this.slimeRenderer?.update(2300, 16, this.slimes.getActiveEnemies());
   }
 
   private stepDebugEncounter(encounterKind: EncounterKind, timeMs: number, deltaMs: number) {

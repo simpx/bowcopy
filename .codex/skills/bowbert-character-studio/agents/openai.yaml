@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bowbert Character Studio"
+  short_description: "End-to-end Bowbert character pipeline"
+  default_prompt: "Use $bowbert-character-studio to produce a Bowbert character from concept through tuning, runtime integration, and playtest."

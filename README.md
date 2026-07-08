@@ -1,15 +1,44 @@
-# Bowbert
+# Bowcopy / Bowbert
 
-一个学习用途的 roguelike 复刻实验。目标不是照搬成品素材，而是验证 Icoso 在 devlog 里展示的思路：用简单图形、程序化动画、模板化房间、随机装饰和大量反馈效果，低成本做出一个可玩的俯视角房间清怪 roguelike。
+一个学习用途的 roguelike 复刻实验。这个仓库的目的，是根据 YouTube 视频里的开发过程还原一个类似的小游戏，并验证这种做法是否真的可行：用极少量手工素材、程序化动画、参数化敌人、模板化房间和大量反馈效果，快速做出一个可玩的俯视角房间清怪 roguelike。
 
 参考视频：Icoso 的 [I Made a Roguelike Game in 72 Hours!](https://www.youtube.com/watch?v=ju0LjRGAu5k)
+
+本项目不是商业复刻，也不是最终素材生产仓库。它更像一个可运行的研究样机：先尽量贴近视频效果，把移动、射箭、怪物、房间、UI、音效和角色生产流程跑通，再判断后续是否值得继续扩展成原创游戏。
 
 ## 目标
 
 - 复刻核心玩法循环：进入房间、关门、刷怪、清怪、开门、探索下一房间。
 - 复刻核心手感：移动端双摇杆、持续射箭、翻滚、箭矢碰撞、受击、爆炸和房间反馈。
-- 复刻低成本素材方案：简单角色形状 + 程序化 squash/stretch + 颜色/参数变体 + 粒子。
-- 验证模板化程序地图是否足够支撑一个小型 roguelike 原型。
+- 复刻低成本素材方案：AI base 图 + runtime 眼神/附件 + 程序化 squash/stretch + 粒子/VFX。
+- 验证模板化房间和 DSL 房间路线是否足够支撑一个小型 roguelike 原型。
+- 沉淀一套可复用的 character studio 流程，让后续角色可以从设定、生成、rig、tuning 到实机接入渐进完成。
+
+## 当前状态
+
+当前版本是一个 Phaser + TypeScript + Vite 原型，重点面向横屏手机操作：
+
+- 左摇杆移动。
+- 右摇杆瞄准并射箭；不动右摇杆时不自动攻击。
+- 闪避按钮按移动方向翻滚，翻滚期间可以撞破部分孢子。
+- 房间内会刷多波敌人，清理后可以进入下一个房间。
+- 已接入的敌人包括 goober、蘑菇怪、炸弹怪、史莱姆和幽灵类原型。
+- 角色资产放在 `assets/characters/<character-id>/`，每个目录尽量自描述，包含 base、rig、brief、tuning 和 playtest 截图。
+
+本仓库仍处于验证阶段，很多数值、动画和怪物行为还在调试中。
+
+## 运行
+
+```bash
+npm install
+npm run dev -- --host 0.0.0.0
+```
+
+构建检查：
+
+```bash
+npm run build
+```
 
 ## 参考资料
 
@@ -27,6 +56,27 @@
 注意：`refs/` 中的截图来自第三方视频，仅用于本学习仓库的研究索引，不应作为最终游戏素材发布或再分发。
 
 MVP 可在 `assets/prototype-video-crops/` 临时使用视频抠图来验证复刻可行性；正式发布前必须替换成自制素材。参考图不进入最终游戏包。
+
+## 资产生产流程
+
+项目里的角色不是传统 sprite sheet 管线，而是采用更适合这个实验的分层方式：
+
+- `base.png`：AI 生成或重绘后的基础角色图，通常包含身体、轮廓、眼白等稳定部分。
+- `attachments/`：可以随 runtime 放置或旋转的附件，例如弓、帽子、特殊装饰。
+- `rig.json`：角色的 scale、anchor、hitbox、shadow、runtime gaze、motion、attack/vfx 等参数。
+- `tuning.html`：角色专用调参页面，用来观察眼神、动作、附件和特效。
+- `playtest/`：实机截图、对比图和 review 证据。
+
+原则是：base 图负责稳定外形，runtime 负责眼神、表情、弹性动作、攻击特效和反馈。这样可以避免为每个动作都画完整 sprite，同时保留比较强的手感和表情变化。
+
+## 随仓库保存的 Skills
+
+项目相关的 Codex skills 已放在 `.codex/skills/`：
+
+- `.codex/skills/generate2dcharacter/`：负责单个角色的素材生成、rig、tuning、质量检查和 Bowbert 风格约束。
+- `.codex/skills/bowbert-character-studio/`：负责 Bowbert 项目的端到端角色生产流程，从设定图、资产目录、runtime 接入到 playtest 状态管理。
+
+这些 skill 是本仓库生产流程的一部分，不是通用游戏开发模板。它们记录了这个项目踩过的坑，比如武器不要烘进主角 base、孢子/拖尾不要烘进蘑菇 base、goober 类敌人的斜切眼白要在 base 阶段确定等。
 
 ## 计划中的游戏结构
 

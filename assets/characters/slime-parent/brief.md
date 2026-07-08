@@ -5,7 +5,7 @@ projectContext: bowbert
 lockedReference: source/reference-01.png
 sourceReferences:
   - source/reference-01.png
-  - source/reference-02.jpg
+  - source/video-large-reference.png
 openItems:
   - Tune parent jump timing, hitbox, split spawn count, and room density during gameplay balancing.
   - Select dedicated parent jump/split audio when the enemy set moves beyond MVP.
@@ -28,7 +28,7 @@ Visual target:
 
 Source:
 - `source/reference-01.png`
-- `source/reference-02.jpg`
+- `source/video-large-reference.png`
 
 Generated candidates:
 - `base.png`: promoted from user-approved `exports/base-v3-candidate.png` as the current runtime base.
@@ -55,7 +55,7 @@ Image generation prompt packets:
 
 Inputs:
 - `source/reference-01.png`
-- `source/reference-02.jpg`
+- `source/video-large-reference.png`
 
 Mode: image-to-image, high reference fidelity.
 
@@ -99,7 +99,7 @@ Acceptance checks:
 Runtime rig notes:
 - use hopper/slime precedent with procedural motion fields instead of frame animation.
 - motion fields: idleWobble, idleBob, preJumpSquash, airStretch, landingSquash, hitScaleX, hitScaleY, jumpHeight, jumpDurationMs, recoverMs.
-- behavior fields: splitOnDeath, childId, childCount, childSpawnRadius, parentHp, contactDamage.
+- behavior fields: splitOnDeath, childId, childCount, childSpawnRadius, parentHp, contactDamage. Parent contact damage is 1 heart on jump/landing collision.
 
 Preview notes:
 - `tuning.html` should show the locked reference beside the assembled runtime result.
@@ -114,3 +114,5 @@ Runtime integration:
 Playtest evidence:
 - `playtest/runtime-encounter.png`: parent slime in a mobile viewport debug encounter.
 - `playtest/runtime-split.png`: forced debug split showing child slime spawn after parent death.
+- `playtest/runtime-encounter-desktop.png`: desktop debug proof that parent runtime scale is distinct from child runtime scale.
+- `playtest/video-runtime-comparison.png`: video reference versus runtime parent, split, child, and damage comparison.

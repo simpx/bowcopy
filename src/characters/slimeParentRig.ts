@@ -4,10 +4,10 @@ export const SLIME_PARENT_RIG = {
     textureKey: 'slime-parent-base',
     imageAsset: 'assets/characters/slime-parent/base.png',
     imageSize: { width: 1254, height: 1254 },
-    scale: 0.118,
+    scale: 0.148,
     y: -18,
-    shadow: { width: 92, height: 16, y: 24 },
-    hitboxRadius: 43
+    shadow: { width: 118, height: 19, y: 28 },
+    hitboxRadius: 54
   },
   gaze: {
     eyes: {

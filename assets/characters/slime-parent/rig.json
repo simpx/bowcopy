@@ -5,7 +5,7 @@
   "status": "playtested",
   "sourceReferences": [
     "source/reference-01.png",
-    "source/reference-02.jpg"
+    "source/video-large-reference.png"
   ],
   "base": {
     "image": "base.png",
@@ -15,7 +15,7 @@
       "width": 1254,
       "height": 1254
     },
-    "scale": 0.118,
+    "scale": 0.148,
     "anchor": {
       "x": 0.5,
       "y": 0.5
@@ -25,12 +25,12 @@
       "y": -18
     },
     "hitbox": {
-      "radius": 43
+      "radius": 54
     },
     "shadow": {
-      "width": 92,
-      "height": 16,
-      "y": 24
+      "width": 118,
+      "height": 19,
+      "y": 28
     }
   },
   "gaze": {

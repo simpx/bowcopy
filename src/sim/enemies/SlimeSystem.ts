@@ -30,12 +30,14 @@ export interface SlimeEnemy {
 interface SlimeRuntime extends SlimeEnemy {
   jumpStart: SimVector;
   jumpTarget: SimVector;
+  playerHitCooldownMs: number;
 }
 
 export type SlimeEvent =
   | { type: 'slime-spawned'; id: number; role: SlimeRole; position: SimVector }
   | { type: 'slime-jumped'; id: number; role: SlimeRole; from: SimVector; to: SimVector }
   | { type: 'slime-landed'; id: number; role: SlimeRole; position: SimVector }
+  | { type: 'slime-damaged-player'; id: number; role: SlimeRole; position: SimVector; damage: number }
   | { type: 'slime-hit'; id: number; role: SlimeRole; arrowId: number; position: SimVector; hp: number; damage: number }
   | { type: 'slime-killed'; id: number; role: SlimeRole; position: SimVector }
   | { type: 'slime-split'; id: number; position: SimVector; childCount: number }
@@ -69,16 +71,20 @@ const JUMP_DISTANCE = 118;
 const JUMP_SIDE_ANGLE = 0.62;
 const MAX_HP = 3;
 const PARENT_HP = 4;
-const PARENT_HIT_RADIUS = 43;
+const PARENT_HIT_RADIUS = 54;
 const PARENT_JUMP_DISTANCE = 92;
 const PARENT_JUMP_HEIGHT = 28;
 const PARENT_JUMP_DURATION_MS = 880;
 const PARENT_RECOVER_DURATION_MS = 330;
 const PARENT_SPLIT_CHILDREN = 4;
-const PARENT_SPLIT_RADIUS = 42;
+const PARENT_SPLIT_RADIUS = 56;
 const HIT_FLASH_MS = 170;
 const ENEMY_RADIUS = 28;
 const ENEMY_HIT_RADIUS = 35;
+const PLAYER_HIT_RADIUS = 29;
+const CHILD_TOUCH_DAMAGE = 0.5;
+const PARENT_TOUCH_DAMAGE = 1;
+const PLAYER_HIT_COOLDOWN_MS = 720;
 const DEAD_ZONE = 0.001;
 
 const clamp = (value: number, min: number, max: number): number =>
@@ -295,7 +301,8 @@ export class SlimeSystem {
       hitFlashMs: 0,
       radius,
       jumpStart: copyVector(position),
-      jumpTarget: copyVector(position)
+      jumpTarget: copyVector(position),
+      playerHitCooldownMs: 0
     };
   }
 
@@ -351,6 +358,7 @@ export class SlimeSystem {
   ) {
     enemy.phaseElapsedMs += deltaMs;
     enemy.hitFlashMs = decay(enemy.hitFlashMs, deltaMs);
+    enemy.playerHitCooldownMs = decay(enemy.playerHitCooldownMs, deltaMs);
     enemy.walkPhase += deltaMs * 0.008;
     enemy.facing = vectorTo(enemy.position, playerPosition);
 
@@ -379,8 +387,10 @@ export class SlimeSystem {
 
     if (enemy.phase === 'jumping') {
       this.updateJumping(enemy, deltaMs);
+      this.tryDamagePlayer(enemy, playerPosition, events);
       if (enemy.phaseElapsedMs >= enemy.phaseDurationMs) {
         this.beginLanding(enemy, events);
+        this.tryDamagePlayer(enemy, playerPosition, events);
       }
       return;
     }
@@ -391,6 +401,7 @@ export class SlimeSystem {
       enemy.airHeight = 0;
       enemy.jumpProgress = 1;
       enemy.squash = (1 - clamp01(enemy.phaseElapsedMs / enemy.phaseDurationMs)) * (enemy.role === 'parent' ? 0.18 : 0.2);
+      this.tryDamagePlayer(enemy, playerPosition, events);
       if (enemy.phaseElapsedMs >= enemy.phaseDurationMs) {
         this.beginRecovering(enemy);
       }
@@ -480,6 +491,32 @@ export class SlimeSystem {
     enemy.phaseDurationMs = enemy.role === 'parent' ? PARENT_RECOVER_DURATION_MS : RECOVER_DURATION_MS;
     enemy.velocity = zeroVector();
     enemy.squash = 0;
+  }
+
+  private tryDamagePlayer(
+    enemy: SlimeRuntime,
+    playerPosition: SimVector,
+    events: SlimeEvent[]
+  ) {
+    if (enemy.playerHitCooldownMs > 0) {
+      return;
+    }
+
+    const hitRadius = enemy.radius + PLAYER_HIT_RADIUS;
+    const distance = Math.hypot(enemy.position.x - playerPosition.x, enemy.position.y - playerPosition.y);
+
+    if (distance > hitRadius) {
+      return;
+    }
+
+    enemy.playerHitCooldownMs = PLAYER_HIT_COOLDOWN_MS;
+    events.push({
+      type: 'slime-damaged-player',
+      id: enemy.id,
+      role: enemy.role,
+      position: copyVector(enemy.position),
+      damage: enemy.role === 'parent' ? PARENT_TOUCH_DAMAGE : CHILD_TOUCH_DAMAGE
+    });
   }
 
   private updateEncounterCleared(events: SlimeEvent[]) {

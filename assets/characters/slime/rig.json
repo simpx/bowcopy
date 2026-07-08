@@ -6,8 +6,7 @@
   "sourceReferences": [
     "source/reference-01.png",
     "source/reference-02.png",
-    "source/video-child-gameplay-reference.jpg",
-    "source/video-parent-swarm-reference.jpg"
+    "source/video-child-gameplay-reference.jpg"
   ],
   "base": {
     "image": "base.png",

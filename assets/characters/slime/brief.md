@@ -7,7 +7,6 @@ sourceReferences:
   - source/reference-01.png
   - source/reference-02.png
   - source/video-child-gameplay-reference.jpg
-  - source/video-parent-swarm-reference.jpg
 openItems:
   - Tune child jump cadence, hitbox, and split-cluster readability during gameplay balancing.
   - Decide later whether this folder should be renamed to `slime-child`; current runtime uses id `slime` as the child role.
@@ -30,7 +29,6 @@ Source:
 - `source/reference-01.png`
 - `source/reference-02.png`
 - `source/video-child-gameplay-reference.jpg`
-- `source/video-parent-swarm-reference.jpg`
 
 Generated candidates:
 - `base.png`: promoted from `exports/base-v4-candidate.png` as the current runtime base.
@@ -46,8 +44,10 @@ Generated candidates:
 Runtime evidence:
 - `src/characters/slimeRig.ts`: points to `assets/characters/slime/base.png` and stores normalized eye placement.
 - `src/render/enemies/SlimeRenderer.ts`: loads the accepted PNG base and overlays runtime black gaze.
-- `src/game/scenes/CombatRoomScene.ts`: maps stone rooms and `?encounter=slime` debug previews to Slime.
+- `src/game/scenes/CombatRoomScene.ts`: maps `?encounter=slime` debug previews to child slime and handles child contact damage.
 - `playtest/runtime-encounter.png`: browser screenshot proof that the accepted PNG base renders in the game scene.
+- `playtest/runtime-damage.png`: forced debug proof that child contact damage removes half a heart.
+- `playtest/video-runtime-comparison.png`: video reference versus runtime parent, split, child, and damage comparison.
 
 Decomposition:
 - base.png: generated fixed child slime body.
@@ -104,7 +104,7 @@ Acceptance checks:
 Runtime rig notes:
 - use procedural hopper motion instead of frame animation.
 - motion fields: idleWobble, preJumpSquash, airStretch, landingSquash, jumpHeight, jumpDurationMs, recoverMs.
-- behavior fields: spawnedBy, hp, speed profile, contactDamage.
+- behavior fields: spawnedBy, hp, speed profile, contactDamage. Child contact damage is 0.5 heart on jump/landing collision.
 - runtime preview should show idle, pre-jump, airborne, landing, hit, and death deformation.
 
 Preview notes:
