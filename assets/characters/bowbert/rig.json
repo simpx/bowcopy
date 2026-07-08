@@ -254,14 +254,15 @@
       }
     },
     "motion": {
-      "walkSquash": 0.074,
+      "walkSquash": 0.11,
       "idleSquash": 0.026,
       "hitSquash": 0.13,
       "dodgeStretch": 0.18,
-      "walkBob": 3.4,
+      "walkBob": 4.8,
       "recoilX": 6,
       "recoilY": 4,
-      "tiltVelocity": 0.075
+      "tiltVelocity": 0.075,
+      "dodgeSpin": 1
     }
   }
 }
