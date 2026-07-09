@@ -110,9 +110,19 @@ const studioReviewInbox = (): Plugin => ({
     server.middlewares.use('/assets/characters', handleRepoAsset('characters'));
     server.middlewares.use('/assets/audio', handleRepoAsset('audio'));
     // Hashed build assets never change: let phones cache them so repeat
-    // visits don't re-download megabytes.
+    // visits don't re-download megabytes. The HTML shell must never be
+    // cached, or a stale page would reference deleted hashed files.
     server.middlewares.use('/assets', (_req, res, next) => {
       res.setHeader('cache-control', 'public, max-age=31536000, immutable');
+      next();
+    });
+    server.middlewares.use((req, res, next) => {
+      const path = (req.url ?? '').split('?')[0];
+
+      if (path === '/' || path.endsWith('.html')) {
+        res.setHeader('cache-control', 'no-cache');
+      }
+
       next();
     });
   }

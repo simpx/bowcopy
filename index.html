@@ -73,7 +73,7 @@
 
         window.__bootProgress = function (value, phase) {
           lastProgressAt = Date.now();
-          if (failed) return;
+          failed = false; // loading resumed: withdraw any failure notice
           var fill = document.getElementById('boot-fill');
           if (fill) {
             fill.classList.add('tracking');
@@ -102,13 +102,17 @@
           });
         }
 
-        // A script/asset that dies during boot would otherwise hang forever.
+        // A dead script/stylesheet during boot would otherwise hang forever.
+        // Non-critical links (manifest, icons) failing must NOT flag a fail.
         window.addEventListener(
           'error',
           function (event) {
-            if (event.target && (event.target.tagName === 'SCRIPT' || event.target.tagName === 'LINK')) {
-              offerRetry('资源加载失败');
-            }
+            var target = event.target;
+            if (!target || !target.tagName) return;
+            var fatal =
+              target.tagName === 'SCRIPT' ||
+              (target.tagName === 'LINK' && target.rel === 'stylesheet');
+            if (fatal) offerRetry('资源加载失败');
           },
           true
         );
