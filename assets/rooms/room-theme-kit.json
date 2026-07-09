@@ -61,25 +61,129 @@
       }
     },
     "spawnPoints": [
-      { "id": "north-west", "x": 390, "y": 250 },
-      { "id": "north", "x": 640, "y": 230 },
-      { "id": "north-east", "x": 890, "y": 250 },
-      { "id": "east", "x": 1010, "y": 380 },
-      { "id": "south-east", "x": 860, "y": 475 },
-      { "id": "south", "x": 640, "y": 500 },
-      { "id": "south-west", "x": 420, "y": 475 },
-      { "id": "west", "x": 270, "y": 380 }
+      {
+        "id": "north-west",
+        "x": 390,
+        "y": 250
+      },
+      {
+        "id": "north",
+        "x": 640,
+        "y": 230
+      },
+      {
+        "id": "north-east",
+        "x": 890,
+        "y": 250
+      },
+      {
+        "id": "east",
+        "x": 1010,
+        "y": 380
+      },
+      {
+        "id": "south-east",
+        "x": 860,
+        "y": 475
+      },
+      {
+        "id": "south",
+        "x": 640,
+        "y": 500
+      },
+      {
+        "id": "south-west",
+        "x": 420,
+        "y": 475
+      },
+      {
+        "id": "west",
+        "x": 270,
+        "y": 380
+      }
     ],
     "floorMarks": [
-      { "id": "north-fleck-1", "x": 154, "y": 96, "width": 8, "height": 3, "rotation": -0.2, "alpha": 0.1 },
-      { "id": "north-fleck-2", "x": 520, "y": 112, "width": 12, "height": 3, "rotation": 0.14, "alpha": 0.09 },
-      { "id": "north-fleck-3", "x": 926, "y": 86, "width": 7, "height": 2, "rotation": 0.2, "alpha": 0.08 },
-      { "id": "west-fleck-1", "x": 154, "y": 374, "width": 8, "height": 3, "rotation": 0.12, "alpha": 0.09 },
-      { "id": "center-fleck-1", "x": 640, "y": 292, "width": 16, "height": 4, "rotation": -0.1, "alpha": 0.1 },
-      { "id": "center-fleck-2", "x": 514, "y": 384, "width": 12, "height": 3, "rotation": 0.04, "alpha": 0.09 },
-      { "id": "east-fleck-1", "x": 1084, "y": 314, "width": 10, "height": 3, "rotation": -0.18, "alpha": 0.08 },
-      { "id": "south-fleck-1", "x": 270, "y": 624, "width": 9, "height": 3, "rotation": -0.06, "alpha": 0.09 },
-      { "id": "south-fleck-2", "x": 854, "y": 642, "width": 12, "height": 4, "rotation": 0.1, "alpha": 0.08 }
+      {
+        "id": "north-fleck-1",
+        "x": 154,
+        "y": 96,
+        "width": 8,
+        "height": 3,
+        "rotation": -0.2,
+        "alpha": 0.1
+      },
+      {
+        "id": "north-fleck-2",
+        "x": 520,
+        "y": 112,
+        "width": 12,
+        "height": 3,
+        "rotation": 0.14,
+        "alpha": 0.09
+      },
+      {
+        "id": "north-fleck-3",
+        "x": 926,
+        "y": 86,
+        "width": 7,
+        "height": 2,
+        "rotation": 0.2,
+        "alpha": 0.08
+      },
+      {
+        "id": "west-fleck-1",
+        "x": 154,
+        "y": 374,
+        "width": 8,
+        "height": 3,
+        "rotation": 0.12,
+        "alpha": 0.09
+      },
+      {
+        "id": "center-fleck-1",
+        "x": 640,
+        "y": 292,
+        "width": 16,
+        "height": 4,
+        "rotation": -0.1,
+        "alpha": 0.1
+      },
+      {
+        "id": "center-fleck-2",
+        "x": 514,
+        "y": 384,
+        "width": 12,
+        "height": 3,
+        "rotation": 0.04,
+        "alpha": 0.09
+      },
+      {
+        "id": "east-fleck-1",
+        "x": 1084,
+        "y": 314,
+        "width": 10,
+        "height": 3,
+        "rotation": -0.18,
+        "alpha": 0.08
+      },
+      {
+        "id": "south-fleck-1",
+        "x": 270,
+        "y": 624,
+        "width": 9,
+        "height": 3,
+        "rotation": -0.06,
+        "alpha": 0.09
+      },
+      {
+        "id": "south-fleck-2",
+        "x": 854,
+        "y": 642,
+        "width": 12,
+        "height": 4,
+        "rotation": 0.1,
+        "alpha": 0.08
+      }
     ]
   },
   "palette": {
@@ -117,21 +221,69 @@
     },
     "skipBelowSeed": 0.12,
     "shapeMix": [
-      { "shape": "v-grass", "maxSeed": 0.46 },
-      { "shape": "w-grass", "maxSeed": 0.72 },
-      { "shape": "split-grass", "maxSeed": 0.9 },
-      { "shape": "tiny-dash", "maxSeed": 1 }
+      {
+        "shape": "v-grass",
+        "maxSeed": 0.46
+      },
+      {
+        "shape": "w-grass",
+        "maxSeed": 0.72
+      },
+      {
+        "shape": "split-grass",
+        "maxSeed": 0.9
+      },
+      {
+        "shape": "tiny-dash",
+        "maxSeed": 1
+      }
     ],
     "pebbleSeed": 0.86,
     "scuffSeed": 0.94
   },
   "baseProps": [
-    { "kind": "stone", "x": 214, "y": 162, "scale": 0.72, "rotation": -0.08 },
-    { "kind": "stump", "x": 1056, "y": 210, "scale": 0.68, "rotation": 0.04 },
-    { "kind": "mushroom", "x": 186, "y": 492, "scale": 0.62, "rotation": -0.08 },
-    { "kind": "stone", "x": 724, "y": 126, "scale": 0.52, "rotation": 0.1 },
-    { "kind": "mushroom", "x": 1004, "y": 524, "scale": 0.58, "rotation": 0.06 },
-    { "kind": "stump", "x": 392, "y": 610, "scale": 0.52, "rotation": -0.05 }
+    {
+      "kind": "stone",
+      "x": 214,
+      "y": 162,
+      "scale": 0.72,
+      "rotation": -0.08
+    },
+    {
+      "kind": "stump",
+      "x": 1056,
+      "y": 210,
+      "scale": 0.68,
+      "rotation": 0.04
+    },
+    {
+      "kind": "mushroom",
+      "x": 186,
+      "y": 492,
+      "scale": 0.62,
+      "rotation": -0.08
+    },
+    {
+      "kind": "stone",
+      "x": 724,
+      "y": 126,
+      "scale": 0.52,
+      "rotation": 0.1
+    },
+    {
+      "kind": "mushroom",
+      "x": 1004,
+      "y": 524,
+      "scale": 0.58,
+      "rotation": 0.06
+    },
+    {
+      "kind": "stump",
+      "x": 392,
+      "y": 610,
+      "scale": 0.52,
+      "rotation": -0.05
+    }
   ],
   "themes": {
     "start": {
@@ -141,8 +293,20 @@
       "floorColor": "#406c4e",
       "decorSeed": 0.11,
       "extraProps": [
-        { "kind": "stone", "x": 498, "y": 186, "scale": 0.48, "rotation": 0.08 },
-        { "kind": "stump", "x": 890, "y": 556, "scale": 0.48, "rotation": -0.04 }
+        {
+          "kind": "stone",
+          "x": 498,
+          "y": 186,
+          "scale": 0.48,
+          "rotation": 0.08
+        },
+        {
+          "kind": "stump",
+          "x": 890,
+          "y": 556,
+          "scale": 0.48,
+          "rotation": -0.04
+        }
       ],
       "encounter": {
         "kind": "safe-start",
@@ -156,13 +320,34 @@
       "floorColor": "#3f694b",
       "decorSeed": 0,
       "extraProps": [
-        { "kind": "stump", "x": 330, "y": 202, "scale": 0.52, "rotation": 0.12 },
-        { "kind": "stump", "x": 944, "y": 448, "scale": 0.66, "rotation": -0.04 },
-        { "kind": "stone", "x": 768, "y": 572, "scale": 0.4, "rotation": 0.1 }
+        {
+          "kind": "stump",
+          "x": 330,
+          "y": 202,
+          "scale": 0.52,
+          "rotation": 0.12
+        },
+        {
+          "kind": "stump",
+          "x": 944,
+          "y": 448,
+          "scale": 0.66,
+          "rotation": -0.04
+        },
+        {
+          "kind": "stone",
+          "x": 768,
+          "y": 572,
+          "scale": 0.4,
+          "rotation": 0.1
+        }
       ],
       "encounter": {
         "kind": "normal",
-        "preferredEnemies": ["dart-goober", "kaboomlet"]
+        "preferredEnemies": [
+          "dart-goober",
+          "kaboomlet"
+        ]
       }
     },
     "stone": {
@@ -172,13 +357,35 @@
       "floorColor": "#405c4e",
       "decorSeed": 0.42,
       "extraProps": [
-        { "kind": "stone", "x": 330, "y": 202, "scale": 0.48, "rotation": 0.12 },
-        { "kind": "stone", "x": 944, "y": 448, "scale": 0.62, "rotation": -0.04 },
-        { "kind": "stone", "x": 768, "y": 572, "scale": 0.54, "rotation": 0.05 }
+        {
+          "kind": "stone",
+          "x": 330,
+          "y": 202,
+          "scale": 0.48,
+          "rotation": 0.12
+        },
+        {
+          "kind": "stone",
+          "x": 944,
+          "y": 448,
+          "scale": 0.62,
+          "rotation": -0.04
+        },
+        {
+          "kind": "stone",
+          "x": 768,
+          "y": 572,
+          "scale": 0.54,
+          "rotation": 0.05
+        }
       ],
       "encounter": {
         "kind": "normal",
-        "preferredEnemies": ["dart-tri-goober", "slime-parent", "slime"]
+        "preferredEnemies": [
+          "dart-tri-goober",
+          "slime-parent",
+          "slime"
+        ]
       }
     },
     "mushroom": {
@@ -188,15 +395,48 @@
       "floorColor": "#3f654f",
       "decorSeed": 0.68,
       "extraProps": [
-        { "kind": "mushroom", "x": 318, "y": 210, "scale": 0.48, "rotation": 0.1 },
-        { "kind": "mushroom", "x": 910, "y": 170, "scale": 0.44, "rotation": -0.08 },
-        { "kind": "mushroom", "x": 758, "y": 566, "scale": 0.52, "rotation": 0.04 },
-        { "kind": "mushroom", "x": 1044, "y": 438, "scale": 0.42, "rotation": -0.12 },
-        { "kind": "mushroom", "x": 486, "y": 532, "scale": 0.5, "rotation": 0.06 }
+        {
+          "kind": "mushroom",
+          "x": 318,
+          "y": 210,
+          "scale": 0.48,
+          "rotation": 0.1
+        },
+        {
+          "kind": "mushroom",
+          "x": 910,
+          "y": 170,
+          "scale": 0.44,
+          "rotation": -0.08
+        },
+        {
+          "kind": "mushroom",
+          "x": 758,
+          "y": 566,
+          "scale": 0.52,
+          "rotation": 0.04
+        },
+        {
+          "kind": "mushroom",
+          "x": 1044,
+          "y": 438,
+          "scale": 0.42,
+          "rotation": -0.12
+        },
+        {
+          "kind": "mushroom",
+          "x": 486,
+          "y": 532,
+          "scale": 0.5,
+          "rotation": 0.06
+        }
       ],
       "encounter": {
         "kind": "normal",
-        "preferredEnemies": ["red-shroom", "purple-shroom"]
+        "preferredEnemies": [
+          "red-shroom",
+          "purple-shroom"
+        ]
       }
     },
     "wizard": {
@@ -206,9 +446,27 @@
       "floorColor": "#3d604f",
       "decorSeed": 0.83,
       "extraProps": [
-        { "kind": "stump", "x": 324, "y": 218, "scale": 0.6, "rotation": 0.1 },
-        { "kind": "mushroom", "x": 900, "y": 504, "scale": 0.62, "rotation": -0.12 },
-        { "kind": "stone", "x": 632, "y": 180, "scale": 0.5, "rotation": 0.02 }
+        {
+          "kind": "stump",
+          "x": 324,
+          "y": 218,
+          "scale": 0.6,
+          "rotation": 0.1
+        },
+        {
+          "kind": "mushroom",
+          "x": 900,
+          "y": 504,
+          "scale": 0.62,
+          "rotation": -0.12
+        },
+        {
+          "kind": "stone",
+          "x": 632,
+          "y": 180,
+          "scale": 0.5,
+          "rotation": 0.02
+        }
       ],
       "encounter": {
         "kind": "reward",
@@ -222,32 +480,115 @@
       "floorColor": "#495348",
       "decorSeed": 0.97,
       "extraProps": [
-        { "kind": "stone", "x": 330, "y": 202, "scale": 0.7, "rotation": 0.12 },
-        { "kind": "stone", "x": 944, "y": 448, "scale": 0.76, "rotation": -0.04 },
-        { "kind": "stump", "x": 742, "y": 562, "scale": 0.68, "rotation": 0.08 }
+        {
+          "kind": "stone",
+          "x": 330,
+          "y": 202,
+          "scale": 0.7,
+          "rotation": 0.12
+        },
+        {
+          "kind": "stone",
+          "x": 944,
+          "y": 448,
+          "scale": 0.76,
+          "rotation": -0.04
+        },
+        {
+          "kind": "stump",
+          "x": 742,
+          "y": 562,
+          "scale": 0.68,
+          "rotation": 0.08
+        }
       ],
       "encounter": {
         "kind": "boss",
-        "preferredEnemies": ["spooper-gooper", "kaboomlet"]
+        "preferredEnemies": [
+          "spooper-gooper",
+          "kaboomlet"
+        ]
       }
     }
   },
   "dungeonDsl": {
     "rows": [
-      "..B..",
-      "..R..",
-      ".GMM.",
-      "..G..",
-      ".MS..",
-      ".W..."
+      "..Z..",
+      "..dp.",
+      ".xs..",
+      "..tk.",
+      ".bm..",
+      "..g..",
+      ".WS.."
     ],
     "legend": {
-      "S": { "kind": "start", "theme": "start" },
-      "G": { "kind": "normal", "theme": "forest" },
-      "M": { "kind": "normal", "theme": "mushroom" },
-      "R": { "kind": "normal", "theme": "stone" },
-      "W": { "kind": "wizard", "theme": "wizard" },
-      "B": { "kind": "boss", "theme": "boss" }
+      "S": {
+        "kind": "start",
+        "theme": "start"
+      },
+      "W": {
+        "kind": "wizard",
+        "theme": "wizard"
+      },
+      "Z": {
+        "kind": "boss",
+        "theme": "boss",
+        "encounter": "hexbrim"
+      },
+      "g": {
+        "kind": "normal",
+        "theme": "forest",
+        "encounter": "dart-goober",
+        "budget": 3
+      },
+      "m": {
+        "kind": "normal",
+        "theme": "mushroom",
+        "encounter": "red-shroom",
+        "budget": 4
+      },
+      "b": {
+        "kind": "normal",
+        "theme": "forest",
+        "encounter": "backboard",
+        "budget": 3
+      },
+      "t": {
+        "kind": "normal",
+        "theme": "stone",
+        "encounter": "dart-tri-goober",
+        "budget": 4
+      },
+      "k": {
+        "kind": "normal",
+        "theme": "forest",
+        "encounter": "kaboomlet",
+        "budget": 6
+      },
+      "s": {
+        "kind": "normal",
+        "theme": "stone",
+        "encounter": "slime-parent",
+        "budget": 6
+      },
+      "x": {
+        "kind": "normal",
+        "theme": "stone",
+        "encounter": "switcheroo",
+        "budget": 6
+      },
+      "d": {
+        "kind": "normal",
+        "theme": "boss",
+        "encounter": "doorbert",
+        "budget": 1
+      },
+      "p": {
+        "kind": "normal",
+        "theme": "boss",
+        "encounter": "spooper-gooper",
+        "budget": 4
+      }
     }
   },
   "openItems": [
