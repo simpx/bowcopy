@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 import hexbrimBaseUrl from '../../../assets/characters/hexbrim/base.png';
 import { HEXBRIM_RIG } from '../../characters/hexbrimRig';
-import type { HexbrimEnemy, HexbrimEvent, HexbrimHex } from '../../sim/enemies';
+import type { HexbrimEnemy, HexbrimEvent, HexbrimHex, HexbrimRing } from '../../sim/enemies';
 import { HOUSE_BURST_STYLE, ParticleBurstPool } from '../feedback/particleBurst';
 import { PortalEffectPool } from '../feedback/portalEffect';
 
@@ -56,11 +56,12 @@ export class HexbrimRenderer {
     timeMs: number,
     deltaMs: number,
     entities: readonly HexbrimEnemy[],
-    hexes: readonly HexbrimHex[]
+    hexes: readonly HexbrimHex[],
+    rings: readonly HexbrimRing[] = []
   ) {
     this.timeMs = timeMs;
     this.syncEntities(timeMs, entities);
-    this.drawHexes(hexes);
+    this.drawHexes(hexes, rings);
     this.bursts.update(deltaMs);
     this.portals.update(deltaMs);
   }
@@ -172,7 +173,7 @@ export class HexbrimRenderer {
     const hover = Math.sin(entity.swayPhase) * (motion.hoverBob ?? 6);
     const sway = Math.sin(entity.swayPhase * 0.8) * (motion.swayTilt ?? 0.06);
     const telegraphShake =
-      entity.phase === 'volley' || entity.phase === 'hexcast'
+      entity.phase === 'volley' || entity.phase === 'hexcast' || entity.phase === 'ringcast'
         ? Math.sin(timeMs * 0.11) * 2.2 * entity.telegraphProgress
         : 0;
     const squash =
@@ -199,7 +200,7 @@ export class HexbrimRenderer {
     );
   }
 
-  private drawHexes(hexes: readonly HexbrimHex[]) {
+  private drawHexes(hexes: readonly HexbrimHex[], rings: readonly HexbrimRing[]) {
     const graphics = this.hexGraphics;
 
     if (!graphics) {
@@ -207,6 +208,19 @@ export class HexbrimRenderer {
     }
 
     graphics.clear();
+
+    for (const ring of rings) {
+      const fade = 1 - ring.radius / ring.maxRadius;
+
+      if (ring.radius <= 0) {
+        continue;
+      }
+
+      graphics.lineStyle(8, 0xc65df0, 0.25 + fade * 0.55);
+      graphics.strokeEllipse(ring.origin.x, ring.origin.y, ring.radius * 2, ring.radius * 1.7);
+      graphics.lineStyle(3, 0xe8b6ff, 0.35 + fade * 0.5);
+      graphics.strokeEllipse(ring.origin.x, ring.origin.y, ring.radius * 2 + 10, ring.radius * 1.7 + 8);
+    }
 
     for (const hex of hexes) {
       const progress = clamp01(hex.elapsedMs / hex.durationMs);

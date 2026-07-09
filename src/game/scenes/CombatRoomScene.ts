@@ -367,6 +367,13 @@ export class CombatRoomScene extends Phaser.Scene {
         this.player.state.position.x = position.x;
         this.player.state.position.y = position.y;
       },
+      hexPlayer: (durationMs) => {
+        this.player.markHexed(durationMs);
+
+        if (this.player.state.hexedMs > 0) {
+          this.feedbackRenderer?.playSporeBreak(this.player.state.position);
+        }
+      },
       damagePlayerFromRadius: (position, radius, damage) =>
         this.damagePlayerFromRadius(position, radius, damage),
       encounterCleared: (options) => this.encounterClearedByKit(options),

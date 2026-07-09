@@ -60,7 +60,8 @@ export class HexbrimKit implements EnemyKit {
       timeMs,
       deltaMs,
       show ? this.system.getActiveEntities() : [],
-      show ? this.system.getActiveHexes() : []
+      show ? this.system.getActiveHexes() : [],
+      show ? this.system.getActiveRings() : []
     );
 
     return frame.consumedArrowIds;
@@ -71,11 +72,17 @@ export class HexbrimKit implements EnemyKit {
 
     this.handleEvents(frame.events);
     this.renderer?.playEvents(frame.events);
-    this.renderer?.update(timeMs, deltaMs, this.system.getActiveEntities(), this.system.getActiveHexes());
+    this.renderer?.update(
+      timeMs,
+      deltaMs,
+      this.system.getActiveEntities(),
+      this.system.getActiveHexes(),
+      this.system.getActiveRings()
+    );
   }
 
   debugForceEffect(effect: string, _kind: EncounterKind, _bounds: RoomBounds) {
-    if (effect === 'volley' || effect === 'hexcast' || effect === 'teleport' || effect === 'clones') {
+    if (effect === 'volley' || effect === 'hexcast' || effect === 'ring' || effect === 'teleport' || effect === 'clones') {
       this.system.debugForce(effect);
     }
   }
@@ -115,8 +122,18 @@ export class HexbrimKit implements EnemyKit {
       }
 
       if (event.type === 'hexbrim-hex-detonated') {
-        this.services.damagePlayerFromRadius(event.position, event.radius, event.damage);
-        this.services.shakeCamera('damage');
+        const player = this.services.getPlayerPosition();
+        const gap = Math.hypot(player.x - event.position.x, player.y - event.position.y);
+
+        if (gap <= event.radius) {
+          this.services.hexPlayer?.(event.morphMs);
+          this.services.shakeCamera('dodge');
+        }
+        continue;
+      }
+
+      if (event.type === 'hexbrim-ring-hit') {
+        this.services.damagePlayer(event.position, event.damage);
         continue;
       }
 

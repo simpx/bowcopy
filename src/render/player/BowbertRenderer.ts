@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 
+import sheepbertBaseUrl from '../../../assets/characters/sheepbert/base.png';
 import {
   BOWBERT_CHARACTER,
   type CharacterAttachmentSource,
   type EyeName
 } from '../characters/layeredCharacterConfig';
 import { resolveEyeExpressions } from '../../characters/eyeEmotionTemplates';
+import { SHEEPBERT_RIG } from '../../characters/sheepbertRig';
 import { drawRuntimeEye } from '../eyes/runtimeEye';
 import type { BowbertPlayerState, SimVector } from '../../sim/player';
 import {
@@ -44,6 +46,10 @@ const normalize = (vector: SimVector): SimVector => {
 };
 
 export const preloadBowbertPlayerAssets = (scene: Phaser.Scene) => {
+  if (!scene.textures.exists(SHEEPBERT_RIG.base.textureKey)) {
+    scene.load.image(SHEEPBERT_RIG.base.textureKey, sheepbertBaseUrl);
+  }
+
   if (!scene.textures.exists(BOWBERT_CHARACTER.base.textureKey)) {
     scene.load.image(BOWBERT_CHARACTER.base.textureKey, BOWBERT_CHARACTER.base.imageUrl);
   }
@@ -55,6 +61,7 @@ export class BowbertRenderer {
   private body?: Phaser.GameObjects.Image;
   private eyeLayer?: Phaser.GameObjects.Container;
   private eyeGraphics?: Phaser.GameObjects.Graphics;
+  private sheepMode = false;
   private bowTexture?: Phaser.Textures.CanvasTexture;
   private bow?: Phaser.GameObjects.Image;
   private readonly ghosts: GhostAfterimage[] = [];
@@ -111,10 +118,18 @@ export class BowbertRenderer {
     const hitSquash = state.hitSquashMs / HIT_SQUASH_MS;
     const eyeEmotion = this.getEyeEmotion(state, hitFlash, hitSquash);
     const { base, motion } = BOWBERT_CHARACTER;
+    const hexed = state.hexedMs > 0;
+
+    if (hexed !== this.sheepMode) {
+      this.sheepMode = hexed;
+      this.body.setTexture(hexed ? SHEEPBERT_RIG.base.textureKey : base.textureKey);
+    }
+
+    const formScale = hexed ? SHEEPBERT_RIG.base.scale : base.scale;
     const bodySquash = walkWave * motion.walkSquash + idleWave * motion.idleSquash + hitSquash * motion.hitSquash;
     const dodgeStretch = dodgeWave * motion.dodgeStretch;
-    const scaleX = base.scale * (1 + Math.abs(bodySquash) + dodgeStretch);
-    const scaleY = base.scale * (1 - bodySquash - dodgeStretch * 0.52);
+    const scaleX = formScale * (1 + Math.abs(bodySquash) + dodgeStretch);
+    const scaleY = formScale * (1 - bodySquash - dodgeStretch * 0.52);
 
     this.container.setPosition(Math.round(state.position.x), Math.round(state.position.y));
     this.container.setDepth(70 + state.position.y / 1000);
@@ -148,7 +163,11 @@ export class BowbertRenderer {
       this.updateEyes(aim, eyeEmotion);
     }
 
-    this.updateBow(timeMs, aim, state, recoil);
+    this.bow.setVisible(!hexed);
+
+    if (!hexed) {
+      this.updateBow(timeMs, aim, state, recoil);
+    }
     this.updateGhosts(deltaMs, state, dodgeWave);
   }
 
@@ -209,9 +228,12 @@ export class BowbertRenderer {
       return;
     }
 
-    const gaze = BOWBERT_CHARACTER.gaze;
+    const hexed = this.sheepMode;
+    const gaze = hexed ? SHEEPBERT_RIG.gaze : BOWBERT_CHARACTER.gaze;
+    const imageSize = hexed ? SHEEPBERT_RIG.base.imageSize : BOWBERT_CHARACTER.base.imageSize;
     const expressions = resolveEyeExpressions(gaze.emotions);
-    const expression = expressions[eyeEmotion] ?? expressions.default;
+    const expression =
+      (hexed ? expressions.scared : undefined) ?? expressions[eyeEmotion] ?? expressions.default;
     const aimLength = Math.hypot(aim.x, aim.y);
     const aimScale = aimLength > 1 ? 1 / aimLength : 1;
 
@@ -222,7 +244,7 @@ export class BowbertRenderer {
         this.eyeGraphics,
         name,
         gaze.eyes[name],
-        BOWBERT_CHARACTER.base.imageSize,
+        imageSize,
         expression,
         {
           facingX: aim.x * aimScale,

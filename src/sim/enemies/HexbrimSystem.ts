@@ -19,7 +19,7 @@ import type { RoomBounds, RoomSpawnPoint } from '../rooms';
  * - phase 3 (hp <= 33%): faster cadence, wider volleys, double hexcast.
  */
 
-export type HexbrimPhase = 'spawning' | 'float' | 'volley' | 'hexcast' | 'vanish' | 'reappear';
+export type HexbrimPhase = 'spawning' | 'float' | 'volley' | 'hexcast' | 'ringcast' | 'vanish' | 'reappear';
 
 export interface HexbrimEnemy {
   readonly id: number;
@@ -47,13 +47,23 @@ export interface HexbrimHex {
   radius: number;
 }
 
+export interface HexbrimRing {
+  readonly id: number;
+  origin: SimVector;
+  radius: number;
+  maxRadius: number;
+  hitPlayer: boolean;
+}
+
 export type HexbrimEvent =
   | { type: 'hexbrim-spawned'; id: number; position: SimVector }
   | { type: 'hexbrim-teleport-out'; id: number; position: SimVector }
   | { type: 'hexbrim-teleport-in'; id: number; position: SimVector }
   | { type: 'hexbrim-volley'; id: number; origin: SimVector; directions: SimVector[] }
   | { type: 'hexbrim-hexcast'; id: number; position: SimVector; radius: number; durationMs: number }
-  | { type: 'hexbrim-hex-detonated'; position: SimVector; radius: number; damage: number }
+  | { type: 'hexbrim-hex-detonated'; position: SimVector; radius: number; morphMs: number }
+  | { type: 'hexbrim-ring-started'; id: number; origin: SimVector; maxRadius: number }
+  | { type: 'hexbrim-ring-hit'; position: SimVector; damage: number }
   | { type: 'hexbrim-clones-split'; positions: SimVector[] }
   | { type: 'hexbrim-clone-dispelled'; id: number; position: SimVector }
   | { type: 'hexbrim-hit'; id: number; arrowId: number; position: SimVector; hp: number; damage: number }
@@ -76,12 +86,17 @@ const VOLLEY_TELEGRAPH_MS = 700;
 const HEXCAST_TELEGRAPH_MS = 520;
 const HEX_BLOOM_MS = 950;
 const HEX_RADIUS = 74;
-const HEX_DAMAGE = 1;
+const RINGCAST_TELEGRAPH_MS = 550;
+const RING_SPEED = 240;
+const RING_MAX_RADIUS = 340;
+const RING_WIDTH = 16;
+const RING_DAMAGE = 1;
+const HEX_MORPH_MS = 4000;
 const VANISH_MS = 620;
 const REAPPEAR_MS = 320;
 const FLOAT_SPEED = 64;
 const PREFERRED_RANGE = 200;
-const BOSS_HP = 28;
+const BOSS_HP = 64;
 const CLONE_COUNT = 2;
 const VOLLEY_BOLTS = 5;
 const VOLLEY_BOLTS_PHASE3 = 7;
@@ -158,17 +173,19 @@ const getSegmentDistanceSquared = (point: SimVector, start: SimVector, end: SimV
   return deltaX * deltaX + deltaY * deltaY;
 };
 
-type HexbrimAction = 'volley' | 'hexcast' | 'teleport';
+type HexbrimAction = 'volley' | 'hexcast' | 'ring' | 'teleport';
 
 export class HexbrimSystem {
   private readonly entities = new Map<number, HexbrimEnemy>();
   private readonly hexes = new Map<number, HexbrimHex>();
+  private readonly rings = new Map<number, HexbrimRing>();
   private nextId = 1;
   private encounterStarted = false;
   private encounterCleared = false;
   private pendingBossSpawn: SimVector | null = null;
   private actionRotationIndex = 0;
-  private clonesSplitThisPhase = false;
+  private splitPhase2Done = false;
+  private splitPhase3Done = false;
   private forcedAction: HexbrimAction | 'clones' | null = null;
 
   startEncounter(spawnPoints: readonly RoomSpawnPoint[], _options: HexbrimEncounterOptions = {}) {
@@ -216,8 +233,29 @@ export class HexbrimSystem {
           type: 'hexbrim-hex-detonated',
           position: copyVector(hex.position),
           radius: hex.radius,
-          damage: HEX_DAMAGE
+          morphMs: HEX_MORPH_MS
         });
+      }
+    }
+
+    for (const ring of Array.from(this.rings.values())) {
+      ring.radius += RING_SPEED * (deltaMs / 1000);
+
+      if (!ring.hitPlayer) {
+        const gap = Math.abs(distance(ring.origin, playerPosition) - ring.radius);
+
+        if (gap <= RING_WIDTH) {
+          ring.hitPlayer = true;
+          events.push({
+            type: 'hexbrim-ring-hit',
+            position: copyVector(playerPosition),
+            damage: RING_DAMAGE
+          });
+        }
+      }
+
+      if (ring.radius >= ring.maxRadius) {
+        this.rings.delete(ring.id);
       }
     }
 
@@ -235,6 +273,10 @@ export class HexbrimSystem {
 
   getActiveHexes(): readonly HexbrimHex[] {
     return Array.from(this.hexes.values());
+  }
+
+  getActiveRings(): readonly HexbrimRing[] {
+    return Array.from(this.rings.values());
   }
 
   activeEnemyCount(): number {
@@ -267,8 +309,10 @@ export class HexbrimSystem {
     this.encounterCleared = false;
     this.pendingBossSpawn = null;
     this.actionRotationIndex = 0;
-    this.clonesSplitThisPhase = false;
+    this.splitPhase2Done = false;
+    this.splitPhase3Done = false;
     this.forcedAction = null;
+    this.rings.clear();
   }
 
   private boss(): HexbrimEnemy | undefined {
@@ -389,7 +433,9 @@ export class HexbrimSystem {
             ? VOLLEY_TELEGRAPH_MS
             : phase === 'hexcast'
               ? HEXCAST_TELEGRAPH_MS
-              : phase === 'vanish'
+              : phase === 'ringcast'
+                ? RINGCAST_TELEGRAPH_MS
+                : phase === 'vanish'
                 ? VANISH_MS
                 : REAPPEAR_MS;
   }
@@ -399,7 +445,9 @@ export class HexbrimSystem {
       return this.forcedAction;
     }
 
-    const rotation: HexbrimAction[] = ['volley', 'hexcast', 'volley', 'teleport'];
+    const rotation: HexbrimAction[] = this.phase2()
+      ? ['volley', 'ring', 'hexcast', 'volley', 'teleport']
+      : ['volley', 'hexcast', 'volley', 'teleport'];
     const action = rotation[this.actionRotationIndex % rotation.length];
 
     this.actionRotationIndex += 1;
@@ -449,11 +497,19 @@ export class HexbrimSystem {
           return;
         }
 
-        if (
-          (this.forcedAction === 'clones' || (this.phase2() && !this.clonesSplitThisPhase)) &&
-          !this.anyClones()
-        ) {
-          this.clonesSplitThisPhase = true;
+        const wantsSplit =
+          this.forcedAction === 'clones' ||
+          (this.phase2() && !this.splitPhase2Done) ||
+          (this.phase3() && !this.splitPhase3Done);
+
+        if (wantsSplit && !this.anyClones()) {
+          if (this.phase3()) {
+            this.splitPhase3Done = true;
+            this.splitPhase2Done = true;
+          } else {
+            this.splitPhase2Done = true;
+          }
+
           this.forcedAction = null;
           this.splitClones(entity, bounds, events);
           return;
@@ -462,7 +518,10 @@ export class HexbrimSystem {
         const action = this.pickAction();
 
         this.forcedAction = null;
-        this.enterPhase(entity, action === 'teleport' ? 'vanish' : action);
+        this.enterPhase(
+          entity,
+          action === 'teleport' ? 'vanish' : action === 'ring' ? 'ringcast' : action
+        );
       }
 
       return;
@@ -524,6 +583,37 @@ export class HexbrimSystem {
           position: copyVector(hex.position),
           radius: hex.radius,
           durationMs: hex.durationMs
+        });
+      }
+
+      this.enterPhase(entity, 'float');
+      return;
+    }
+
+    if (entity.phase === 'ringcast') {
+      entity.telegraphProgress = clamp01(entity.phaseElapsedMs / entity.phaseDurationMs);
+
+      if (entity.phaseElapsedMs < entity.phaseDurationMs) {
+        return;
+      }
+
+      const ringCount = this.phase3() ? 2 : 1;
+
+      for (let index = 0; index < ringCount; index += 1) {
+        const ring: HexbrimRing = {
+          id: this.nextId++,
+          origin: copyVector(entity.position),
+          radius: 20 - index * 46,
+          maxRadius: RING_MAX_RADIUS,
+          hitPlayer: false
+        };
+
+        this.rings.set(ring.id, ring);
+        events.push({
+          type: 'hexbrim-ring-started',
+          id: ring.id,
+          origin: copyVector(ring.origin),
+          maxRadius: ring.maxRadius
         });
       }
 

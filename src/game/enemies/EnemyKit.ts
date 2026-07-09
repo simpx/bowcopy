@@ -54,6 +54,8 @@ export interface EnemyKitServices {
   damagePlayer(sourcePosition: SimVector, damage: number): void;
   /** Moves Bowbert instantly (switcheroo swaps). Optional: absent in tooling hosts. */
   teleportPlayer?(position: SimVector): void;
+  /** Polymorphs Bowbert into sheep form for the duration (Hexbrim's hex). */
+  hexPlayer?(durationMs: number): void;
   damagePlayerFromRadius(position: SimVector, radius: number, damage: number): void;
   /** Marks the room cleared with sfx/feedback/shake and optional projectile cleanup. */
   encounterCleared(options: { clearSpores: boolean; clearDarts: boolean }): void;

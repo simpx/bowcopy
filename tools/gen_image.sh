@@ -31,6 +31,12 @@ done
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 
+# Codex's imagegen skill grabs the newest file from a SHARED
+# ~/.codex/generated_images cache — concurrent runs race and can steal each
+# other's output. Serialize all generations on one lock.
+exec 9>"/tmp/bowcopy-gen-image.lock"
+flock 9
+
 # NOTE: -i/--image is variadic and would swallow a trailing positional
 # prompt, so the prompt must come before the reference flags.
 codex exec \

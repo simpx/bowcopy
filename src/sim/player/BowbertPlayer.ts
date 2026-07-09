@@ -42,6 +42,8 @@ export interface BowbertPlayerState {
   fireRecoilMs: number;
   hitFlashMs: number;
   hitSquashMs: number;
+  /** >0 while polymorphed into a sheep (Hexbrim's hex): slow, no bow. */
+  hexedMs: number;
   dodge: BowbertDodgeState;
 }
 
@@ -52,10 +54,10 @@ export interface BowbertPlayerFrame {
 
 const PLAYER_RADIUS = 30;
 const PLAYER_SPEED = 178;
-const DODGE_SPEED = 462;
-const DODGE_DURATION_MS = 170;
+const DODGE_SPEED = 540;
+const DODGE_DURATION_MS = 310;
 const DODGE_COOLDOWN_MS = 680;
-const DODGE_INVULNERABLE_MS = 260;
+const DODGE_INVULNERABLE_MS = 360;
 const FIRST_ARROW_MS = 0;
 const ARROW_CADENCE_MS = 360;
 const ARROW_DAMAGE = 1;
@@ -119,6 +121,7 @@ export const createBowbertPlayerState = (position: SimVector): BowbertPlayerStat
   fireRecoilMs: 0,
   hitFlashMs: 0,
   hitSquashMs: 0,
+  hexedMs: 0,
   dodge: {
     activeMs: 0,
     durationMs: DODGE_DURATION_MS,
@@ -144,16 +147,31 @@ export class BowbertPlayerModel {
     const events: BowbertPlayerEvent[] = [];
     const deltaSeconds = deltaMs / 1000;
 
-    this.updateFacing(snapshot);
-    this.updateDodge(snapshot, deltaMs, events);
-    this.updateMovement(snapshot, deltaSeconds, bounds);
-    this.updateFiring(snapshot, deltaMs, events);
+    this.state.hexedMs = decay(this.state.hexedMs, deltaMs);
+
+    // A sheep cannot draw a bow; it can still waddle and tumble.
+    const effectiveSnapshot: InputSnapshot =
+      this.state.hexedMs > 0 ? { ...snapshot, firing: false } : snapshot;
+
+    this.updateFacing(effectiveSnapshot);
+    this.updateDodge(effectiveSnapshot, deltaMs, events);
+    this.updateMovement(effectiveSnapshot, deltaSeconds, bounds);
+    this.updateFiring(effectiveSnapshot, deltaMs, events);
     this.updateFeedback(deltaMs);
 
     return {
       state: this.state,
       events
     };
+  }
+
+  /** Hexbrim's polymorph: sheep form for `durationMs` (i-frames block it). */
+  markHexed(durationMs: number) {
+    if (this.state.dodge.invulnerableMs > 0) {
+      return;
+    }
+
+    this.state.hexedMs = Math.max(this.state.hexedMs, durationMs);
   }
 
   markHit() {
@@ -238,9 +256,11 @@ export class BowbertPlayerModel {
       };
       this.state.moveAmount = 1;
     } else {
+      const speed = this.state.hexedMs > 0 ? PLAYER_SPEED * 0.55 : PLAYER_SPEED;
+
       this.state.velocity = {
-        x: moveDirection.x * PLAYER_SPEED * moveLength,
-        y: moveDirection.y * PLAYER_SPEED * moveLength
+        x: moveDirection.x * speed * moveLength,
+        y: moveDirection.y * speed * moveLength
       };
       this.state.moveAmount = moveLength;
     }

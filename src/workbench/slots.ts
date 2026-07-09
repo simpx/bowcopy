@@ -509,6 +509,8 @@ class BowbertSlot implements WorkbenchSlot {
   readonly label = 'Bowbert (player)';
   readonly kind = 'player' as const;
 
+  readonly actions = [{ label: '变羊4秒', run: () => this.player.markHexed(4000) }];
+
   private scene!: Phaser.Scene;
   private cell!: WorkbenchCell;
   private feedback!: CombatFeedbackRenderer;
@@ -819,6 +821,7 @@ class HexbrimSlot extends EnemySlotBase {
   readonly actions = [
     { label: '强制弹幕', run: () => this.system.debugForce('volley') },
     { label: '强制咒术', run: () => this.system.debugForce('hexcast') },
+    { label: '强制波环', run: () => this.system.debugForce('ring') },
     { label: '强制传送', run: () => this.system.debugForce('teleport') },
     { label: '强制分身', run: () => this.system.debugForce('clones') }
   ];
@@ -857,6 +860,8 @@ class HexbrimSlot extends EnemySlotBase {
         }
       } else if (event.type === 'hexbrim-hit' && event.hp > 0) {
         this.feedback.playArrowEnemy(event.position, event.damage);
+      } else if (event.type === 'hexbrim-ring-hit') {
+        this.feedback.playDamage(event.position, event.damage);
       } else if (event.type === 'hexbrim-clone-dispelled') {
         this.feedback.playSporeBreak(event.position);
       } else if (event.type === 'hexbrim-killed') {
@@ -868,7 +873,13 @@ class HexbrimSlot extends EnemySlotBase {
 
     this.renderer.playEvents(frame.events);
     this.dartRenderer.playEvents(dartEvents);
-    this.renderer.update(timeMs, deltaMs, this.system.getActiveEntities(), this.system.getActiveHexes());
+    this.renderer.update(
+      timeMs,
+      deltaMs,
+      this.system.getActiveEntities(),
+      this.system.getActiveHexes(),
+      this.system.getActiveRings()
+    );
     this.dartRenderer.update(deltaMs, this.darts.getActiveDarts());
 
     return frame.consumedArrowIds;
