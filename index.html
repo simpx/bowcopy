@@ -62,21 +62,68 @@
     </style>
     <script>
       // Live before the JS bundle arrives; the game updates it during preload.
-      window.__bootProgress = function (value, note) {
-        var fill = document.getElementById('boot-fill');
-        var label = document.getElementById('boot-note');
-        if (fill) {
-          fill.classList.add('tracking');
-          fill.style.width = Math.round(4 + value * 96) + '%';
+      (function () {
+        var lastProgressAt = Date.now();
+        var failed = false;
+
+        function note(text) {
+          var label = document.getElementById('boot-note');
+          if (label) label.textContent = text;
         }
-        if (label && note) label.textContent = note;
-      };
-      window.__bootDone = function () {
-        var el = document.getElementById('boot-loading');
-        if (!el) return;
-        el.classList.add('done');
-        setTimeout(function () { el.remove(); }, 500);
-      };
+
+        window.__bootProgress = function (value, phase) {
+          lastProgressAt = Date.now();
+          if (failed) return;
+          var fill = document.getElementById('boot-fill');
+          if (fill) {
+            fill.classList.add('tracking');
+            fill.style.width = Math.round(4 + value * 96) + '%';
+          }
+          note((phase || '正在加载') + ' ' + Math.round(value * 100) + '%');
+        };
+
+        window.__bootDone = function () {
+          var el = document.getElementById('boot-loading');
+          if (!el) return;
+          el.classList.add('done');
+          setTimeout(function () {
+            el.remove();
+          }, 500);
+        };
+
+        function offerRetry(reason) {
+          if (failed || !document.getElementById('boot-loading')) return;
+          failed = true;
+          note(reason + ',点击屏幕重试');
+          var el = document.getElementById('boot-loading');
+          el.style.cursor = 'pointer';
+          el.addEventListener('click', function () {
+            window.location.reload();
+          });
+        }
+
+        // A script/asset that dies during boot would otherwise hang forever.
+        window.addEventListener(
+          'error',
+          function (event) {
+            if (event.target && (event.target.tagName === 'SCRIPT' || event.target.tagName === 'LINK')) {
+              offerRetry('资源加载失败');
+            }
+          },
+          true
+        );
+
+        // Watchdog: no progress for a while = stalled network.
+        var watchdog = setInterval(function () {
+          if (!document.getElementById('boot-loading')) {
+            clearInterval(watchdog);
+            return;
+          }
+          if (Date.now() - lastProgressAt > 20000) {
+            offerRetry('网络缓慢或中断');
+          }
+        }, 5000);
+      })();
     </script>
     <script type="module" src="/src/main.ts"></script>
   </body>

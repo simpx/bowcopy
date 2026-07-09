@@ -146,7 +146,7 @@ export class CombatRoomScene extends Phaser.Scene {
     };
 
     this.load.on(Phaser.Loader.Events.PROGRESS, (value: number) => {
-      boot.__bootProgress?.(value, '正在加载素材…');
+      boot.__bootProgress?.(value, '正在加载素材');
     });
     this.load.once(Phaser.Loader.Events.COMPLETE, () => {
       boot.__bootDone?.();

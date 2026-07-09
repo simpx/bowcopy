@@ -109,6 +109,12 @@ const studioReviewInbox = (): Plugin => ({
     server.middlewares.use('/__studio/note', handleReviewNote);
     server.middlewares.use('/assets/characters', handleRepoAsset('characters'));
     server.middlewares.use('/assets/audio', handleRepoAsset('audio'));
+    // Hashed build assets never change: let phones cache them so repeat
+    // visits don't re-download megabytes.
+    server.middlewares.use('/assets', (_req, res, next) => {
+      res.setHeader('cache-control', 'public, max-age=31536000, immutable');
+      next();
+    });
   }
 });
 
