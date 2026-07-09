@@ -45,6 +45,13 @@ export class MusicDirector {
       return;
     }
 
+    // Music loads in the background after boot; remember the request
+    // until notifyLoaded() flushes it.
+    if (!this.scene.cache.audio.exists(MUSIC_KEYS[track])) {
+      this.pendingTrack = track;
+      return;
+    }
+
     if (this.scene.sound.locked) {
       this.pendingTrack = track;
 
@@ -61,6 +68,16 @@ export class MusicDirector {
     }
 
     this.start(track);
+  }
+
+  /** Call when the deferred audio finishes loading: starts any queued track. */
+  notifyLoaded() {
+    if (this.pendingTrack && this.scene.cache.audio.exists(MUSIC_KEYS[this.pendingTrack])) {
+      const track = this.pendingTrack;
+
+      this.pendingTrack = null;
+      this.play(track);
+    }
   }
 
   /** Dip the volume briefly so an announcement cue can sit on top. */

@@ -137,7 +137,19 @@ export class CombatRoomScene extends Phaser.Scene {
       kit.preload(this);
     }
     preloadCombatSfx(this);
-    preloadMusic(this);
+
+    // Boot overlay defined inline in index.html.
+    const boot = window as typeof window & {
+      __bootProgress?: (value: number, note?: string) => void;
+      __bootDone?: () => void;
+    };
+
+    this.load.on(Phaser.Loader.Events.PROGRESS, (value: number) => {
+      boot.__bootProgress?.(value, '正在加载素材…');
+    });
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+      boot.__bootDone?.();
+    });
   }
 
   create() {
@@ -190,6 +202,11 @@ export class CombatRoomScene extends Phaser.Scene {
     this.sfx = new CombatSfxDirector(this);
     this.music = new MusicDirector(this);
     this.music.play('combat');
+    // Music is heavyweight and not needed for the first seconds: stream it
+    // in after boot instead of blocking the loading screen.
+    preloadMusic(this);
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => this.music?.notifyLoaded());
+    this.load.start();
     this.bootstrapDebugEncounter();
     this.bootstrapDebugFeedback();
 

@@ -19,6 +19,65 @@
     <div id="app">
       <div id="game-root" aria-label="Bowbert game"></div>
     </div>
+    <div id="boot-loading">
+      <div id="boot-title">BOWBERT</div>
+      <div id="boot-bar"><div id="boot-fill"></div></div>
+      <div id="boot-note">正在加载…</div>
+    </div>
+    <style>
+      #boot-loading {
+        position: fixed;
+        inset: 0;
+        z-index: 99;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        background: #07090f;
+        transition: opacity 400ms ease;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+      }
+      #boot-loading.done { opacity: 0; pointer-events: none; }
+      #boot-title { color: #f0e4ff; font-size: 26px; font-weight: 900; letter-spacing: 0.35em; }
+      #boot-bar {
+        width: min(60vw, 300px);
+        height: 10px;
+        border-radius: 999px;
+        border: 2px solid #1e3324;
+        background: #0d1610;
+        overflow: hidden;
+      }
+      #boot-fill {
+        width: 4%;
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #ffd75d, #c68a2a);
+        transition: width 200ms ease;
+        animation: boot-pulse 1.2s ease-in-out infinite alternate;
+      }
+      #boot-fill.tracking { animation: none; }
+      #boot-note { color: #8faa96; font-size: 12px; letter-spacing: 0.15em; }
+      @keyframes boot-pulse { from { opacity: 0.55; } to { opacity: 1; } }
+    </style>
+    <script>
+      // Live before the JS bundle arrives; the game updates it during preload.
+      window.__bootProgress = function (value, note) {
+        var fill = document.getElementById('boot-fill');
+        var label = document.getElementById('boot-note');
+        if (fill) {
+          fill.classList.add('tracking');
+          fill.style.width = Math.round(4 + value * 96) + '%';
+        }
+        if (label && note) label.textContent = note;
+      };
+      window.__bootDone = function () {
+        var el = document.getElementById('boot-loading');
+        if (!el) return;
+        el.classList.add('done');
+        setTimeout(function () { el.remove(); }, 500);
+      };
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
