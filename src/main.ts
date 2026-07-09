@@ -1,5 +1,31 @@
 import './styles.css';
 
+// Mobile Safari ignores user-scalable=no: block pinch/double-tap zoom and
+// the long-press context menu at the event level (game page only — the
+// workbench and audition pages keep normal text behavior).
+for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(type, (event) => event.preventDefault(), { passive: false });
+}
+
+document.addEventListener('dblclick', (event) => event.preventDefault(), { passive: false });
+document.addEventListener('contextmenu', (event) => event.preventDefault());
+
+let lastTouchEndMs = 0;
+
+document.addEventListener(
+  'touchend',
+  (event) => {
+    const now = Date.now();
+
+    if (now - lastTouchEndMs < 320) {
+      event.preventDefault();
+    }
+
+    lastTouchEndMs = now;
+  },
+  { passive: false }
+);
+
 import { GAME_PARENT_ID } from './game/constants';
 import { createGame } from './game/createGame';
 

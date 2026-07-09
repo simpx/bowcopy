@@ -26,6 +26,16 @@ body {
   min-width: 320px;
   min-height: 100%;
   overflow: hidden;
+  touch-action: none;
+}
+
+/* The game page has no selectable content — kill long-press selection and
+   the iOS magnifier everywhere, DOM HUD layers included. */
+#app,
+#app * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 body {
