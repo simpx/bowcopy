@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bowcopy 音频试听</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 16px; background: #0b120d; color: #d8e8dc;
+        font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      h1 { font-size: 20px; margin: 8px 0 4px; }
+      p.hint { color: #8faa96; font-size: 13px; margin: 0 0 16px; }
+      section.event {
+        background: #101a13; border: 1px solid #1e3324; border-radius: 10px;
+        padding: 12px 14px; margin-bottom: 14px;
+      }
+      section.event h2 { font-size: 15px; margin: 0 0 2px; color: #ffd75d; }
+      section.event p.usage { margin: 0 0 10px; font-size: 13px; color: #9db8a4; }
+      .cand {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        padding: 6px 0; border-top: 1px solid #16241a;
+      }
+      .cand label { display: flex; align-items: center; gap: 8px; min-width: 210px; font-size: 13px; cursor: pointer; }
+      .cand audio { height: 30px; flex: 1; min-width: 220px; max-width: 380px; }
+      .cand .meta { font-size: 11px; color: #6f8a77; }
+      .skip { font-size: 12px; color: #8faa96; margin-top: 8px; }
+      textarea {
+        width: 100%; min-height: 70px; margin-top: 16px; border-radius: 8px;
+        background: #0d1610; color: #d8e8dc; border: 1px solid #1e3324; padding: 8px; font-size: 13px;
+      }
+      button.submit {
+        margin: 12px 0 40px; padding: 10px 22px; border-radius: 8px; border: 0;
+        background: #ffd75d; color: #201a05; font-weight: 700; font-size: 14px; cursor: pointer;
+      }
+      #status { margin-left: 12px; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <h1>音频试听(boss / 新敌人 SFX + 音乐)</h1>
+    <p class="hint">
+      每个事件选一个(或选"都不要,重找")。选择只进 review-inbox,由 AI 评估后落库——和角色评审同一套流程。
+    </p>
+    <div id="root">加载中…</div>
+    <textarea id="note" placeholder="补充意见:音量、氛围、想要的感觉…(可留空)"></textarea>
+    <br />
+    <button class="submit" id="submit">提交选择到 review-inbox</button><span id="status"></span>
+    <script>
+      const root = document.getElementById('root');
+      const picks = {};
+
+      const renderGroup = (key, info, kind) => {
+        const section = document.createElement('section');
+        section.className = 'event';
+        section.innerHTML = `<h2>${key} <small style="color:#6f8a77">(${kind})</small></h2><p class="usage">${info.usage}</p>`;
+
+        for (const cand of info.candidates) {
+          const row = document.createElement('div');
+          row.className = 'cand';
+          row.innerHTML = `
+            <label><input type="radio" name="${key}" value="${cand.id}" />
+              <span>${cand.id}<br /><span class="meta">${cand.source} · ${cand.author} · ${cand.license}</span></span>
+            </label>
+            <audio controls preload="none" src="/${cand.file}"></audio>`;
+          row.querySelector('input').addEventListener('change', () => { picks[key] = cand.id; });
+          section.append(row);
+        }
+
+        const skip = document.createElement('label');
+        skip.className = 'skip';
+        skip.innerHTML = `<input type="radio" name="${key}" value="__none__" /> 都不要,重找`;
+        skip.querySelector('input').addEventListener('change', () => { picks[key] = '都不要,重找'; });
+        section.append(skip);
+        return section;
+      };
+
+      fetch('/assets/audio/audition-v2.json')
+        .then((r) => r.json())
+        .then((m) => {
+          root.textContent = '';
+          for (const [key, info] of Object.entries(m.events)) root.append(renderGroup(key, info, 'SFX'));
+          for (const [key, info] of Object.entries(m.music)) root.append(renderGroup(key, info, '音乐'));
+        })
+        .catch((e) => { root.textContent = '加载 audition-v2.json 失败:' + e; });
+
+      document.getElementById('submit').addEventListener('click', async () => {
+        const status = document.getElementById('status');
+        const chosen = Object.entries(picks).map(([k, v]) => `${k}=${v}`).join('; ');
+        const extra = document.getElementById('note').value.trim();
+
+        if (!chosen && !extra) { status.textContent = '还没有任何选择'; return; }
+
+        const note = `[audition-v2] ${chosen}${extra ? ' | 补充: ' + extra : ''}`;
+        const res = await fetch('/__studio/note/audio', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ note })
+        });
+
+        status.textContent = res.ok ? '已提交 ✓' : '提交失败: ' + res.status;
+      });
+    </script>
+  </body>
+</html>

@@ -21,11 +21,12 @@ const handleReviewNote = (req: Connect.IncomingMessage, res: ServerResponse) => 
   const characterDir = join(REPO_ROOT, 'assets', 'characters', id);
   const inboxPath = join(REPO_ROOT, 'assets', 'characters', 'review-inbox.md');
 
-  // 'eye-templates' is a pseudo-target for feedback on the shared eye assets.
+  // 'eye-templates' / 'audio' are pseudo-targets for feedback on shared
+  // eye assets and the audio audition page respectively.
   if (
     req.method !== 'POST' ||
     !/^[a-z0-9-]+$/.test(id) ||
-    (id !== 'eye-templates' && !existsSync(characterDir))
+    (id !== 'eye-templates' && id !== 'audio' && !existsSync(characterDir))
   ) {
     res.statusCode = 404;
     res.end(JSON.stringify({ ok: false, error: 'unknown character or bad request' }));
@@ -65,7 +66,11 @@ const ASSET_CONTENT_TYPES: Record<string, string> = {
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
   '.json': 'application/json',
-  '.md': 'text/markdown; charset=utf-8'
+  '.md': 'text/markdown; charset=utf-8',
+  '.ogg': 'audio/ogg',
+  '.wav': 'audio/wav',
+  '.mp3': 'audio/mpeg',
+  '.flac': 'audio/flac'
 };
 
 /**
@@ -73,13 +78,15 @@ const ASSET_CONTENT_TYPES: Record<string, string> = {
  * repo files natively, but `vite preview` only serves dist/, which would 404
  * the workbench's base.png / comparison.png / brief.md / qc-report.json.
  */
-const handleCharacterAsset = (
-  req: Connect.IncomingMessage,
-  res: ServerResponse,
-  next: Connect.NextFunction
+const handleRepoAsset = (
+  base: string
+): ((req: Connect.IncomingMessage, res: ServerResponse, next: Connect.NextFunction) => void) => (
+  req,
+  res,
+  next
 ) => {
   const relative = decodeURIComponent((req.url ?? '').split('?')[0]).replace(/^\//, '');
-  const filePath = join(REPO_ROOT, 'assets', 'characters', relative);
+  const filePath = join(REPO_ROOT, 'assets', base, relative);
 
   if (req.method !== 'GET' || relative.includes('..') || !existsSync(filePath) || !statSync(filePath).isFile()) {
     next();
@@ -100,7 +107,8 @@ const studioReviewInbox = (): Plugin => ({
   },
   configurePreviewServer(server) {
     server.middlewares.use('/__studio/note', handleReviewNote);
-    server.middlewares.use('/assets/characters', handleCharacterAsset);
+    server.middlewares.use('/assets/characters', handleRepoAsset('characters'));
+    server.middlewares.use('/assets/audio', handleRepoAsset('audio'));
   }
 });
 
@@ -112,7 +120,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: new URL('index.html', import.meta.url).pathname,
-        workbench: new URL('workbench.html', import.meta.url).pathname
+        workbench: new URL('workbench.html', import.meta.url).pathname,
+        audition: new URL('audition.html', import.meta.url).pathname
       }
     }
   },

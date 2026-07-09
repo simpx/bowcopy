@@ -18,3 +18,10 @@ assets/characters/review-inbox.md
 
 # Python bytecode
 __pycache__/
+
+# 音频试听中间产物(tools 重新可生成;最终选中的才进 sfx/game 与 music/)
+assets/audio/sfx/candidates/
+assets/audio/sfx/curated/
+assets/audio/music/candidates/
+assets/audio/audition-v2.json
+assets/audio/.cache/
