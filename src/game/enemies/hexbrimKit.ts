@@ -264,7 +264,7 @@ export class HexbrimKit implements EnemyKit {
       }
 
       if (event.type === 'hexbrim-hit') {
-        sfx?.playEnemyHit(event.position, event.damage);
+        sfx?.playEnemyHit(event.position, event.damage, 'magic');
         feedback?.playArrowEnemy(event.position, event.damage);
         this.services.shakeCamera('hit');
         continue;
@@ -282,7 +282,7 @@ export class HexbrimKit implements EnemyKit {
         }
 
         this.shades.clear();
-        sfx?.playEnemyDeath(event.position);
+        sfx?.playEnemyDeath(event.position, 'magic');
         feedback?.playEnemyDeath(event.position);
         feedback?.playAnnouncement('HEXBRIM UNRAVELED', bounds, 'clear');
         this.services.flashCamera?.(600, 255, 255, 255);
@@ -321,14 +321,14 @@ export class HexbrimKit implements EnemyKit {
       }
 
       if (event.type === 'spooper-gooper-hit') {
-        sfx?.playEnemyHit(event.position, event.damage);
+        sfx?.playEnemyHit(event.position, event.damage, 'ghost');
         feedback?.playArrowEnemy(event.position, event.damage);
         this.services.shakeCamera('hit');
         continue;
       }
 
       if (event.type === 'spooper-gooper-killed') {
-        sfx?.playEnemyDeath(event.position);
+        sfx?.playEnemyDeath(event.position, 'ghost');
         feedback?.playEnemyDeath(event.position);
         this.services.shakeCamera('hit');
       }

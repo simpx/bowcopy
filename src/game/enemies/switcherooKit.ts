@@ -117,14 +117,14 @@ export class SwitcherooKit implements EnemyKit {
       }
 
       if (event.type === 'switcheroo-hit') {
-        sfx?.playEnemyHit(event.position, event.damage);
+        sfx?.playEnemyHit(event.position, event.damage, 'squish');
         feedback?.playArrowEnemy(event.position, event.damage);
         this.services.shakeCamera('hit');
         continue;
       }
 
       if (event.type === 'switcheroo-killed') {
-        sfx?.playEnemyDeath(event.position);
+        sfx?.playEnemyDeath(event.position, 'squish');
         feedback?.playEnemyDeath(event.position);
         this.services.shakeCamera('hit');
         continue;

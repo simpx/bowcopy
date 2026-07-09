@@ -52,6 +52,7 @@ SOURCES = {
  'oga-explosion-0': (['https://opengameart.org/sites/default/files/explosion.wav'], False),
  'oga-synthesized-explosion': (['https://opengameart.org/sites/default/files/synthetic_explosion_1.flac'], False),
  'oga-big-explosion': (['https://opengameart.org/sites/default/files/DeathFlash.flac'], False),
+ 'oga-fantasy-sound-effects-library': (['https://opengameart.org/sites/default/files/Fantasy%20Sound%20Library.zip'], True),
 }
 
 def fetch():
@@ -105,6 +106,7 @@ OGA_META={
  'oga-explosion-0':('Explosion','tinyworlds','CC0'),
  'oga-synthesized-explosion':('Synthesized Explosion','qubodup','CC0'),
  'oga-big-explosion':('Big Explosion (DeathFlash)','lamoot','CC-BY 3.0'),
+ 'oga-fantasy-sound-effects-library':('Fantasy Sound Effects Library','Little Robot Sound Factory','CC-BY 3.0'),
 }
 
 def M(sid):
@@ -187,21 +189,24 @@ EVENTS={
    ('oga-explosion-0','explosion.wav','tinyworlds-explosion',3),
    ('oga-synthesized-explosion','synthetic_explosion_1.flac','qubodup-synth',3),
    ('oga-big-explosion','DeathFlash.flac','lamoot-deathflash',3)]),
- 'enemy_hit_magic':('Hexbrim boss 受击(布+魔法,不该是木头)',[
-   ('oga-8-magic-attacks','unz/22_Water_02.wav','water',2),
-   ('oga-8-magic-attacks','unz/25_Wind_01.wav','wind',2),
-   ('oga-8-magic-attacks','unz/30_Earth_02.wav','earth',2),
-   ('oga-spell-sounds-starter-pack','unz/zap15.ogg','zap15',2)]),
- 'enemy_death_magic':('Hexbrim boss 死亡(魔法解体)',[
-   ('oga-8-magic-attacks','unz/18_Thunder_02.wav','thunder',3),
-   ('oga-spell-sounds-starter-pack','unz/explode.ogg','explode',3),
-   ('oga-spell-sounds-starter-pack','unz/spell.ogg','spell',3)]),
+ # round 2 (元素系被拒): 布质闷响 + 暗影系
+ 'enemy_hit_magic':('Hexbrim boss 受击 v2:布质闷响/暗影(元素系已拒)',[
+   ('kenney_rpg-audio','Audio/cloth2.ogg','cloth-whump',1.6),
+   ('oga-rpg-sound-pack','unz/RPG Sound Pack/NPC/shade/shade1.wav','shade1',2),
+   ('oga-rpg-sound-pack','unz/RPG Sound Pack/NPC/shade/shade5.wav','shade5',2),
+   ('oga-fantasy-sound-effects-library','unz/Fantasy Sound Library/Wav/Spell_01.wav','lrsf-spell1',2)]),
+ 'enemy_death_magic':('Hexbrim boss 死亡 v2:暗影解体(元素系已拒)',[
+   ('oga-rpg-sound-pack','unz/RPG Sound Pack/NPC/shade/shade10.wav','shade10',3),
+   ('oga-ghost-monster-voice','unz/qubodup-GhostMoans/wav/qubodup-GhostMoan01.wav','ghost-moan1',3),
+   ('oga-fantasy-sound-effects-library','unz/Fantasy Sound Library/Wav/Spell_03.wav','lrsf-spell3',3)]),
 }
 
 # v2 groups already applied on 2026-07-09 — page hides these.
 DECIDED = {'portal_whoosh','spell_bolt','witchfire_ignite','hex_orb_launch','sheep_morph',
            'sheep_bleat','ritual_channel','ritual_blast','shade_summon','door_creak','parry_wood',
-           'music_combat','music_boss'}
+           'music_combat','music_boss',
+           'enemy_hit_squish','enemy_death_squish','enemy_hit_ghost','enemy_death_ghost',
+           'enemy_hit_metal','explosion_small'}
 MUSIC={
  'music_combat':('普通战斗房循环',[
    ('oga-8-bit-battle-loop','8BitBattleLoop_0.ogg','8bit-battle'),

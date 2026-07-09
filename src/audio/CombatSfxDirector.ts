@@ -33,8 +33,17 @@ export const COMBAT_SFX_KEYS = [
   'ritual_blast',
   'shade_summon',
   'door_creak',
-  'parry_wood'
+  'parry_wood',
+  'enemy_hit_squish',
+  'enemy_death_squish',
+  'enemy_hit_ghost',
+  'enemy_death_ghost',
+  'enemy_hit_metal',
+  'explosion_small'
 ] as const;
+
+/** What an enemy is made of — picks its hit/death samples. */
+export type EnemyMaterial = 'wood' | 'squish' | 'ghost' | 'metal' | 'magic';
 
 type CombatSfxKey = (typeof COMBAT_SFX_KEYS)[number];
 
@@ -189,8 +198,49 @@ const COMBAT_SFX_ASSETS: readonly CombatSfxAsset[] = [
   {
     key: 'parry_wood',
     url: new URL('../../assets/audio/sfx/game/parry_wood.ogg', import.meta.url).href
+  },
+  {
+    key: 'enemy_hit_squish',
+    url: new URL('../../assets/audio/sfx/game/enemy_hit_squish.ogg', import.meta.url).href
+  },
+  {
+    key: 'enemy_death_squish',
+    url: new URL('../../assets/audio/sfx/game/enemy_death_squish.ogg', import.meta.url).href
+  },
+  {
+    key: 'enemy_hit_ghost',
+    url: new URL('../../assets/audio/sfx/game/enemy_hit_ghost.ogg', import.meta.url).href
+  },
+  {
+    key: 'enemy_death_ghost',
+    url: new URL('../../assets/audio/sfx/game/enemy_death_ghost.ogg', import.meta.url).href
+  },
+  {
+    key: 'enemy_hit_metal',
+    url: new URL('../../assets/audio/sfx/game/enemy_hit_metal.ogg', import.meta.url).href
+  },
+  {
+    key: 'explosion_small',
+    url: new URL('../../assets/audio/sfx/game/explosion_small.ogg', import.meta.url).href
   }
 ];
+
+// 'magic' falls back to wood until its re-audition lands (audition v3 note).
+const HIT_KEY_BY_MATERIAL: Record<EnemyMaterial, CombatSfxKey> = {
+  wood: 'hit_wood_board',
+  squish: 'enemy_hit_squish',
+  ghost: 'enemy_hit_ghost',
+  metal: 'enemy_hit_metal',
+  magic: 'hit_wood_board'
+};
+
+const DEATH_KEY_BY_MATERIAL: Record<EnemyMaterial, CombatSfxKey> = {
+  wood: 'hit_wood_board',
+  squish: 'enemy_death_squish',
+  ghost: 'enemy_death_ghost',
+  metal: 'enemy_hit_metal',
+  magic: 'hit_wood_board'
+};
 
 const DEFAULT_PROFILE: CueProfile = {
   volume: 0.28,
@@ -426,6 +476,48 @@ const CUE_PROFILES: Partial<Record<CombatSfxKey, Partial<CueProfile>>> = {
     detuneJitter: 40,
     rateJitter: 0.025,
     cooldownMs: 120
+  },
+  enemy_hit_squish: {
+    volume: 0.24,
+    volumeJitter: 0.03,
+    detuneJitter: 60,
+    rateJitter: 0.04,
+    cooldownMs: 80
+  },
+  enemy_death_squish: {
+    volume: 0.26,
+    volumeJitter: 0.03,
+    detuneJitter: 40,
+    rateJitter: 0.03,
+    cooldownMs: 140
+  },
+  enemy_hit_ghost: {
+    volume: 0.2,
+    volumeJitter: 0.03,
+    detuneJitter: 50,
+    rateJitter: 0.035,
+    cooldownMs: 100
+  },
+  enemy_death_ghost: {
+    volume: 0.24,
+    volumeJitter: 0.02,
+    detuneJitter: 30,
+    rateJitter: 0.02,
+    cooldownMs: 300
+  },
+  enemy_hit_metal: {
+    volume: 0.22,
+    volumeJitter: 0.03,
+    detuneJitter: 50,
+    rateJitter: 0.03,
+    cooldownMs: 80
+  },
+  explosion_small: {
+    volume: 0.34,
+    volumeJitter: 0.02,
+    detuneJitter: 20,
+    rateJitter: 0.015,
+    cooldownMs: 250
   }
 };
 
@@ -457,12 +549,19 @@ export class CombatSfxDirector {
     this.play('hit_wood_board', { force: 0.72, pos });
   }
 
-  playEnemyHit(pos: SimVector, damage: number): void {
-    this.play('hit_wood_board', { force: Phaser.Math.Clamp(0.45 + damage * 0.24, 0.45, 0.92), pos });
+  playEnemyHit(pos: SimVector, damage: number, material: EnemyMaterial = 'wood'): void {
+    this.play(HIT_KEY_BY_MATERIAL[material], {
+      force: Phaser.Math.Clamp(0.45 + damage * 0.24, 0.45, 0.92),
+      pos
+    });
   }
 
-  playEnemyDeath(pos: SimVector): void {
-    this.play('hit_wood_board', { force: 0.96, pos });
+  playEnemyDeath(pos: SimVector, material: EnemyMaterial = 'wood'): void {
+    this.play(DEATH_KEY_BY_MATERIAL[material], { force: 0.96, pos });
+  }
+
+  playExplosion(pos: SimVector): void {
+    this.play('explosion_small', { force: 0.95, pos });
   }
 
   playShroomHit(pos: SimVector, damage: number): void {

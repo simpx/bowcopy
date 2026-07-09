@@ -108,7 +108,7 @@ export class SpooperGooperKit implements EnemyKit {
 
       if (event.type === 'spooper-gooper-hit') {
         if (event.hp > 0) {
-          sfx?.playEnemyHit(event.position, event.damage);
+          sfx?.playEnemyHit(event.position, event.damage, 'ghost');
           feedback?.playArrowEnemy(event.position, event.damage);
           this.services.shakeCamera('hit');
         }
@@ -116,7 +116,7 @@ export class SpooperGooperKit implements EnemyKit {
       }
 
       if (event.type === 'spooper-gooper-killed') {
-        sfx?.playEnemyDeath(event.position);
+        sfx?.playEnemyDeath(event.position, 'ghost');
         feedback?.playEnemyDeath(event.position);
         this.services.shakeCamera('hit');
         continue;

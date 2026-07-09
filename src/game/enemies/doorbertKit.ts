@@ -140,7 +140,7 @@ export class DoorbertKit implements EnemyKit {
       }
 
       if (event.type === 'doorbert-killed' || event.type === 'keylet-killed') {
-        sfx?.playEnemyDeath(event.position);
+        sfx?.playEnemyDeath(event.position, event.type === 'keylet-killed' ? 'metal' : 'wood');
         feedback?.playEnemyDeath(event.position);
         this.services.shakeCamera('hit');
         continue;

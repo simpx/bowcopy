@@ -112,7 +112,7 @@ export class KaboomletKit implements EnemyKit {
       }
 
       if (event.type === 'kaboomlet-exploded') {
-        sfx?.playEnemyDeath(event.position);
+        sfx?.playExplosion(event.position);
         feedback?.playEnemyDeath(event.position);
         this.services.damagePlayerFromRadius(event.position, event.radius, event.damage);
         this.services.shakeCamera('damage');
@@ -121,7 +121,7 @@ export class KaboomletKit implements EnemyKit {
 
       if (event.type === 'kaboomlet-hit') {
         if (event.hp > 0) {
-          sfx?.playEnemyHit(event.position, event.damage);
+          sfx?.playEnemyHit(event.position, event.damage, 'metal');
           feedback?.playArrowEnemy(event.position, event.damage);
           this.services.shakeCamera('hit');
         }
@@ -129,7 +129,8 @@ export class KaboomletKit implements EnemyKit {
       }
 
       if (event.type === 'kaboomlet-killed') {
-        sfx?.playEnemyDeath(event.position);
+        // Shot dead before going off: a dull metal clunk, no boom.
+        sfx?.playEnemyDeath(event.position, 'metal');
         feedback?.playEnemyDeath(event.position);
         this.services.shakeCamera('hit');
         continue;
