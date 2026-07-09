@@ -22,7 +22,18 @@ export const COMBAT_SFX_KEYS = [
   'room_clear',
   'pickup',
   'equipment_toggle',
-  'item_select'
+  'item_select',
+  'portal_whoosh',
+  'spell_bolt',
+  'witchfire_ignite',
+  'hex_orb_launch',
+  'sheep_morph',
+  'sheep_bleat',
+  'ritual_channel',
+  'ritual_blast',
+  'shade_summon',
+  'door_creak',
+  'parry_wood'
 ] as const;
 
 type CombatSfxKey = (typeof COMBAT_SFX_KEYS)[number];
@@ -134,6 +145,50 @@ const COMBAT_SFX_ASSETS: readonly CombatSfxAsset[] = [
   {
     key: 'item_select',
     url: new URL('../../assets/audio/sfx/game/item_select.ogg', import.meta.url).href
+  },
+  {
+    key: 'portal_whoosh',
+    url: new URL('../../assets/audio/sfx/game/portal_whoosh.ogg', import.meta.url).href
+  },
+  {
+    key: 'spell_bolt',
+    url: new URL('../../assets/audio/sfx/game/spell_bolt.ogg', import.meta.url).href
+  },
+  {
+    key: 'witchfire_ignite',
+    url: new URL('../../assets/audio/sfx/game/witchfire_ignite.ogg', import.meta.url).href
+  },
+  {
+    key: 'hex_orb_launch',
+    url: new URL('../../assets/audio/sfx/game/hex_orb_launch.ogg', import.meta.url).href
+  },
+  {
+    key: 'sheep_morph',
+    url: new URL('../../assets/audio/sfx/game/sheep_morph.ogg', import.meta.url).href
+  },
+  {
+    key: 'sheep_bleat',
+    url: new URL('../../assets/audio/sfx/game/sheep_bleat.ogg', import.meta.url).href
+  },
+  {
+    key: 'ritual_channel',
+    url: new URL('../../assets/audio/sfx/game/ritual_channel.ogg', import.meta.url).href
+  },
+  {
+    key: 'ritual_blast',
+    url: new URL('../../assets/audio/sfx/game/ritual_blast.ogg', import.meta.url).href
+  },
+  {
+    key: 'shade_summon',
+    url: new URL('../../assets/audio/sfx/game/shade_summon.ogg', import.meta.url).href
+  },
+  {
+    key: 'door_creak',
+    url: new URL('../../assets/audio/sfx/game/door_creak.ogg', import.meta.url).href
+  },
+  {
+    key: 'parry_wood',
+    url: new URL('../../assets/audio/sfx/game/parry_wood.ogg', import.meta.url).href
   }
 ];
 
@@ -294,6 +349,83 @@ const CUE_PROFILES: Partial<Record<CombatSfxKey, Partial<CueProfile>>> = {
     detuneJitter: 18,
     rateJitter: 0.012,
     cooldownMs: 90
+  },
+  portal_whoosh: {
+    volume: 0.26,
+    volumeJitter: 0.03,
+    detuneJitter: 60,
+    rateJitter: 0.04,
+    cooldownMs: 200
+  },
+  spell_bolt: {
+    volume: 0.24,
+    volumeJitter: 0.03,
+    detuneJitter: 40,
+    rateJitter: 0.03,
+    cooldownMs: 240
+  },
+  witchfire_ignite: {
+    volume: 0.24,
+    volumeJitter: 0.03,
+    detuneJitter: 30,
+    rateJitter: 0.02,
+    cooldownMs: 300
+  },
+  hex_orb_launch: {
+    volume: 0.26,
+    volumeJitter: 0.02,
+    detuneJitter: 20,
+    rateJitter: 0.015,
+    cooldownMs: 500
+  },
+  sheep_morph: {
+    volume: 0.28,
+    volumeJitter: 0.02,
+    detuneJitter: 20,
+    rateJitter: 0.015,
+    cooldownMs: 400
+  },
+  sheep_bleat: {
+    volume: 0.22,
+    volumeJitter: 0.03,
+    detuneJitter: 70,
+    rateJitter: 0.05,
+    cooldownMs: 600
+  },
+  ritual_channel: {
+    volume: 0.26,
+    volumeJitter: 0.015,
+    detuneJitter: 0,
+    rateJitter: 0,
+    cooldownMs: 2000
+  },
+  ritual_blast: {
+    volume: 0.32,
+    volumeJitter: 0.02,
+    detuneJitter: 20,
+    rateJitter: 0.015,
+    cooldownMs: 800
+  },
+  shade_summon: {
+    volume: 0.26,
+    volumeJitter: 0.02,
+    detuneJitter: 30,
+    rateJitter: 0.02,
+    cooldownMs: 800
+  },
+  door_creak: {
+    volume: 0.24,
+    volumeJitter: 0.025,
+    detuneJitter: 30,
+    rateJitter: 0.02,
+    cooldownMs: 350
+  },
+  parry_wood: {
+    volume: 0.28,
+    volumeJitter: 0.03,
+    detuneJitter: 40,
+    rateJitter: 0.025,
+    cooldownMs: 120
   }
 };
 
@@ -381,6 +513,52 @@ export class CombatSfxDirector {
 
   playSporeBreak(pos: SimVector): void {
     this.play('spore_break', { force: 0.46, pos });
+  }
+
+  playPortal(pos: SimVector): void {
+    this.play('portal_whoosh', { force: 0.66, pos });
+  }
+
+  playSpellBolt(pos: SimVector): void {
+    this.play('spell_bolt', { force: 0.7, pos });
+  }
+
+  playWitchfireIgnite(pos: SimVector): void {
+    this.play('witchfire_ignite', { force: 0.68, pos });
+  }
+
+  playHexOrbLaunch(pos: SimVector): void {
+    this.play('hex_orb_launch', { force: 0.74, pos });
+  }
+
+  /** Polymorph lands: the poof and the sheep, together. */
+  playSheepMorph(pos: SimVector): void {
+    this.play('sheep_morph', { force: 0.78, pos });
+    this.play('sheep_bleat', { force: 0.7, pos });
+  }
+
+  playSheepBleat(pos: SimVector): void {
+    this.play('sheep_bleat', { force: 0.55, pos });
+  }
+
+  playRitualChannel(pos: SimVector): void {
+    this.play('ritual_channel', { force: 0.8, pos });
+  }
+
+  playRitualBlast(pos: SimVector): void {
+    this.play('ritual_blast', { force: 0.95, pos });
+  }
+
+  playShadeSummon(pos: SimVector): void {
+    this.play('shade_summon', { force: 0.78, pos });
+  }
+
+  playDoorCreak(pos: SimVector): void {
+    this.play('door_creak', { force: 0.68, pos });
+  }
+
+  playParry(pos: SimVector): void {
+    this.play('parry_wood', { force: 0.78, pos });
   }
 
   private play(key: CombatSfxKey, options: CueOptions = {}): void {

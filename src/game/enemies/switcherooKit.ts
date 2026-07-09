@@ -107,6 +107,9 @@ export class SwitcherooKit implements EnemyKit {
       }
 
       if (event.type === 'switcheroo-swapped') {
+        sfx?.playPortal(event.fromPosition);
+        sfx?.playPortal(event.toPosition);
+
         if (event.targetingPlayer) {
           this.services.shakeCamera('dodge');
         }

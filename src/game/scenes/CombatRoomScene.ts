@@ -20,6 +20,7 @@ import {
 } from '../enemies';
 import { ArrowProjectileSystem, EnemyDartProjectileSystem, ShroomSporeProjectileSystem } from '../../sim/projectiles';
 import { CombatSfxDirector, preloadCombatSfx } from '../../audio/CombatSfxDirector';
+import { MusicDirector, preloadMusic } from '../../audio/MusicDirector';
 import {
   OPPOSITE_DOOR_SIDE,
   ROOM_THEME_NAMES,
@@ -105,6 +106,9 @@ export class CombatRoomScene extends Phaser.Scene {
   private shroomSporeRenderer?: ShroomSporeProjectileRenderer;
   private feedbackRenderer?: CombatFeedbackRenderer;
   private sfx?: CombatSfxDirector;
+  private music?: MusicDirector;
+  private bossMusicActive = false;
+  private nextSheepBleatAt = 0;
   private dungeonState: DungeonState = createInitialDungeonState();
   private currentRoomDefinition: CombatRoomDefinition = referenceCombatRoom;
   private debugPlayerDemoElapsedMs = 0;
@@ -130,6 +134,7 @@ export class CombatRoomScene extends Phaser.Scene {
       kit.preload(this);
     }
     preloadCombatSfx(this);
+    preloadMusic(this);
   }
 
   create() {
@@ -179,6 +184,8 @@ export class CombatRoomScene extends Phaser.Scene {
     this.feedbackRenderer = new CombatFeedbackRenderer(this);
     this.feedbackRenderer.create();
     this.sfx = new CombatSfxDirector(this);
+    this.music = new MusicDirector(this);
+    this.music.play('combat');
     this.bootstrapDebugEncounter();
     this.bootstrapDebugFeedback();
 
@@ -234,6 +241,15 @@ export class CombatRoomScene extends Phaser.Scene {
       this.shakeCamera('room-clear');
     }
 
+    if (bossStatus && !this.bossMusicActive) {
+      this.bossMusicActive = true;
+      this.music?.play('boss');
+    } else if (!bossStatus && this.bossMusicActive) {
+      this.bossMusicActive = false;
+      this.music?.play('combat');
+    }
+
+    this.updateSheepBleats(time, playerFrame.state.hexedMs);
     this.bossHud?.update(bossStatus);
 
     const enemyDartEvents = this.enemyDarts.update(
@@ -375,6 +391,7 @@ export class CombatRoomScene extends Phaser.Scene {
       shroomSpores: this.shroomSpores,
       getFeedback: () => this.feedbackRenderer,
       getSfx: () => this.sfx,
+      duckMusic: (holdMs) => this.music?.duck(holdMs),
       getPlayerPosition: () => this.player.state.position,
       shakeCamera: (kind) => this.shakeCamera(kind),
       damagePlayer: (sourcePosition, damage) => this.damagePlayerFromEnemy(sourcePosition, damage),
@@ -889,8 +906,28 @@ export class CombatRoomScene extends Phaser.Scene {
     camera.centerOn(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
   }
 
+  /** Sheepbert complains every second or two while polymorphed. */
+  private updateSheepBleats(timeMs: number, hexedMs: number) {
+    if (hexedMs <= 0) {
+      this.nextSheepBleatAt = 0;
+      return;
+    }
+
+    if (this.nextSheepBleatAt === 0) {
+      this.nextSheepBleatAt = timeMs + 1200;
+      return;
+    }
+
+    if (timeMs >= this.nextSheepBleatAt) {
+      this.sfx?.playSheepBleat(this.player.state.position);
+      this.nextSheepBleatAt = timeMs + 1300 + Math.random() * 900;
+    }
+  }
+
   private disposeRuntime() {
     this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize);
+    this.music?.destroy();
+    this.music = undefined;
     this.desktopInput?.dispose();
     this.desktopInput = undefined;
     this.heartsHud?.dispose();

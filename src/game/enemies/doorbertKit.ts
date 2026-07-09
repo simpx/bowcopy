@@ -105,7 +105,19 @@ export class DoorbertKit implements EnemyKit {
     const sfx = this.services.getSfx();
 
     for (const event of events) {
-      if (event.type === 'doorbert-spawned' || event.type === 'keylet-spawned') {
+      if (event.type === 'doorbert-portal-opened') {
+        sfx?.playDoorCreak(event.position);
+        sfx?.playPortal(event.portalPosition);
+        continue;
+      }
+
+      if (event.type === 'keylet-spawned') {
+        feedback?.playEnemySpawn(event.position);
+        sfx?.playPortal(event.position);
+        continue;
+      }
+
+      if (event.type === 'doorbert-spawned') {
         feedback?.playEnemySpawn(event.position);
         continue;
       }

@@ -154,7 +154,32 @@ export class HexbrimKit implements EnemyKit {
     for (const event of events) {
       if (event.type === 'hexbrim-spawned') {
         feedback?.playEnemySpawn(event.position);
+        sfx?.playPortal(event.position);
         this.services.shakeCamera('room-clear');
+        continue;
+      }
+
+      if (event.type === 'hexbrim-teleport-out' || event.type === 'hexbrim-teleport-in') {
+        sfx?.playPortal(event.position);
+        continue;
+      }
+
+      if (event.type === 'hexbrim-hexcast') {
+        sfx?.playHexOrbLaunch(event.position);
+        continue;
+      }
+
+      if (event.type === 'hexbrim-witchfire') {
+        if (event.positions.length > 0) {
+          sfx?.playWitchfireIgnite(event.positions[0]);
+        }
+        continue;
+      }
+
+      if (event.type === 'hexbrim-clones-split') {
+        for (const position of event.positions) {
+          sfx?.playPortal(position);
+        }
         continue;
       }
 
@@ -162,6 +187,8 @@ export class HexbrimKit implements EnemyKit {
         // 'fan' sprays one bolt per direction; 'stream' fires a speed-staggered
         // three-bolt train down a single lane.
         const speeds = event.pattern === 'stream' ? STREAM_BOLT_SPEEDS : [220];
+
+        sfx?.playSpellBolt(event.origin);
 
         for (const direction of event.directions) {
           for (const speed of speeds) {
@@ -179,6 +206,8 @@ export class HexbrimKit implements EnemyKit {
 
       if (event.type === 'hexbrim-summon') {
         feedback?.playAnnouncement('SHADES ANSWER', bounds, 'damage');
+        sfx?.playShadeSummon(event.positions[0] ?? this.services.getPlayerPosition());
+        this.services.duckMusic?.(1200);
         this.services.flashCamera?.(320, 90, 140, 90);
         this.services.shakeCamera('damage');
         this.shades.startEncounter(
@@ -196,6 +225,7 @@ export class HexbrimKit implements EnemyKit {
         // The orb touched Bowbert (markHexed no-ops during i-frames, so a
         // well-timed tumble phases straight through the orb).
         this.services.hexPlayer?.(event.morphMs);
+        sfx?.playSheepMorph(event.position);
         this.services.shakeCamera('dodge');
         continue;
       }
@@ -209,6 +239,7 @@ export class HexbrimKit implements EnemyKit {
         // The finished ritual detonates the whole arena; a well-timed
         // tumble (i-frames) is the only out — damagePlayer respects it.
         feedback?.playAnnouncement('TOO SLOW', bounds, 'damage');
+        sfx?.playRitualBlast(this.services.getPlayerPosition());
         this.services.flashCamera?.(420, 210, 40, 60);
         this.services.damagePlayer(this.services.getPlayerPosition(), event.damage);
         this.services.shakeCamera('damage');
@@ -217,6 +248,8 @@ export class HexbrimKit implements EnemyKit {
 
       if (event.type === 'hexbrim-channel-started') {
         feedback?.playAnnouncement('THE RITUAL BEGINS', bounds, 'damage');
+        sfx?.playRitualChannel(this.services.getPlayerPosition());
+        this.services.duckMusic?.(event.durationMs);
         this.services.flashCamera?.(320, 138, 60, 190);
         this.services.shakeCamera('damage');
         continue;

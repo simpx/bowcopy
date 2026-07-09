@@ -96,6 +96,7 @@ export class BackboardKit implements EnemyKit {
       }
 
       if (event.type === 'backboard-reflected') {
+        sfx?.playParry(event.origin);
         // The parry: consume the arrow, send it right back as an enemy dart.
         this.services.enemyDarts.fireDart({
           origin: event.origin,
