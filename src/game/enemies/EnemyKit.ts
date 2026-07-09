@@ -71,6 +71,8 @@ export interface EnemyKitServices {
  */
 export interface EnemyKit {
   readonly kinds: readonly EncounterKind[];
+  /** Boss kits report a name + health for the boss HUD bar. */
+  getBossStatus?(): { name: string; hp: number; maxHp: number } | null;
   preload(scene: Phaser.Scene): void;
   create(services: EnemyKitServices): void;
   startEncounter(context: EncounterContext): void;

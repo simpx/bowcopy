@@ -6,6 +6,7 @@ import { DesktopInputAdapter } from '../../input/DesktopInputAdapter';
 import { InputController } from '../../input/InputController';
 import { PlayerHealth } from '../PlayerHealth';
 import { DungeonMinimap } from '../../ui/DungeonMinimap';
+import { BossHud } from '../../ui/BossHud';
 import { HeartsHud } from '../../ui/HeartsHud';
 import { TouchInputOverlay } from '../../ui/TouchInputOverlay';
 import { BowbertPlayerModel, type BowbertPlayerEvent, type SimVector } from '../../sim/player';
@@ -94,6 +95,7 @@ export class CombatRoomScene extends Phaser.Scene {
   private desktopInput?: DesktopInputAdapter;
   private dungeonMinimap?: DungeonMinimap;
   private heartsHud?: HeartsHud;
+  private bossHud?: BossHud;
   private touchOverlay?: TouchInputOverlay;
   private roomRenderer?: CombatRoomRenderer;
   private playerRenderer?: BowbertRenderer;
@@ -222,6 +224,8 @@ export class CombatRoomScene extends Phaser.Scene {
       }
     }
 
+    this.bossHud?.update(this.kitFor(encounterKind)?.getBossStatus?.());
+
     const enemyDartEvents = this.enemyDarts.update(
       delta,
       this.currentRoomDefinition.bounds,
@@ -267,6 +271,7 @@ export class CombatRoomScene extends Phaser.Scene {
 
     if (parent) {
       this.heartsHud = new HeartsHud(parent, this.playerHealth.state);
+      this.bossHud = new BossHud(parent);
     }
   }
 

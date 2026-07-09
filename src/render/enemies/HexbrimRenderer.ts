@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 import hexbrimBaseUrl from '../../../assets/characters/hexbrim/base.png';
 import { HEXBRIM_RIG } from '../../characters/hexbrimRig';
-import type { HexbrimEnemy, HexbrimEvent, HexbrimHex, HexbrimRing } from '../../sim/enemies';
+import type { HexbrimEnemy, HexbrimEvent, HexbrimFirePatch, HexbrimHex } from '../../sim/enemies';
 import { HOUSE_BURST_STYLE, ParticleBurstPool } from '../feedback/particleBurst';
 import { PortalEffectPool } from '../feedback/portalEffect';
 
@@ -57,11 +57,11 @@ export class HexbrimRenderer {
     deltaMs: number,
     entities: readonly HexbrimEnemy[],
     hexes: readonly HexbrimHex[],
-    rings: readonly HexbrimRing[] = []
+    firePatches: readonly HexbrimFirePatch[] = []
   ) {
     this.timeMs = timeMs;
     this.syncEntities(timeMs, entities);
-    this.drawHexes(hexes, rings);
+    this.drawHexes(hexes, firePatches);
     this.bursts.update(deltaMs);
     this.portals.update(deltaMs);
   }
@@ -82,6 +82,19 @@ export class HexbrimRenderer {
 
       if (event.type === 'hexbrim-volley') {
         this.bursts.emit(event.origin, 7, VOLLEY_FLASH_COLORS, 36, 92, 3.2, 190);
+        continue;
+      }
+
+      if (event.type === 'hexbrim-witchfire') {
+        for (const position of event.positions) {
+          this.bursts.emit(position, 5, [HEX_COLOR, 0xd8ffb0], 20, 52, 3.0, 180);
+        }
+        continue;
+      }
+
+      if (event.type === 'hexbrim-ritual-complete') {
+        // Arena-wide detonation flash.
+        this.portals.flash({ x: 0, y: 0 }, 0, 60);
         continue;
       }
 
@@ -173,12 +186,15 @@ export class HexbrimRenderer {
     const hover = Math.sin(entity.swayPhase) * (motion.hoverBob ?? 6);
     const sway = Math.sin(entity.swayPhase * 0.8) * (motion.swayTilt ?? 0.06);
     const telegraphShake =
-      entity.phase === 'volley' || entity.phase === 'hexcast' || entity.phase === 'ringcast'
+      entity.phase === 'volley' || entity.phase === 'hexcast' || entity.phase === 'firecast'
         ? Math.sin(timeMs * 0.11) * 2.2 * entity.telegraphProgress
-        : 0;
+        : entity.phase === 'channel'
+          ? Math.sin(timeMs * 0.18) * 3.4 * (0.4 + entity.telegraphProgress * 0.6)
+          : 0;
     const squash =
       hitFlash * (motion.hitScaleX ?? 0.07) +
-      (entity.phase === 'hexcast' ? 0.05 * entity.telegraphProgress : 0);
+      (entity.phase === 'hexcast' ? 0.05 * entity.telegraphProgress : 0) +
+      (entity.phase === 'stagger' ? 0.12 * (1 - entity.phaseElapsedMs / Math.max(1, entity.phaseDurationMs)) : 0);
 
     visual.container.setPosition(entity.position.x + telegraphShake, entity.position.y);
     visual.container.setDepth(72 + entity.position.y / 1000);
@@ -194,13 +210,15 @@ export class HexbrimRenderer {
     visual.body.setTint(
       hitFlash > 0
         ? 0xfff0df
-        : entity.phase === 'volley' && entity.telegraphProgress > 0.4
-          ? 0xe8c8ff
-          : 0xffffff
+        : entity.phase === 'channel'
+          ? (Math.sin(timeMs * 0.02) > 0 ? 0xd8f0a0 : 0xffffff)
+          : entity.phase === 'volley' && entity.telegraphProgress > 0.4
+            ? 0xe8c8ff
+            : 0xffffff
     );
   }
 
-  private drawHexes(hexes: readonly HexbrimHex[], rings: readonly HexbrimRing[]) {
+  private drawHexes(hexes: readonly HexbrimHex[], firePatches: readonly HexbrimFirePatch[]) {
     const graphics = this.hexGraphics;
 
     if (!graphics) {
@@ -209,17 +227,24 @@ export class HexbrimRenderer {
 
     graphics.clear();
 
-    for (const ring of rings) {
-      const fade = 1 - ring.radius / ring.maxRadius;
+    for (const patch of firePatches) {
+      const life = patch.lifeMs / patch.maxLifeMs;
+      const flicker = 0.75 + Math.sin(this.timeMs * 0.02 + patch.id) * 0.25;
+      const alpha = Math.min(1, life * 3) * flicker;
 
-      if (ring.radius <= 0) {
-        continue;
+      graphics.fillStyle(0x143a10, 0.5 * alpha);
+      graphics.fillEllipse(patch.position.x, patch.position.y, patch.radius * 2.2, patch.radius * 1.8);
+      graphics.fillStyle(HEX_COLOR, 0.55 * alpha);
+      graphics.fillEllipse(patch.position.x, patch.position.y, patch.radius * 1.6, patch.radius * 1.3);
+      graphics.fillStyle(0xd8ffb0, 0.6 * alpha);
+
+      for (let index = 0; index < 3; index += 1) {
+        const angle = this.timeMs * 0.004 + patch.id + (index * Math.PI * 2) / 3;
+        const fx = patch.position.x + Math.cos(angle) * patch.radius * 0.5;
+        const fy = patch.position.y + Math.sin(angle) * patch.radius * 0.4 - 6 * flicker;
+
+        graphics.fillEllipse(fx, fy, 8, 12 * flicker);
       }
-
-      graphics.lineStyle(8, 0xc65df0, 0.25 + fade * 0.55);
-      graphics.strokeEllipse(ring.origin.x, ring.origin.y, ring.radius * 2, ring.radius * 1.7);
-      graphics.lineStyle(3, 0xe8b6ff, 0.35 + fade * 0.5);
-      graphics.strokeEllipse(ring.origin.x, ring.origin.y, ring.radius * 2 + 10, ring.radius * 1.7 + 8);
     }
 
     for (const hex of hexes) {

@@ -6,7 +6,7 @@ lockedReference: source/reference-01.png
 sourceReferences:
   - source/reference-01.png
 openItems:
-  - INTEGRATED (kit + workbench slot + /?encounter=hexbrim). Review aids: 强制弹幕/咒术/波环/传送/分身 buttons; Bowbert card has 变羊4秒. Status stays rigged pending human review.
+  - INTEGRATED (kit + workbench slot + /?encounter=hexbrim). Review aids: 强制弹幕/咒术/巫火/传送/分身 buttons; Bowbert card has 变羊4秒. Boss HP bar shows in-game. Status stays rigged pending human review.
   - Boss HP 64 / cadence / phase thresholds are first-pass numbers for review.
   - Boss room presentation (intro beat, health bar?) is future gameplay work.
 ---
@@ -19,10 +19,11 @@ Role:
 Behavior (kit `hexbrimKit`, mechanics modeled on Hades II's first-chapter headmistress fight):
 - float: hovers keeping mid-range, orbiting Bowbert.
 - volley: telegraphed fan of 5 magic bolts (7 in phase 3) via the enemy dart system (black-ink style).
-- hexcast: a polymorph circle blooms under Bowbert (0.95s) and detonates — caught inside, Bowbert IS the sheep (Sheepbert form, 4s: no bow, 55% speed, tumble intact; i-frames dodge it). Phase 3 casts two.
+- hexcast: a polymorph circle blooms under Bowbert AND CHASES him (0.95s) before detonating — caught inside, Bowbert IS the sheep (Sheepbert form, 4s: no bow, 55% speed, tumble intact; i-frames dodge it). Phase 3 casts two.
 - teleport: vanishes into a portal (invulnerable), reappears away from Bowbert.
-- ring: a telegraphed shockwave ring expands from the boss (damage on edge contact; dodge through it). Phase 3 fires ring pairs.
-- clones (at 66% AND 33% hp): splits into the real boss + 2 identical 1-HP illusions; illusions volley too and dispel in one hit; killing the boss dispels all.
+- witchfire: sprays a trail of green fire patches toward Bowbert; patches burn for ~6s on contact (area denial). Phase 3 sprays wider.
+- ritual (at 66% AND 33% hp): splits into the real boss + 2 identical 1-HP illusions and ALL of them channel for 6s — hit the REAL one to interrupt (boss staggers: punish window); let it finish and an arena-wide blast lands (a well-timed tumble's i-frames evade it).
+- teleports are interstitial: ~60% chance to blink away after each attack (per the original's constant relocating).
 - Phase 3 (hp <= 33%): faster float cadence, wider volleys, double hexcast.
 
 Visual target:

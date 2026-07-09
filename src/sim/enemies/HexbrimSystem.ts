@@ -14,12 +14,29 @@ import type { RoomBounds, RoomSpawnPoint } from '../rooms';
  *   player morph is an open item).
  * - teleport: vanishes into a portal, reappears elsewhere (invulnerable
  *   while gone).
- * - clones (phase 2, hp <= 66%): teleport-splits into the real boss plus
- *   identical 1-HP illusions; only hits reveal the truth.
- * - phase 3 (hp <= 33%): faster cadence, wider volleys, double hexcast.
+ * - witchfire: sprays persistent green fire patches toward Bowbert that
+ *   burn on contact for several seconds (area denial).
+ * - ritual (at 66% and 33% hp): splits into the real boss plus identical
+ *   1-HP illusions and ALL of them channel a ritual — hit the real one
+ *   before the cast completes to interrupt it (boss staggers, punish
+ *   window); let it finish and an arena-wide blast lands (dodge i-frames
+ *   can still evade it).
+ * - teleports are interstitial: the boss likes to blink away between
+ *   attacks rather than on a schedule.
+ * - phase 3 (hp <= 33%): faster cadence, wider volleys, double hexcast,
+ *   wider witchfire.
  */
 
-export type HexbrimPhase = 'spawning' | 'float' | 'volley' | 'hexcast' | 'ringcast' | 'vanish' | 'reappear';
+export type HexbrimPhase =
+  | 'spawning'
+  | 'float'
+  | 'volley'
+  | 'hexcast'
+  | 'firecast'
+  | 'channel'
+  | 'stagger'
+  | 'vanish'
+  | 'reappear';
 
 export interface HexbrimEnemy {
   readonly id: number;
@@ -47,12 +64,12 @@ export interface HexbrimHex {
   radius: number;
 }
 
-export interface HexbrimRing {
+export interface HexbrimFirePatch {
   readonly id: number;
-  origin: SimVector;
+  position: SimVector;
   radius: number;
-  maxRadius: number;
-  hitPlayer: boolean;
+  lifeMs: number;
+  maxLifeMs: number;
 }
 
 export type HexbrimEvent =
@@ -62,8 +79,11 @@ export type HexbrimEvent =
   | { type: 'hexbrim-volley'; id: number; origin: SimVector; directions: SimVector[] }
   | { type: 'hexbrim-hexcast'; id: number; position: SimVector; radius: number; durationMs: number }
   | { type: 'hexbrim-hex-detonated'; position: SimVector; radius: number; morphMs: number }
-  | { type: 'hexbrim-ring-started'; id: number; origin: SimVector; maxRadius: number }
-  | { type: 'hexbrim-ring-hit'; position: SimVector; damage: number }
+  | { type: 'hexbrim-witchfire'; id: number; positions: SimVector[] }
+  | { type: 'hexbrim-witchfire-burn'; position: SimVector; damage: number }
+  | { type: 'hexbrim-channel-started'; durationMs: number }
+  | { type: 'hexbrim-channel-interrupted'; position: SimVector }
+  | { type: 'hexbrim-ritual-complete'; damage: number }
   | { type: 'hexbrim-clones-split'; positions: SimVector[] }
   | { type: 'hexbrim-clone-dispelled'; id: number; position: SimVector }
   | { type: 'hexbrim-hit'; id: number; arrowId: number; position: SimVector; hp: number; damage: number }
@@ -86,11 +106,17 @@ const VOLLEY_TELEGRAPH_MS = 700;
 const HEXCAST_TELEGRAPH_MS = 520;
 const HEX_BLOOM_MS = 950;
 const HEX_RADIUS = 74;
-const RINGCAST_TELEGRAPH_MS = 550;
-const RING_SPEED = 240;
-const RING_MAX_RADIUS = 340;
-const RING_WIDTH = 16;
-const RING_DAMAGE = 1;
+const FIRECAST_TELEGRAPH_MS = 500;
+const FIRE_PATCH_RADIUS = 30;
+const FIRE_PATCH_LIFE_MS = 6000;
+const FIRE_PATCH_SPACING = 72;
+const FIRE_BURN_DAMAGE = 1;
+const FIRE_BURN_COOLDOWN_MS = 900;
+const CHANNEL_MS = 6000;
+const RITUAL_DAMAGE = 2;
+const STAGGER_MS = 1400;
+const INTERSTITIAL_TELEPORT_CHANCE = 0.6;
+const HEX_CHASE_SPEED = 118;
 const HEX_MORPH_MS = 4000;
 const VANISH_MS = 620;
 const REAPPEAR_MS = 320;
@@ -173,12 +199,14 @@ const getSegmentDistanceSquared = (point: SimVector, start: SimVector, end: SimV
   return deltaX * deltaX + deltaY * deltaY;
 };
 
-type HexbrimAction = 'volley' | 'hexcast' | 'ring' | 'teleport';
+type HexbrimAction = 'volley' | 'hexcast' | 'witchfire' | 'teleport';
 
 export class HexbrimSystem {
   private readonly entities = new Map<number, HexbrimEnemy>();
   private readonly hexes = new Map<number, HexbrimHex>();
-  private readonly rings = new Map<number, HexbrimRing>();
+  private readonly firePatches = new Map<number, HexbrimFirePatch>();
+  private burnCooldownMs = 0;
+  private channelRemainingMs = 0;
   private nextId = 1;
   private encounterStarted = false;
   private encounterCleared = false;
@@ -227,6 +255,15 @@ export class HexbrimSystem {
     for (const hex of Array.from(this.hexes.values())) {
       hex.elapsedMs += deltaMs;
 
+      // The polymorph circle stalks its prey (per the original fight).
+      const chase = vectorTo(hex.position, playerPosition);
+      const step = HEX_CHASE_SPEED * (deltaMs / 1000);
+
+      if (distance(hex.position, playerPosition) > 6) {
+        hex.position.x += chase.x * step;
+        hex.position.y += chase.y * step;
+      }
+
       if (hex.elapsedMs >= hex.durationMs) {
         this.hexes.delete(hex.id);
         events.push({
@@ -238,24 +275,50 @@ export class HexbrimSystem {
       }
     }
 
-    for (const ring of Array.from(this.rings.values())) {
-      ring.radius += RING_SPEED * (deltaMs / 1000);
+    this.burnCooldownMs = Math.max(0, this.burnCooldownMs - deltaMs);
 
-      if (!ring.hitPlayer) {
-        const gap = Math.abs(distance(ring.origin, playerPosition) - ring.radius);
+    for (const patch of Array.from(this.firePatches.values())) {
+      patch.lifeMs -= deltaMs;
 
-        if (gap <= RING_WIDTH) {
-          ring.hitPlayer = true;
-          events.push({
-            type: 'hexbrim-ring-hit',
-            position: copyVector(playerPosition),
-            damage: RING_DAMAGE
-          });
-        }
+      if (patch.lifeMs <= 0) {
+        this.firePatches.delete(patch.id);
+        continue;
       }
 
-      if (ring.radius >= ring.maxRadius) {
-        this.rings.delete(ring.id);
+      if (this.burnCooldownMs <= 0 && distance(patch.position, playerPosition) <= patch.radius) {
+        this.burnCooldownMs = FIRE_BURN_COOLDOWN_MS;
+        events.push({
+          type: 'hexbrim-witchfire-burn',
+          position: copyVector(playerPosition),
+          damage: FIRE_BURN_DAMAGE
+        });
+      }
+    }
+
+    // Ritual channel: shared timer across the boss and its illusions.
+    if (this.channelRemainingMs > 0) {
+      this.channelRemainingMs -= deltaMs;
+
+      if (this.channelRemainingMs <= 0) {
+        this.channelRemainingMs = 0;
+        events.push({ type: 'hexbrim-ritual-complete', damage: RITUAL_DAMAGE });
+
+        for (const other of Array.from(this.entities.values())) {
+          if (other.isClone) {
+            this.entities.delete(other.id);
+            events.push({
+              type: 'hexbrim-clone-dispelled',
+              id: other.id,
+              position: copyVector(other.position)
+            });
+          }
+        }
+
+        const boss = this.boss();
+
+        if (boss) {
+          this.enterPhase(boss, 'vanish');
+        }
       }
     }
 
@@ -275,8 +338,13 @@ export class HexbrimSystem {
     return Array.from(this.hexes.values());
   }
 
-  getActiveRings(): readonly HexbrimRing[] {
-    return Array.from(this.rings.values());
+  getActiveFirePatches(): readonly HexbrimFirePatch[] {
+    return Array.from(this.firePatches.values());
+  }
+
+  /** 0..1 while a ritual channel is running (renderer ramps the dread). */
+  channelProgress(): number {
+    return this.channelRemainingMs > 0 ? 1 - this.channelRemainingMs / CHANNEL_MS : 0;
   }
 
   activeEnemyCount(): number {
@@ -287,6 +355,12 @@ export class HexbrimSystem {
     const boss = this.boss();
 
     return boss ? boss.hp / boss.maxHp : 0;
+  }
+
+  bossStatus(): { hp: number; maxHp: number } | null {
+    const boss = this.boss();
+
+    return boss ? { hp: boss.hp, maxHp: boss.maxHp } : null;
   }
 
   hasEncounterStarted(): boolean {
@@ -312,7 +386,9 @@ export class HexbrimSystem {
     this.splitPhase2Done = false;
     this.splitPhase3Done = false;
     this.forcedAction = null;
-    this.rings.clear();
+    this.firePatches.clear();
+    this.burnCooldownMs = 0;
+    this.channelRemainingMs = 0;
   }
 
   private boss(): HexbrimEnemy | undefined {
@@ -389,6 +465,29 @@ export class HexbrimSystem {
         entity.hp -= arrow.damage;
         entity.hitFlashMs = HIT_FLASH_MS;
 
+        if (entity.phase === 'channel' && this.channelRemainingMs > 0) {
+          // Found the real one: ritual interrupted, illusions collapse,
+          // the boss reels — the punish window.
+          this.channelRemainingMs = 0;
+          events.push({
+            type: 'hexbrim-channel-interrupted',
+            position: copyVector(entity.position)
+          });
+
+          for (const other of Array.from(this.entities.values())) {
+            if (other.isClone) {
+              this.entities.delete(other.id);
+              events.push({
+                type: 'hexbrim-clone-dispelled',
+                id: other.id,
+                position: copyVector(other.position)
+              });
+            }
+          }
+
+          this.enterPhase(entity, 'stagger');
+        }
+
         if (entity.hp <= 0) {
           this.entities.delete(entity.id);
 
@@ -433,9 +532,13 @@ export class HexbrimSystem {
             ? VOLLEY_TELEGRAPH_MS
             : phase === 'hexcast'
               ? HEXCAST_TELEGRAPH_MS
-              : phase === 'ringcast'
-                ? RINGCAST_TELEGRAPH_MS
-                : phase === 'vanish'
+              : phase === 'firecast'
+                ? FIRECAST_TELEGRAPH_MS
+                : phase === 'channel'
+                  ? CHANNEL_MS
+                  : phase === 'stagger'
+                    ? STAGGER_MS
+                    : phase === 'vanish'
                 ? VANISH_MS
                 : REAPPEAR_MS;
   }
@@ -446,8 +549,8 @@ export class HexbrimSystem {
     }
 
     const rotation: HexbrimAction[] = this.phase2()
-      ? ['volley', 'ring', 'hexcast', 'volley', 'teleport']
-      : ['volley', 'hexcast', 'volley', 'teleport'];
+      ? ['volley', 'witchfire', 'hexcast', 'volley', 'witchfire']
+      : ['volley', 'hexcast', 'volley', 'witchfire'];
     const action = rotation[this.actionRotationIndex % rotation.length];
 
     this.actionRotationIndex += 1;
@@ -492,8 +595,7 @@ export class HexbrimSystem {
 
       if (entity.phaseElapsedMs >= entity.phaseDurationMs || forced) {
         if (entity.isClone) {
-          // Clones only volley.
-          this.enterPhase(entity, 'volley');
+          entity.phaseElapsedMs = 0;
           return;
         }
 
@@ -511,7 +613,7 @@ export class HexbrimSystem {
           }
 
           this.forcedAction = null;
-          this.splitClones(entity, bounds, events);
+          this.startRitual(entity, bounds, events);
           return;
         }
 
@@ -520,7 +622,7 @@ export class HexbrimSystem {
         this.forcedAction = null;
         this.enterPhase(
           entity,
-          action === 'teleport' ? 'vanish' : action === 'ring' ? 'ringcast' : action
+          action === 'teleport' ? 'vanish' : action === 'witchfire' ? 'firecast' : action
         );
       }
 
@@ -550,7 +652,7 @@ export class HexbrimSystem {
         origin: copyVector(entity.position),
         directions
       });
-      this.enterPhase(entity, 'float');
+      this.finishAction(entity);
       return;
     }
 
@@ -586,38 +688,65 @@ export class HexbrimSystem {
         });
       }
 
-      this.enterPhase(entity, 'float');
+      this.finishAction(entity);
       return;
     }
 
-    if (entity.phase === 'ringcast') {
+    if (entity.phase === 'firecast') {
       entity.telegraphProgress = clamp01(entity.phaseElapsedMs / entity.phaseDurationMs);
 
       if (entity.phaseElapsedMs < entity.phaseDurationMs) {
         return;
       }
 
-      const ringCount = this.phase3() ? 2 : 1;
+      // Spray a trail of witchfire from the boss toward Bowbert.
+      const aim = vectorTo(entity.position, playerPosition);
+      const patchCount = this.phase3() ? 5 : 4;
+      const positions: SimVector[] = [];
 
-      for (let index = 0; index < ringCount; index += 1) {
-        const ring: HexbrimRing = {
+      for (let index = 1; index <= patchCount; index += 1) {
+        const wobble = rotate(aim, (Math.random() - 0.5) * 0.3);
+        const position = clampPositionToBounds(
+          {
+            x: entity.position.x + wobble.x * FIRE_PATCH_SPACING * index,
+            y: entity.position.y + wobble.y * FIRE_PATCH_SPACING * index
+          },
+          bounds
+        );
+        const patch: HexbrimFirePatch = {
           id: this.nextId++,
-          origin: copyVector(entity.position),
-          radius: 20 - index * 46,
-          maxRadius: RING_MAX_RADIUS,
-          hitPlayer: false
+          position,
+          radius: FIRE_PATCH_RADIUS,
+          lifeMs: FIRE_PATCH_LIFE_MS,
+          maxLifeMs: FIRE_PATCH_LIFE_MS
         };
 
-        this.rings.set(ring.id, ring);
-        events.push({
-          type: 'hexbrim-ring-started',
-          id: ring.id,
-          origin: copyVector(ring.origin),
-          maxRadius: ring.maxRadius
-        });
+        this.firePatches.set(patch.id, patch);
+        positions.push(copyVector(position));
       }
 
-      this.enterPhase(entity, 'float');
+      events.push({ type: 'hexbrim-witchfire', id: entity.id, positions });
+      this.finishAction(entity);
+      return;
+    }
+
+    if (entity.phase === 'channel') {
+      // Held by the shared ritual timer; interruption/completion handled
+      // in update()/applyArrowHits.
+      entity.telegraphProgress = this.channelProgress();
+
+      if (this.channelRemainingMs <= 0 && entity.phaseElapsedMs >= entity.phaseDurationMs) {
+        this.enterPhase(entity, 'float');
+      }
+
+      return;
+    }
+
+    if (entity.phase === 'stagger') {
+      if (entity.phaseElapsedMs >= entity.phaseDurationMs) {
+        this.enterPhase(entity, 'float');
+      }
+
       return;
     }
 
@@ -664,28 +793,42 @@ export class HexbrimSystem {
     return Array.from(this.entities.values()).some((entity) => entity.isClone);
   }
 
-  private splitClones(boss: HexbrimEnemy, bounds: RoomBounds, events: HexbrimEvent[]) {
+  private startRitual(boss: HexbrimEnemy, bounds: RoomBounds, events: HexbrimEvent[]) {
     const positions: SimVector[] = [copyVector(boss.position)];
 
     for (let index = 0; index < CLONE_COUNT; index += 1) {
       const angle = ((index + 1) / (CLONE_COUNT + 1)) * Math.PI * 2;
       const position = clampPositionToBounds(
         {
-          x: boss.position.x + Math.cos(angle) * 110,
-          y: boss.position.y + Math.sin(angle) * 90
+          x: boss.position.x + Math.cos(angle) * 185,
+          y: boss.position.y + Math.sin(angle) * 135
         },
         bounds
       );
       const clone = this.createEntity(position, true);
 
-      clone.phase = 'float';
-      clone.phaseDurationMs = FLOAT_MS;
+      clone.phase = 'channel';
+      clone.phaseElapsedMs = 0;
+      clone.phaseDurationMs = CHANNEL_MS;
+      clone.spawnProgress = 1;
       this.entities.set(clone.id, clone);
       positions.push(copyVector(position));
     }
 
     events.push({ type: 'hexbrim-clones-split', positions });
-    this.enterPhase(boss, 'vanish');
+    this.enterPhase(boss, 'channel');
+    this.channelRemainingMs = CHANNEL_MS;
+    events.push({ type: 'hexbrim-channel-started', durationMs: CHANNEL_MS });
+  }
+
+  /** Post-attack: the boss likes to blink away before its next move. */
+  private finishAction(entity: HexbrimEnemy) {
+    if (!entity.isClone && Math.random() < INTERSTITIAL_TELEPORT_CHANCE) {
+      this.enterPhase(entity, 'vanish');
+      return;
+    }
+
+    this.enterPhase(entity, 'float');
   }
 }
 

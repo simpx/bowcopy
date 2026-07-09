@@ -9,8 +9,11 @@ import type { EncounterContext, EncounterKind, EnemyKit, EnemyKitServices } from
 
 /**
  * Chapter boss: floating witch hat + cloak (Hades II headmistress homage).
- * Volleys fire through the shared enemy dart system; hex detonations use the
- * radius damage service; teleports/clones are portal effects.
+ * Volleys fire through the shared enemy dart system; the hex circle
+ * polymorphs Bowbert into Sheepbert; witchfire leaves burning ground; the
+ * ritual (clone split) must be interrupted by hitting the real boss before
+ * the channel completes or an arena blast lands. Reports getBossStatus for
+ * the boss HUD bar.
  */
 export class HexbrimKit implements EnemyKit {
   readonly kinds: readonly EncounterKind[] = ['hexbrim'];
@@ -41,6 +44,12 @@ export class HexbrimKit implements EnemyKit {
     return this.system.activeEnemyCount();
   }
 
+  getBossStatus() {
+    const status = this.system.bossStatus();
+
+    return status ? { name: 'HEXBRIM', ...status } : null;
+  }
+
   update(
     timeMs: number,
     deltaMs: number,
@@ -61,7 +70,7 @@ export class HexbrimKit implements EnemyKit {
       deltaMs,
       show ? this.system.getActiveEntities() : [],
       show ? this.system.getActiveHexes() : [],
-      show ? this.system.getActiveRings() : []
+      show ? this.system.getActiveFirePatches() : []
     );
 
     return frame.consumedArrowIds;
@@ -77,12 +86,12 @@ export class HexbrimKit implements EnemyKit {
       deltaMs,
       this.system.getActiveEntities(),
       this.system.getActiveHexes(),
-      this.system.getActiveRings()
+      this.system.getActiveFirePatches()
     );
   }
 
   debugForceEffect(effect: string, _kind: EncounterKind, _bounds: RoomBounds) {
-    if (effect === 'volley' || effect === 'hexcast' || effect === 'ring' || effect === 'teleport' || effect === 'clones') {
+    if (effect === 'volley' || effect === 'hexcast' || effect === 'witchfire' || effect === 'teleport' || effect === 'clones') {
       this.system.debugForce(effect);
     }
   }
@@ -132,8 +141,22 @@ export class HexbrimKit implements EnemyKit {
         continue;
       }
 
-      if (event.type === 'hexbrim-ring-hit') {
+      if (event.type === 'hexbrim-witchfire-burn') {
         this.services.damagePlayer(event.position, event.damage);
+        continue;
+      }
+
+      if (event.type === 'hexbrim-ritual-complete') {
+        // The finished ritual detonates the whole arena; a well-timed
+        // tumble (i-frames) is the only out — damagePlayer respects it.
+        this.services.damagePlayer(this.services.getPlayerPosition(), event.damage);
+        this.services.shakeCamera('damage');
+        continue;
+      }
+
+      if (event.type === 'hexbrim-channel-interrupted') {
+        feedback?.playEnemySpawn(event.position);
+        this.services.shakeCamera('hit');
         continue;
       }
 
