@@ -881,7 +881,7 @@ class HexbrimSlot extends EnemySlotBase {
       timeMs,
       deltaMs,
       this.system.getActiveEntities(),
-      this.system.getActiveHexes(),
+      this.system.getActiveHexOrbs(),
       this.system.getActiveFirePatches()
     );
     this.dartRenderer.update(deltaMs, this.darts.getActiveDarts());

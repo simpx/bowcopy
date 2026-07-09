@@ -149,9 +149,11 @@ export class BowbertPlayerModel {
 
     this.state.hexedMs = decay(this.state.hexedMs, deltaMs);
 
-    // A sheep cannot draw a bow; it can still waddle and tumble.
+    // A sheep cannot draw a bow OR tumble — it can only waddle and pray.
     const effectiveSnapshot: InputSnapshot =
-      this.state.hexedMs > 0 ? { ...snapshot, firing: false } : snapshot;
+      this.state.hexedMs > 0
+        ? { ...snapshot, firing: false, actions: { ...snapshot.actions, dodge: false } }
+        : snapshot;
 
     this.updateFacing(effectiveSnapshot);
     this.updateDodge(effectiveSnapshot, deltaMs, events);

@@ -56,11 +56,11 @@ export interface HexbrimEnemy {
   visible: boolean;
 }
 
-export interface HexbrimHex {
+export interface HexbrimHexOrb {
   readonly id: number;
   position: SimVector;
-  elapsedMs: number;
-  durationMs: number;
+  lifeMs: number;
+  maxLifeMs: number;
   radius: number;
 }
 
@@ -77,8 +77,9 @@ export type HexbrimEvent =
   | { type: 'hexbrim-teleport-out'; id: number; position: SimVector }
   | { type: 'hexbrim-teleport-in'; id: number; position: SimVector }
   | { type: 'hexbrim-volley'; id: number; origin: SimVector; directions: SimVector[] }
-  | { type: 'hexbrim-hexcast'; id: number; position: SimVector; radius: number; durationMs: number }
-  | { type: 'hexbrim-hex-detonated'; position: SimVector; radius: number; morphMs: number }
+  | { type: 'hexbrim-hexcast'; id: number; position: SimVector }
+  | { type: 'hexbrim-hex-caught'; position: SimVector; morphMs: number }
+  | { type: 'hexbrim-hex-expired'; position: SimVector }
   | { type: 'hexbrim-witchfire'; id: number; positions: SimVector[] }
   | { type: 'hexbrim-witchfire-burn'; position: SimVector; damage: number }
   | { type: 'hexbrim-channel-started'; durationMs: number }
@@ -104,8 +105,10 @@ const FLOAT_MS = 1700;
 const FLOAT_MS_PHASE3 = 1100;
 const VOLLEY_TELEGRAPH_MS = 700;
 const HEXCAST_TELEGRAPH_MS = 520;
-const HEX_BLOOM_MS = 950;
-const HEX_RADIUS = 74;
+const HEX_ORB_SPEED = 150;
+const HEX_ORB_LIFE_MS = 4500;
+const HEX_ORB_RADIUS = 20;
+const HEX_ORB_CATCH_RADIUS = 34;
 const FIRECAST_TELEGRAPH_MS = 500;
 const FIRE_PATCH_RADIUS = 30;
 const FIRE_PATCH_LIFE_MS = 6000;
@@ -116,7 +119,6 @@ const CHANNEL_MS = 6000;
 const RITUAL_DAMAGE = 2;
 const STAGGER_MS = 1400;
 const INTERSTITIAL_TELEPORT_CHANCE = 0.6;
-const HEX_CHASE_SPEED = 118;
 const HEX_MORPH_MS = 4000;
 const VANISH_MS = 620;
 const REAPPEAR_MS = 320;
@@ -203,7 +205,7 @@ type HexbrimAction = 'volley' | 'hexcast' | 'witchfire' | 'teleport';
 
 export class HexbrimSystem {
   private readonly entities = new Map<number, HexbrimEnemy>();
-  private readonly hexes = new Map<number, HexbrimHex>();
+  private readonly hexOrbs = new Map<number, HexbrimHexOrb>();
   private readonly firePatches = new Map<number, HexbrimFirePatch>();
   private burnCooldownMs = 0;
   private channelRemainingMs = 0;
@@ -252,24 +254,27 @@ export class HexbrimSystem {
       this.updateEntity(entity, deltaMs, bounds, playerPosition, events);
     }
 
-    for (const hex of Array.from(this.hexes.values())) {
-      hex.elapsedMs += deltaMs;
+    // Polymorph orbs: slow homing projectiles — touch one and you're wool.
+    for (const orb of Array.from(this.hexOrbs.values())) {
+      orb.lifeMs -= deltaMs;
 
-      // The polymorph circle stalks its prey (per the original fight).
-      const chase = vectorTo(hex.position, playerPosition);
-      const step = HEX_CHASE_SPEED * (deltaMs / 1000);
-
-      if (distance(hex.position, playerPosition) > 6) {
-        hex.position.x += chase.x * step;
-        hex.position.y += chase.y * step;
+      if (orb.lifeMs <= 0) {
+        this.hexOrbs.delete(orb.id);
+        events.push({ type: 'hexbrim-hex-expired', position: copyVector(orb.position) });
+        continue;
       }
 
-      if (hex.elapsedMs >= hex.durationMs) {
-        this.hexes.delete(hex.id);
+      const chase = vectorTo(orb.position, playerPosition);
+      const step = HEX_ORB_SPEED * (deltaMs / 1000);
+
+      orb.position.x += chase.x * step;
+      orb.position.y += chase.y * step;
+
+      if (distance(orb.position, playerPosition) <= HEX_ORB_CATCH_RADIUS) {
+        this.hexOrbs.delete(orb.id);
         events.push({
-          type: 'hexbrim-hex-detonated',
-          position: copyVector(hex.position),
-          radius: hex.radius,
+          type: 'hexbrim-hex-caught',
+          position: copyVector(orb.position),
           morphMs: HEX_MORPH_MS
         });
       }
@@ -334,8 +339,8 @@ export class HexbrimSystem {
     return Array.from(this.entities.values());
   }
 
-  getActiveHexes(): readonly HexbrimHex[] {
-    return Array.from(this.hexes.values());
+  getActiveHexOrbs(): readonly HexbrimHexOrb[] {
+    return Array.from(this.hexOrbs.values());
   }
 
   getActiveFirePatches(): readonly HexbrimFirePatch[] {
@@ -377,7 +382,7 @@ export class HexbrimSystem {
 
   clear() {
     this.entities.clear();
-    this.hexes.clear();
+    this.hexOrbs.clear();
     this.nextId = 1;
     this.encounterStarted = false;
     this.encounterCleared = false;
@@ -666,26 +671,20 @@ export class HexbrimSystem {
       const casts = this.phase3() ? 2 : 1;
 
       for (let index = 0; index < casts; index += 1) {
-        const jitter = index === 0 ? { x: 0, y: 0 } : { x: (Math.random() - 0.5) * 120, y: (Math.random() - 0.5) * 90 };
-        const hex: HexbrimHex = {
+        const offset = rotate(vectorTo(entity.position, playerPosition), (index - (casts - 1) / 2) * 0.5);
+        const orb: HexbrimHexOrb = {
           id: this.nextId++,
-          position: clampPositionToBounds(
-            { x: playerPosition.x + jitter.x, y: playerPosition.y + jitter.y },
-            bounds
-          ),
-          elapsedMs: 0,
-          durationMs: HEX_BLOOM_MS,
-          radius: HEX_RADIUS
+          position: {
+            x: entity.position.x + offset.x * 34,
+            y: entity.position.y + offset.y * 34
+          },
+          lifeMs: HEX_ORB_LIFE_MS,
+          maxLifeMs: HEX_ORB_LIFE_MS,
+          radius: HEX_ORB_RADIUS
         };
 
-        this.hexes.set(hex.id, hex);
-        events.push({
-          type: 'hexbrim-hexcast',
-          id: entity.id,
-          position: copyVector(hex.position),
-          radius: hex.radius,
-          durationMs: hex.durationMs
-        });
+        this.hexOrbs.set(orb.id, orb);
+        events.push({ type: 'hexbrim-hexcast', id: entity.id, position: copyVector(orb.position) });
       }
 
       this.finishAction(entity);

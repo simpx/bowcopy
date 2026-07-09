@@ -16,8 +16,8 @@ Role:
 - Not an enemy: Bowbert's polymorphed form while Hexbrim's sheep hex is active (the Hades II homage, 1:1 per review). Rendered by BowbertRenderer when `state.hexedMs > 0`.
 
 Behavior (owned by BowbertPlayerModel):
-- While hexed: cannot draw the bow, moves at 55% speed, can still tumble-dodge (i-frames intact); form expires after the hex duration (~4s).
-- Getting hexed while i-framed is ignored (dodge through the circle).
+- While hexed: cannot draw the bow, CANNOT tumble (decided 2026-07-09), moves at 55% speed — pure flight; form expires after the hex duration (~4s).
+- Getting hexed while i-framed is ignored (tumble through the homing orb to consume it harmlessly).
 
 Visual target:
 - Locked reference: round fluffy sheep in Bowbert's green leaf hood with the little red flag — unmistakably still our hero, just... wool.

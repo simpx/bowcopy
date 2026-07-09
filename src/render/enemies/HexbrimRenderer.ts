@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 import hexbrimBaseUrl from '../../../assets/characters/hexbrim/base.png';
 import { HEXBRIM_RIG } from '../../characters/hexbrimRig';
-import type { HexbrimEnemy, HexbrimEvent, HexbrimFirePatch, HexbrimHex } from '../../sim/enemies';
+import type { HexbrimEnemy, HexbrimEvent, HexbrimFirePatch, HexbrimHexOrb } from '../../sim/enemies';
 import { HOUSE_BURST_STYLE, ParticleBurstPool } from '../feedback/particleBurst';
 import { PortalEffectPool } from '../feedback/portalEffect';
 
@@ -56,12 +56,12 @@ export class HexbrimRenderer {
     timeMs: number,
     deltaMs: number,
     entities: readonly HexbrimEnemy[],
-    hexes: readonly HexbrimHex[],
+    hexOrbs: readonly HexbrimHexOrb[],
     firePatches: readonly HexbrimFirePatch[] = []
   ) {
     this.timeMs = timeMs;
     this.syncEntities(timeMs, entities);
-    this.drawHexes(hexes, firePatches);
+    this.drawHexes(hexOrbs, firePatches);
     this.bursts.update(deltaMs);
     this.portals.update(deltaMs);
   }
@@ -92,6 +92,16 @@ export class HexbrimRenderer {
         continue;
       }
 
+      if (event.type === 'hexbrim-hex-caught') {
+        this.bursts.emit(event.position, 16, [HEX_COLOR, 0xd8ffb0, 0xffffff], 40, 100, 4.2, 300);
+        continue;
+      }
+
+      if (event.type === 'hexbrim-hex-expired') {
+        this.bursts.emit(event.position, 6, [HEX_COLOR, 0x2b1140], 18, 46, 2.6, 180);
+        continue;
+      }
+
       if (event.type === 'hexbrim-ritual-complete') {
         // Arena-wide detonation flash.
         this.portals.flash({ x: 0, y: 0 }, 0, 60);
@@ -107,11 +117,6 @@ export class HexbrimRenderer {
 
       if (event.type === 'hexbrim-clone-dispelled') {
         this.bursts.emit(event.position, 14, DISPEL_COLORS, 44, 110, 4.2, 280);
-        continue;
-      }
-
-      if (event.type === 'hexbrim-hex-detonated') {
-        this.bursts.emit(event.position, 20, [HEX_COLOR, 0xfff3b1, 0x2b1140], 52, 140, 4.6, 320);
         continue;
       }
 
@@ -218,7 +223,7 @@ export class HexbrimRenderer {
     );
   }
 
-  private drawHexes(hexes: readonly HexbrimHex[], firePatches: readonly HexbrimFirePatch[]) {
+  private drawHexes(hexOrbs: readonly HexbrimHexOrb[], firePatches: readonly HexbrimFirePatch[]) {
     const graphics = this.hexGraphics;
 
     if (!graphics) {
@@ -247,26 +252,24 @@ export class HexbrimRenderer {
       }
     }
 
-    for (const hex of hexes) {
-      const progress = clamp01(hex.elapsedMs / hex.durationMs);
-      const radius = hex.radius * (0.3 + 0.7 * progress);
-      const spin = this.timeMs * 0.004;
+    for (const orb of hexOrbs) {
+      const pulse = 0.85 + Math.sin(this.timeMs * 0.015 + orb.id) * 0.15;
+      const fading = Math.min(1, (orb.lifeMs / orb.maxLifeMs) * 4);
+      const spin = this.timeMs * 0.008 + orb.id;
 
-      graphics.fillStyle(HEX_CORE_COLOR, 0.28 + progress * 0.2);
-      graphics.fillEllipse(hex.position.x, hex.position.y, radius * 2, radius * 1.6);
-
-      graphics.lineStyle(3 + progress * 3, HEX_COLOR, 0.5 + progress * 0.45);
-      graphics.strokeEllipse(hex.position.x, hex.position.y, radius * 2, radius * 1.6);
-
-      // Rotating rune ticks around the rim.
-      for (let index = 0; index < 6; index += 1) {
-        const angle = spin + (index / 6) * Math.PI * 2;
-        const tickX = hex.position.x + Math.cos(angle) * radius;
-        const tickY = hex.position.y + Math.sin(angle) * radius * 0.8;
-
-        graphics.fillStyle(HEX_COLOR, 0.6 + progress * 0.4);
-        graphics.fillCircle(tickX, tickY, 3 + progress * 2);
-      }
+      // Halo, core, and a small orbiting rune — a slow, ominous tracker.
+      graphics.fillStyle(HEX_CORE_COLOR, 0.5 * fading);
+      graphics.fillCircle(orb.position.x, orb.position.y, orb.radius * 1.5 * pulse);
+      graphics.fillStyle(HEX_COLOR, 0.85 * fading);
+      graphics.fillCircle(orb.position.x, orb.position.y, orb.radius * pulse);
+      graphics.fillStyle(0xd8ffb0, 0.9 * fading);
+      graphics.fillCircle(orb.position.x, orb.position.y, orb.radius * 0.45 * pulse);
+      graphics.fillStyle(HEX_COLOR, 0.7 * fading);
+      graphics.fillCircle(
+        orb.position.x + Math.cos(spin) * orb.radius * 1.6,
+        orb.position.y + Math.sin(spin) * orb.radius * 1.3,
+        4
+      );
     }
   }
 }

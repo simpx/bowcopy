@@ -69,7 +69,7 @@ export class HexbrimKit implements EnemyKit {
       timeMs,
       deltaMs,
       show ? this.system.getActiveEntities() : [],
-      show ? this.system.getActiveHexes() : [],
+      show ? this.system.getActiveHexOrbs() : [],
       show ? this.system.getActiveFirePatches() : []
     );
 
@@ -85,7 +85,7 @@ export class HexbrimKit implements EnemyKit {
       timeMs,
       deltaMs,
       this.system.getActiveEntities(),
-      this.system.getActiveHexes(),
+      this.system.getActiveHexOrbs(),
       this.system.getActiveFirePatches()
     );
   }
@@ -130,14 +130,11 @@ export class HexbrimKit implements EnemyKit {
         continue;
       }
 
-      if (event.type === 'hexbrim-hex-detonated') {
-        const player = this.services.getPlayerPosition();
-        const gap = Math.hypot(player.x - event.position.x, player.y - event.position.y);
-
-        if (gap <= event.radius) {
-          this.services.hexPlayer?.(event.morphMs);
-          this.services.shakeCamera('dodge');
-        }
+      if (event.type === 'hexbrim-hex-caught') {
+        // The orb touched Bowbert (markHexed no-ops during i-frames, so a
+        // well-timed tumble phases straight through the orb).
+        this.services.hexPlayer?.(event.morphMs);
+        this.services.shakeCamera('dodge');
         continue;
       }
 
