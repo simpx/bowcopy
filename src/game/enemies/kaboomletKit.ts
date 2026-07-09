@@ -32,6 +32,10 @@ export class KaboomletKit implements EnemyKit {
     });
   }
 
+  damageArea(position: SimVector, radius: number, damage: number) {
+    this.system.queueAreaDamage(position, radius, damage);
+  }
+
   hasEncounterStarted(): boolean {
     return this.system.hasEncounterStarted();
   }
@@ -115,6 +119,8 @@ export class KaboomletKit implements EnemyKit {
         sfx?.playExplosion(event.position);
         feedback?.playEnemyDeath(event.position);
         this.services.damagePlayerFromRadius(event.position, event.radius, event.damage);
+        // Bombs don't take sides: the blast hurts monsters too.
+        this.services.damageEnemiesFromRadius(event.position, event.radius, event.damage);
         this.services.shakeCamera('damage');
         continue;
       }
@@ -129,10 +135,8 @@ export class KaboomletKit implements EnemyKit {
       }
 
       if (event.type === 'kaboomlet-killed') {
-        // Shot dead before going off: a dull metal clunk, no boom.
-        sfx?.playEnemyDeath(event.position, 'metal');
+        // The paired 'kaboomlet-exploded' event carries the boom.
         feedback?.playEnemyDeath(event.position);
-        this.services.shakeCamera('hit');
         continue;
       }
 

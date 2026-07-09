@@ -223,6 +223,14 @@ export class DartGooberSystem {
   private encounterStarted = false;
   private encounterCleared = false;
 
+
+  private readonly pendingAreaDamage: { position: SimVector; radius: number; damage: number }[] = [];
+
+  /** External blast (kaboomlet etc.): applied at the start of the next update. */
+  queueAreaDamage(position: SimVector, radius: number, damage: number) {
+    this.pendingAreaDamage.push({ position: { x: position.x, y: position.y }, radius, damage });
+  }
+
   startEncounter(
     spawnPoints: readonly RoomSpawnPoint[],
     options: DartGooberEncounterOptions = {}
@@ -249,6 +257,7 @@ export class DartGooberSystem {
       };
     }
 
+    this.applyPendingAreaDamage(events);
     this.updateSpawnQueue(deltaMs, events);
     this.applyArrowHits(arrows, events, consumedArrowIds);
 
@@ -542,4 +551,41 @@ export class DartGooberSystem {
       type: 'dart-goober-encounter-cleared'
     });
   }
+
+  private applyPendingAreaDamage(events: DartGooberEvent[]) {
+    if (this.pendingAreaDamage.length === 0) {
+      return;
+    }
+
+    const blasts = this.pendingAreaDamage.splice(0);
+
+    for (const enemy of Array.from(this.enemies.values())) {
+      for (const blast of blasts) {
+        const distance = Math.hypot(enemy.position.x - blast.position.x, enemy.position.y - blast.position.y);
+
+        if (distance > blast.radius) {
+          continue;
+        }
+
+        enemy.hp -= blast.damage;
+        enemy.hitFlashMs = HIT_FLASH_MS;
+
+        if (enemy.hp <= 0) {
+          this.enemies.delete(enemy.id);
+          events.push({ type: 'dart-goober-killed', id: enemy.id, position: copyVector(enemy.position) });
+          break;
+        }
+
+        events.push({
+          type: 'dart-goober-hit',
+          id: enemy.id,
+          arrowId: -1,
+          position: copyVector(enemy.position),
+          hp: enemy.hp,
+          damage: blast.damage
+        });
+      }
+    }
+  }
+
 }

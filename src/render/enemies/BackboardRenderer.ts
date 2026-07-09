@@ -149,7 +149,11 @@ export class BackboardRenderer {
     let squashY = -squashX;
     let shiver = 0;
 
-    if (enemy.phase === 'brace') {
+    if (enemy.phase === 'drift') {
+      // Shield up while strolling: proud, slightly puffed.
+      squashX += Math.sin(timeMs * 0.006) * 0.02;
+      squashY -= Math.sin(timeMs * 0.006) * 0.02;
+    } else if (enemy.phase === 'brace') {
       // Plant down: pre-parry squash.
       squashX += 0.1 * phaseProgress;
       squashY -= 0.14 * phaseProgress;
@@ -179,14 +183,16 @@ export class BackboardRenderer {
     visual.shadow.setAlpha(0.14 + spawnEase * 0.2);
 
     const glowStrength =
-      enemy.phase === 'brace' ? phaseProgress * 0.5 : enemy.phase === 'parry' ? 0.55 + Math.sin(timeMs * 0.02) * 0.1 : 0;
+      enemy.phase === 'drift' ? 0.45 + Math.sin(timeMs * 0.012) * 0.08 : enemy.phase === 'parry' ? 0.55 + Math.sin(timeMs * 0.02) * 0.1 : 0;
 
     visual.glow.setAlpha(glowStrength * 0.4);
     visual.glow.setScale(1 + glowStrength * 0.25);
 
     visual.artLayer.setPosition(0, base.y + idleWave * (motion.idleBob ?? 2) - Math.abs(walkWave) * (motion.walkBob ?? 2));
     visual.artLayer.setScale(base.scale * (1 + squashX), base.scale * (1 + squashY));
-    visual.body.setTint(hitFlash > 0 ? 0xfff1d0 : enemy.phase === 'parry' ? 0xffe9c0 : 0xffffff);
+    visual.body.setTint(
+      hitFlash > 0 ? 0xfff1d0 : enemy.phase === 'recover' ? 0xd8d8d8 : 0xffe9c0
+    );
 
     this.drawEyes(visual.eyes, enemy, timeMs);
   }
@@ -197,9 +203,8 @@ export class BackboardRenderer {
     const hitFlash = enemy.hitFlashMs > 0;
     const expression =
       (hitFlash ? expressions.hit : undefined) ??
-      (enemy.phase === 'brace' ? expressions.aim : undefined) ??
-      (enemy.phase === 'parry' ? expressions.angry : undefined) ??
       (enemy.phase === 'recover' ? expressions.dizzy : undefined) ??
+      (enemy.phase === 'drift' ? expressions.angry : undefined) ??
       expressions.default;
     const facing = normalize(enemy.facing);
 

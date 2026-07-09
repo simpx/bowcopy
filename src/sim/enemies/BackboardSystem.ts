@@ -4,7 +4,7 @@ import type { RoomBounds, RoomSpawnPoint } from '../rooms';
 
 /**
  * Backboard: anti-ranged plank on a fixed, learnable rhythm
- * (drift -> brace -> parry -> recover). Arrows that land during the parry
+ * (drift reflects while walking -> brief dizzy vulnerability). Arrows that land while reflecting
  * window are consumed and reported as reflections (the kit fires them back
  * as enemy projectiles); the plank is invulnerable while parrying and wide
  * open during recover.
@@ -20,6 +20,7 @@ export interface BackboardEnemy {
   hp: number;
   maxHp: number;
   phase: BackboardPhase;
+  reflectCount: number;
   phaseElapsedMs: number;
   phaseDurationMs: number;
   spawnProgress: number;
@@ -32,6 +33,7 @@ export interface BackboardEnemy {
 export type BackboardEvent =
   | { type: 'backboard-spawned'; id: number; position: SimVector }
   | { type: 'backboard-parry-start'; id: number; position: SimVector }
+  | { type: 'backboard-dazed'; id: number; position: SimVector }
   | { type: 'backboard-reflected'; id: number; origin: SimVector; direction: SimVector; damage: number }
   | { type: 'backboard-hit'; id: number; arrowId: number; position: SimVector; hp: number; damage: number }
   | { type: 'backboard-killed'; id: number; position: SimVector }
@@ -51,10 +53,11 @@ const DEFAULT_ENCOUNTER_SIZE = 2;
 const FIRST_SPAWN_DELAY_MS = 260;
 const SPAWN_CADENCE_MS = 620;
 const SPAWN_DURATION_MS = 360;
-const DRIFT_MS = 2600;
+const DRIFT_MS = 4200;
 const BRACE_MS = 420;
 const PARRY_MS = 1150;
-const RECOVER_MS = 1400;
+const RECOVER_MS = 1300;
+const REFLECTS_TO_DAZE = 3;
 const DRIFT_SPEED = 26;
 const REFLECT_DAMAGE = 1;
 const MAX_HP = 4;
@@ -137,6 +140,14 @@ export class BackboardSystem {
   private encounterStarted = false;
   private encounterCleared = false;
 
+
+  private readonly pendingAreaDamage: { position: SimVector; radius: number; damage: number }[] = [];
+
+  /** External blast (kaboomlet etc.): applied at the start of the next update. */
+  queueAreaDamage(position: SimVector, radius: number, damage: number) {
+    this.pendingAreaDamage.push({ position: { x: position.x, y: position.y }, radius, damage });
+  }
+
   startEncounter(spawnPoints: readonly RoomSpawnPoint[], options: BackboardEncounterOptions = {}) {
     this.clear();
     this.encounterStarted = true;
@@ -160,6 +171,7 @@ export class BackboardSystem {
       return { events, consumedArrowIds: [] };
     }
 
+    this.applyPendingAreaDamage(events);
     this.updateSpawnQueue(deltaMs, events);
     this.applyArrowHits(arrows, events, consumedArrowIds);
 
@@ -187,11 +199,11 @@ export class BackboardSystem {
     return this.encounterCleared;
   }
 
-  /** Debug hook: force every plank straight into its parry stance. */
+  /** Debug hook: force every plank into its dizzy (vulnerable) window. */
   debugForceParry() {
     for (const enemy of this.enemies.values()) {
       if (enemy.phase !== 'spawning') {
-        this.enterPhase(enemy, 'parry');
+        this.enterPhase(enemy, 'recover');
       }
     }
   }
@@ -230,6 +242,7 @@ export class BackboardSystem {
       hp: MAX_HP,
       maxHp: MAX_HP,
       phase: 'spawning',
+      reflectCount: 0,
       phaseElapsedMs: 0,
       phaseDurationMs: SPAWN_DURATION_MS,
       spawnProgress: 0,
@@ -266,7 +279,9 @@ export class BackboardSystem {
 
         consumedArrowIds.add(arrow.id);
 
-        if (enemy.phase === 'parry') {
+        // The plank blocks and returns almost everything — walking included.
+        // Only the brief dizzy window ('recover') leaves it open.
+        if (enemy.phase !== 'recover' && enemy.phase !== 'spawning') {
           const incoming = normalize(arrow.direction);
 
           events.push({
@@ -276,6 +291,13 @@ export class BackboardSystem {
             direction: { x: -incoming.x, y: -incoming.y },
             damage: REFLECT_DAMAGE
           });
+          enemy.reflectCount += 1;
+
+          if (enemy.reflectCount >= REFLECTS_TO_DAZE) {
+            // Battered into a daze: short punish window.
+            this.enterPhase(enemy, 'recover');
+            events.push({ type: 'backboard-dazed', id: enemy.id, position: copyVector(enemy.position) });
+          }
           continue;
         }
 
@@ -316,6 +338,7 @@ export class BackboardSystem {
 
     if (phase === 'drift') {
       enemy.driftDirection = randomDirection();
+      enemy.reflectCount = 0;
     }
   }
 
@@ -349,7 +372,9 @@ export class BackboardSystem {
       enemy.moveAmount = 1;
 
       if (enemy.phaseElapsedMs >= enemy.phaseDurationMs) {
-        this.enterPhase(enemy, 'brace');
+        // Even without being peppered, the plank tires out periodically.
+        this.enterPhase(enemy, 'recover');
+        events.push({ type: 'backboard-dazed', id: enemy.id, position: copyVector(enemy.position) });
       }
 
       return;
@@ -357,23 +382,46 @@ export class BackboardSystem {
 
     enemy.moveAmount = 0;
 
-    if (enemy.phase === 'brace' && enemy.phaseElapsedMs >= enemy.phaseDurationMs) {
-      this.enterPhase(enemy, 'parry');
-      events.push({
-        type: 'backboard-parry-start',
-        id: enemy.id,
-        position: copyVector(enemy.position)
-      });
-      return;
-    }
-
-    if (enemy.phase === 'parry' && enemy.phaseElapsedMs >= enemy.phaseDurationMs) {
-      this.enterPhase(enemy, 'recover');
-      return;
-    }
-
     if (enemy.phase === 'recover' && enemy.phaseElapsedMs >= enemy.phaseDurationMs) {
       this.enterPhase(enemy, 'drift');
     }
   }
+
+  private applyPendingAreaDamage(events: BackboardEvent[]) {
+    if (this.pendingAreaDamage.length === 0) {
+      return;
+    }
+
+    const blasts = this.pendingAreaDamage.splice(0);
+
+    for (const enemy of Array.from(this.enemies.values())) {
+      for (const blast of blasts) {
+        const distance = Math.hypot(enemy.position.x - blast.position.x, enemy.position.y - blast.position.y);
+
+        if (distance > blast.radius) {
+          continue;
+        }
+
+        // Blasts wrap around the plank — no reflecting an explosion.
+        enemy.hp -= blast.damage;
+        enemy.hitFlashMs = HIT_FLASH_MS;
+
+        if (enemy.hp <= 0) {
+          this.enemies.delete(enemy.id);
+          events.push({ type: 'backboard-killed', id: enemy.id, position: copyVector(enemy.position) });
+          break;
+        }
+
+        events.push({
+          type: 'backboard-hit',
+          id: enemy.id,
+          arrowId: -1,
+          position: copyVector(enemy.position),
+          hp: enemy.hp,
+          damage: blast.damage
+        });
+      }
+    }
+  }
+
 }

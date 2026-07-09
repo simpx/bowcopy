@@ -32,6 +32,10 @@ export class SwitcherooKit implements EnemyKit {
     });
   }
 
+  damageArea(position: SimVector, radius: number, damage: number) {
+    this.system.queueAreaDamage(position, radius, damage);
+  }
+
   hasEncounterStarted(): boolean {
     return this.system.hasEncounterStarted();
   }

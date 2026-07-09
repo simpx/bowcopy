@@ -32,6 +32,10 @@ export class BackboardKit implements EnemyKit {
     });
   }
 
+  damageArea(position: SimVector, radius: number, damage: number) {
+    this.system.queueAreaDamage(position, radius, damage);
+  }
+
   hasEncounterStarted(): boolean {
     return this.system.hasEncounterStarted();
   }
@@ -92,6 +96,11 @@ export class BackboardKit implements EnemyKit {
     for (const event of events) {
       if (event.type === 'backboard-spawned') {
         feedback?.playEnemySpawn(event.position);
+        continue;
+      }
+
+      if (event.type === 'backboard-dazed') {
+        feedback?.playSporeBreak(event.position);
         continue;
       }
 

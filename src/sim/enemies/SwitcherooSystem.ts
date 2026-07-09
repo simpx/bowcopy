@@ -150,6 +150,14 @@ export class SwitcherooSystem {
   private encounterCleared = false;
   private forceSwapRequested = false;
 
+
+  private readonly pendingAreaDamage: { position: SimVector; radius: number; damage: number }[] = [];
+
+  /** External blast (kaboomlet etc.): applied at the start of the next update. */
+  queueAreaDamage(position: SimVector, radius: number, damage: number) {
+    this.pendingAreaDamage.push({ position: { x: position.x, y: position.y }, radius, damage });
+  }
+
   startEncounter(spawnPoints: readonly RoomSpawnPoint[], options: SwitcherooEncounterOptions = {}) {
     this.clear();
     this.encounterStarted = true;
@@ -174,6 +182,7 @@ export class SwitcherooSystem {
       return { events, consumedArrowIds: [], playerTeleport: null };
     }
 
+    this.applyPendingAreaDamage(events);
     this.updateSpawnQueue(deltaMs, events);
     this.applyArrowHits(arrows, events, consumedArrowIds);
 
@@ -478,4 +487,41 @@ export class SwitcherooSystem {
     enemy.position = clampPositionToBounds(enemy.position, bounds);
     enemy.moveAmount = 1;
   }
+
+  private applyPendingAreaDamage(events: SwitcherooEvent[]) {
+    if (this.pendingAreaDamage.length === 0) {
+      return;
+    }
+
+    const blasts = this.pendingAreaDamage.splice(0);
+
+    for (const enemy of Array.from(this.enemies.values())) {
+      for (const blast of blasts) {
+        const distance = Math.hypot(enemy.position.x - blast.position.x, enemy.position.y - blast.position.y);
+
+        if (distance > blast.radius) {
+          continue;
+        }
+
+        enemy.hp -= blast.damage;
+        enemy.hitFlashMs = HIT_FLASH_MS;
+
+        if (enemy.hp <= 0) {
+          this.enemies.delete(enemy.id);
+          events.push({ type: 'switcheroo-killed', id: enemy.id, position: copyVector(enemy.position) });
+          break;
+        }
+
+        events.push({
+          type: 'switcheroo-hit',
+          id: enemy.id,
+          arrowId: -1,
+          position: copyVector(enemy.position),
+          hp: enemy.hp,
+          damage: blast.damage
+        });
+      }
+    }
+  }
+
 }

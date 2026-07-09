@@ -437,6 +437,11 @@ export class CombatRoomScene extends Phaser.Scene {
       getPlayerPosition: () => this.player.state.position,
       shakeCamera: (kind) => this.shakeCamera(kind),
       damagePlayer: (sourcePosition, damage) => this.damagePlayerFromEnemy(sourcePosition, damage),
+      damageEnemiesFromRadius: (position, radius, damage) => {
+        for (const kit of this.enemyKits) {
+          kit.damageArea?.(position, radius, damage);
+        }
+      },
       teleportPlayer: (position) => {
         this.player.state.position.x = position.x;
         this.player.state.position.y = position.y;

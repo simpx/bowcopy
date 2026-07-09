@@ -36,6 +36,35 @@ if (!mount) {
 }
 
 const game = createGame();
+
+// iOS audio: 'playback' lets the game sound through the silent (ringer)
+// switch like native games (Safari 16.4+); interruptions from app switches
+// leave the WebAudio context suspended, so nudge it back on return.
+const audioSession = (
+  navigator as Navigator & { audioSession?: { type: string } }
+).audioSession;
+
+if (audioSession) {
+  audioSession.type = 'playback';
+}
+
+const resumeAudioContext = () => {
+  const sound = game.sound as Phaser.Sound.WebAudioSoundManager;
+  const context: AudioContext | undefined = sound?.context;
+
+  if (context && context.state !== 'running') {
+    context.resume().catch(() => {});
+  }
+};
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    resumeAudioContext();
+  }
+});
+window.addEventListener('focus', resumeAudioContext);
+window.addEventListener('pageshow', resumeAudioContext);
+document.addEventListener('touchend', resumeAudioContext, { passive: true });
 const preventGameBrowserGesture = (event: Event) => {
   event.preventDefault();
 };

@@ -139,6 +139,14 @@ export class KaboomletSystem {
   private encounterStarted = false;
   private encounterCleared = false;
 
+
+  private readonly pendingAreaDamage: { position: SimVector; radius: number; damage: number }[] = [];
+
+  /** External blast (kaboomlet etc.): applied at the start of the next update. */
+  queueAreaDamage(position: SimVector, radius: number, damage: number) {
+    this.pendingAreaDamage.push({ position: { x: position.x, y: position.y }, radius, damage });
+  }
+
   startEncounter(
     spawnPoints: readonly RoomSpawnPoint[],
     options: KaboomletEncounterOptions = {}
@@ -162,6 +170,7 @@ export class KaboomletSystem {
       return { events, consumedArrowIds: [] };
     }
 
+    this.applyPendingAreaDamage(events);
     this.updateSpawnQueue(deltaMs, events);
     this.applyArrowHits(arrows, events, consumedArrowIds);
 
@@ -275,7 +284,15 @@ export class KaboomletSystem {
 
         if (enemy.hp <= 0) {
           this.enemies.delete(enemy.id);
+          // Shot dead = still a bomb: it goes off where it falls.
           events.push({ type: 'kaboomlet-killed', id: enemy.id, position: copyVector(enemy.position) });
+          events.push({
+            type: 'kaboomlet-exploded',
+            id: enemy.id,
+            position: copyVector(enemy.position),
+            radius: EXPLOSION_RADIUS,
+            damage: EXPLOSION_DAMAGE
+          });
           break;
         }
       }
@@ -387,4 +404,39 @@ export class KaboomletSystem {
     this.encounterCleared = true;
     events.push({ type: 'kaboomlet-encounter-cleared' });
   }
+
+  private applyPendingAreaDamage(events: KaboomletEvent[]) {
+    if (this.pendingAreaDamage.length === 0) {
+      return;
+    }
+
+    const blasts = this.pendingAreaDamage.splice(0);
+
+    for (const enemy of Array.from(this.enemies.values())) {
+      for (const blast of blasts) {
+        const distance = Math.hypot(enemy.position.x - blast.position.x, enemy.position.y - blast.position.y);
+
+        if (distance > blast.radius || distance < 1) {
+          continue;
+        }
+
+        enemy.hp -= blast.damage;
+        enemy.hitFlashMs = HIT_FLASH_MS;
+
+        if (enemy.hp <= 0) {
+          this.enemies.delete(enemy.id);
+          events.push({ type: 'kaboomlet-killed', id: enemy.id, position: copyVector(enemy.position) });
+          events.push({
+            type: 'kaboomlet-exploded',
+            id: enemy.id,
+            position: copyVector(enemy.position),
+            radius: EXPLOSION_RADIUS,
+            damage: EXPLOSION_DAMAGE
+          });
+          break;
+        }
+      }
+    }
+  }
+
 }
