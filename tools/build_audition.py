@@ -43,6 +43,15 @@ SOURCES = {
  'oga-dungeon-05': (['https://opengameart.org/sites/default/files/Dungeon%2005.ogg'], False),
  'oga-creepy': (['https://opengameart.org/sites/default/files/CrEEP.ogg'], False),
  'oga-creepy-ambient-loop': (['https://opengameart.org/sites/default/files/creepyloop-v2_0.ogg'], False),
+ 'oga-8-wet-squish-slurp-impacts': (['https://opengameart.org/sites/default/files/independent_nu_ljudbank-wet_squish_slurp_impacts.7z'], True),
+ 'oga-squish-sounds-effects': ([
+   'https://opengameart.org/sites/default/files/squish_01_0.mp3',
+   'https://opengameart.org/sites/default/files/squish_02.mp3'], False),
+ 'oga-ghost-monster-voice': (['https://opengameart.org/sites/default/files/qubodup-GhostMoans.zip'], True),
+ 'oga-ghost-breath': (['https://opengameart.org/sites/default/files/ghostbreath.flac'], False),
+ 'oga-explosion-0': (['https://opengameart.org/sites/default/files/explosion.wav'], False),
+ 'oga-synthesized-explosion': (['https://opengameart.org/sites/default/files/synthetic_explosion_1.flac'], False),
+ 'oga-big-explosion': (['https://opengameart.org/sites/default/files/DeathFlash.flac'], False),
 }
 
 def fetch():
@@ -57,6 +66,8 @@ def fetch():
                 subprocess.run(['curl', '-sL', '--max-time', '180', '-o', path, url], check=True)
             if unzip and fn.endswith('.zip') and not os.path.isdir(f'{d}/unz'):
                 subprocess.run(['unzip', '-q', '-o', path, '-d', f'{d}/unz'], check=True)
+            if unzip and fn.endswith('.7z') and not os.path.isdir(f'{d}/unz'):
+                subprocess.run(['7z', 'x', '-y', path, f'-o{d}/unz'], check=True, stdout=subprocess.DEVNULL)
 
 fetch()
 CAND=f'{REPO}/assets/audio/sfx/candidates'
@@ -87,12 +98,20 @@ OGA_META={
  'oga-dungeon-05':('Dungeon 05','Fantasy Musica','CC-BY-SA 4.0'),
  'oga-creepy':('CrEEP','TokyoGeisha','CC0'),
  'oga-creepy-ambient-loop':('Creepy Ambient Loop','EPB9000','CC0'),
+ 'oga-8-wet-squish-slurp-impacts':('8 Wet Squish, Slurp Impacts','Independent.nu (via qubodup)','CC0'),
+ 'oga-squish-sounds-effects':('Squish Sounds Effects','ezduzziteh','CC0'),
+ 'oga-ghost-monster-voice':('Ghost/Monster Voice: Moaning & Growling','qubodup','CC0'),
+ 'oga-ghost-breath':('Ghost Breath','qubodup','CC0'),
+ 'oga-explosion-0':('Explosion','tinyworlds','CC0'),
+ 'oga-synthesized-explosion':('Synthesized Explosion','qubodup','CC0'),
+ 'oga-big-explosion':('Big Explosion (DeathFlash)','lamoot','CC-BY 3.0'),
 }
 
 def M(sid):
     if sid.startswith('kenney'): return {**KENNEY,'slug':f'https://kenney.nl/assets/{sid.replace("kenney_","")}'}
     title,author,lic=OGA_META[sid]
-    return {'source':title,'author':author,'license':lic,'slug':f'https://opengameart.org/content/{sid[4:]}'}
+    slug='ghost-monster-voice-moaning-growling' if sid=='oga-ghost-monster-voice' else sid[4:]
+    return {'source':title,'author':author,'license':lic,'slug':f'https://opengameart.org/content/{slug}'}
 
 # event -> usage + candidates [(sourceId, relpath, label, max_seconds)]
 EVENTS={
@@ -142,7 +161,47 @@ EVENTS={
    ('kenney_impact-sounds','Audio/impactPlank_medium_000.ogg','plank0',2),
    ('kenney_impact-sounds','Audio/impactPlank_medium_001.ogg','plank1',2),
    ('kenney_impact-sounds','Audio/impactPlank_medium_002.ogg','plank2',2)]),
+ # --- v3: 材质化受击/死亡(替换木桩默认音) ---
+ 'enemy_hit_squish':('软体受击:墨水怪 goober、交换怪(替换木板声)',[
+   ('oga-8-wet-squish-slurp-impacts','unz/impsplat/impactsplat01.mp3.flac','impactsplat1',1.6),
+   ('oga-8-wet-squish-slurp-impacts','unz/impsplat/impactsplat03.mp3.flac','impactsplat3',1.6),
+   ('oga-squish-sounds-effects','squish_01_0.mp3','ezd-squish1',1.6)]),
+ 'enemy_death_squish':('软体死亡 splat:goober/交换怪(更大更湿)',[
+   ('oga-8-wet-squish-slurp-impacts','unz/impsplat/impactsplat07.mp3.flac','impactsplat7',2.5),
+   ('oga-8-wet-squish-slurp-impacts','unz/impsplat/impactsplat08.mp3.flac','impactsplat8',2.5),
+   ('oga-squish-sounds-effects','squish_02.mp3','ezd-squish2',2.5)]),
+ 'enemy_hit_ghost':('幽灵受击:Spooper Gooper + boss 召唤的 shades',[
+   ('oga-7-ghast-sounds','unz/ghast - StarNinjas/ghast_hurt.1.ogg','ghast-hurt1',2),
+   ('oga-7-ghast-sounds','unz/ghast - StarNinjas/ghast_hurt.2.ogg','ghast-hurt2',2),
+   ('oga-7-ghast-sounds','unz/ghast - StarNinjas/ghast_hurt.3.ogg','ghast-hurt3',2)]),
+ 'enemy_death_ghost':('幽灵消散死亡',[
+   ('oga-ghost-monster-voice','unz/qubodup-GhostMoans/wav/qubodup-GhostMoan01.wav','ghost-moan1',3),
+   ('oga-ghost-monster-voice','unz/qubodup-GhostMoans/wav/qubodup-GhostMoan04.wav','ghost-moan4',3),
+   ('oga-ghost-breath','ghostbreath.flac','ghost-breath',3)]),
+ 'enemy_hit_metal':('金属受击:Keylet 钥匙、Kaboomlet 炸弹小子',[
+   ('kenney_impact-sounds','Audio/impactMetal_light_000.ogg','metal-light0',1.5),
+   ('kenney_impact-sounds','Audio/impactMetal_light_002.ogg','metal-light2',1.5),
+   ('kenney_rpg-audio','Audio/metalLatch.ogg','metal-latch',1.5),
+   ('kenney_impact-sounds','Audio/impactGeneric_light_001.ogg','generic-light1',1.5)]),
+ 'explosion_small':('Kaboomlet 爆炸(现在竟然是木板声)',[
+   ('oga-explosion-0','explosion.wav','tinyworlds-explosion',3),
+   ('oga-synthesized-explosion','synthetic_explosion_1.flac','qubodup-synth',3),
+   ('oga-big-explosion','DeathFlash.flac','lamoot-deathflash',3)]),
+ 'enemy_hit_magic':('Hexbrim boss 受击(布+魔法,不该是木头)',[
+   ('oga-8-magic-attacks','unz/22_Water_02.wav','water',2),
+   ('oga-8-magic-attacks','unz/25_Wind_01.wav','wind',2),
+   ('oga-8-magic-attacks','unz/30_Earth_02.wav','earth',2),
+   ('oga-spell-sounds-starter-pack','unz/zap15.ogg','zap15',2)]),
+ 'enemy_death_magic':('Hexbrim boss 死亡(魔法解体)',[
+   ('oga-8-magic-attacks','unz/18_Thunder_02.wav','thunder',3),
+   ('oga-spell-sounds-starter-pack','unz/explode.ogg','explode',3),
+   ('oga-spell-sounds-starter-pack','unz/spell.ogg','spell',3)]),
 }
+
+# v2 groups already applied on 2026-07-09 — page hides these.
+DECIDED = {'portal_whoosh','spell_bolt','witchfire_ignite','hex_orb_launch','sheep_morph',
+           'sheep_bleat','ritual_channel','ritual_blast','shade_summon','door_creak','parry_wood',
+           'music_combat','music_boss'}
 MUSIC={
  'music_combat':('普通战斗房循环',[
    ('oga-8-bit-battle-loop','8BitBattleLoop_0.ogg','8bit-battle'),
@@ -174,7 +233,7 @@ for event,(usage,cands) in EVENTS.items():
           '-ar','44100','-ac','1','-c:a','libvorbis','-q:a','4',out],check=True)
         entries.append({'id':label,'file':f'assets/audio/sfx/curated/{event}/{label}.ogg',
                         'raw':f'assets/audio/sfx/candidates/{sid}/{os.path.basename(rel)}',**M(sid)})
-    manifest['events'][event]={'usage':usage,'candidates':entries}
+    manifest['events'][event]={'usage':usage,'candidates':entries,'decided':event in DECIDED}
 
 for slot,(usage,cands) in MUSIC.items():
     entries=[]
@@ -186,7 +245,7 @@ for slot,(usage,cands) in MUSIC.items():
         os.makedirs(os.path.dirname(keep),exist_ok=True)
         if not os.path.exists(keep): shutil.copy(src,keep)
         entries.append({'id':label,'file':f'assets/audio/music/candidates/{sid}/{os.path.basename(rel)}',**M(sid)})
-    manifest['music'][slot]={'usage':usage,'candidates':entries}
+    manifest['music'][slot]={'usage':usage,'candidates':entries,'decided':slot in DECIDED}
 
 manifest['events']['parry_wood']['candidates'].append({'id':'reuse-hit-wood-board','file':'assets/audio/sfx/game/hit_wood_board.wav','raw':'assets/audio/sfx/game/hit_wood_board.wav','source':'现有 game 包 hit_wood_board(复用选项)','author':'plantmonkey','license':'CC0','slug':'existing'})
 json.dump(manifest,open(f'{REPO}/assets/audio/audition-v2.json','w'),indent=1,ensure_ascii=False)

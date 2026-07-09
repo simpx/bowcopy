@@ -80,8 +80,13 @@
         .then((r) => r.json())
         .then((m) => {
           root.textContent = '';
-          for (const [key, info] of Object.entries(m.events)) root.append(renderGroup(key, info, 'SFX'));
-          for (const [key, info] of Object.entries(m.music)) root.append(renderGroup(key, info, '音乐'));
+          // decided groups were already applied to the game pack — hide them.
+          for (const [key, info] of Object.entries(m.events)) {
+            if (!info.decided) root.append(renderGroup(key, info, 'SFX'));
+          }
+          for (const [key, info] of Object.entries(m.music)) {
+            if (!info.decided) root.append(renderGroup(key, info, '音乐'));
+          }
         })
         .catch((e) => { root.textContent = '加载 audition-v2.json 失败:' + e; });
 
