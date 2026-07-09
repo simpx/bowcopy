@@ -28,6 +28,7 @@ import {
   createCombatRoomDefinitionForDungeonRoom,
   createInitialDungeonState,
   enterDungeonRoom,
+  isCombatDungeonRoom,
   getCurrentDungeonRoom,
   getNeighborDungeonRoom,
   referenceCombatRoom,
@@ -109,6 +110,8 @@ export class CombatRoomScene extends Phaser.Scene {
   private music?: MusicDirector;
   private bossMusicActive = false;
   private nextSheepBleatAt = 0;
+  private runPhase: 'playing' | 'defeat' | 'victory' = 'playing';
+  private healedRoomIds = new Set<string>();
   private dungeonState: DungeonState = createInitialDungeonState();
   private currentRoomDefinition: CombatRoomDefinition = referenceCombatRoom;
   private debugPlayerDemoElapsedMs = 0;
@@ -147,6 +150,7 @@ export class CombatRoomScene extends Phaser.Scene {
       getCurrentDungeonRoom(this.dungeonState)
     );
     this.applyDebugEncounterFromUrl();
+    this.applyDebugRoomFromUrl();
     this.player = new BowbertPlayerModel({
       x: PLAYER_START.x,
       y: PLAYER_START.y
@@ -191,6 +195,7 @@ export class CombatRoomScene extends Phaser.Scene {
 
     this.desktopInput = new DesktopInputAdapter(this, this.inputController, () => this.player.state.position);
     this.createHeartsHud();
+    this.applyDebugHpFromUrl();
     this.createDungeonMinimap();
     this.createTouchInput();
     this.configureCamera();
@@ -205,7 +210,17 @@ export class CombatRoomScene extends Phaser.Scene {
     this.desktopInput?.update();
     this.updateDebugPlayerDemo(delta);
 
-    const snapshot = this.inputController.consumeSnapshot();
+    const rawSnapshot = this.inputController.consumeSnapshot();
+    // After defeat the player goes limp; the world keeps moving around them.
+    const snapshot =
+      this.runPhase === 'defeat'
+        ? {
+            ...rawSnapshot,
+            move: { x: 0, y: 0 },
+            firing: false,
+            actions: { ...rawSnapshot.actions, dodge: false }
+          }
+        : rawSnapshot;
     const playerFrame = this.player.update(snapshot, delta, this.currentRoomDefinition.bounds);
 
     this.tryMoveThroughOpenDoor(snapshot.move);
@@ -365,6 +380,10 @@ export class CombatRoomScene extends Phaser.Scene {
   }
 
   private damagePlayerFromEnemy(sourcePosition: SimVector, damage: number) {
+    if (this.runPhase !== 'playing') {
+      return;
+    }
+
     if (this.player.state.dodge.invulnerableMs > 0) {
       this.feedbackRenderer?.playDodge(this.player.state.position, this.player.state.dodge.direction);
       this.shakeCamera('dodge');
@@ -378,6 +397,7 @@ export class CombatRoomScene extends Phaser.Scene {
     this.heartsHud?.flashDamage();
     this.feedbackRenderer?.playDamage(this.player.state.position, damage);
     this.shakeCamera('damage');
+    this.checkDefeat();
   }
 
   private kitFor(kind: EncounterKind): EnemyKit | undefined {
@@ -434,7 +454,13 @@ export class CombatRoomScene extends Phaser.Scene {
   }
 
   private encounterClearedByKit(options: { clearSpores: boolean; clearDarts: boolean }) {
+    const clearedRoom = getCurrentDungeonRoom(this.dungeonState);
+
     clearCurrentDungeonRoom(this.dungeonState);
+
+    if (clearedRoom.kind === 'boss' && this.runPhase === 'playing') {
+      this.startVictory();
+    }
 
     if (options.clearSpores) {
       this.shroomSpores.clear();
@@ -526,6 +552,13 @@ export class CombatRoomScene extends Phaser.Scene {
       return debugEncounter;
     }
 
+    // Level design: rooms pin their encounter in the dungeon blueprint.
+    const pinned = getCurrentDungeonRoom(this.dungeonState).encounterKind;
+
+    if (pinned && (ENCOUNTER_KINDS as readonly string[]).includes(pinned)) {
+      return pinned as EncounterKind;
+    }
+
     if (this.currentRoomDefinition.theme === 'mushroom') {
       return 'red-shroom';
     }
@@ -543,6 +576,41 @@ export class CombatRoomScene extends Phaser.Scene {
     }
 
     return 'dart-goober';
+  }
+
+  /** Review aid: /?debugroom=X,Y starts the run inside that dungeon room. */
+  private applyDebugRoomFromUrl() {
+    const raw = new URLSearchParams(window.location.search).get('debugroom');
+
+    if (!raw || this.getDebugEncounterKind()) {
+      return;
+    }
+
+    if (!this.dungeonState.rooms.has(raw)) {
+      return;
+    }
+
+    const room = enterDungeonRoom(this.dungeonState, raw);
+
+    this.currentRoomDefinition = createCombatRoomDefinitionForDungeonRoom(this.dungeonState, room);
+
+    if (isCombatDungeonRoom(room) && room.phase === 'open') {
+      startCurrentDungeonRoomCombat(this.dungeonState);
+    }
+  }
+
+  /** Review aid: /?debughp=N starts the run at N hearts. */
+  private applyDebugHpFromUrl() {
+    const raw = new URLSearchParams(window.location.search).get('debughp');
+    const target = raw === null ? Number.NaN : Number.parseFloat(raw);
+
+    if (!Number.isFinite(target)) {
+      return;
+    }
+
+    this.playerHealth.reset();
+    this.playerHealth.damage(Math.max(0.5, this.playerHealth.state.max - target));
+    this.heartsHud?.update(this.playerHealth.state);
   }
 
   private applyDebugEncounterFromUrl() {
@@ -673,8 +741,23 @@ export class CombatRoomScene extends Phaser.Scene {
     this.rebuildRoomRenderer();
     this.clearRoomRuntime();
     this.placePlayerAtEntry(OPPOSITE_DOOR_SIDE[exitSide]);
+    this.healInWizardRoomIfNeeded(nextRoom.id, nextRoom.kind);
     this.startCombatInCurrentRoomIfNeeded();
     this.centerCameraOnRoom();
+  }
+
+  /** The wizard's den restores all hearts, once per room per run. */
+  private healInWizardRoomIfNeeded(roomId: string, kind: string) {
+    if (kind !== 'wizard' || this.healedRoomIds.has(roomId)) {
+      return;
+    }
+
+    this.healedRoomIds.add(roomId);
+    this.playerHealth.reset();
+    this.heartsHud?.update(this.playerHealth.state);
+    this.feedbackRenderer?.playAnnouncement('RESTORED', this.currentRoomDefinition.bounds, 'clear');
+    this.feedbackRenderer?.playRoomClear(this.currentRoomDefinition.bounds);
+    this.sfx?.playPortal(this.player.state.position);
   }
 
   private getRequestedExitSide(move: { readonly x: number; readonly y: number }): RoomDoorSide | undefined {
@@ -785,6 +868,7 @@ export class CombatRoomScene extends Phaser.Scene {
     this.heartsHud?.update(this.playerHealth.state);
     this.heartsHud?.flashDamage();
     this.feedbackRenderer?.playDamage(playerPosition, damage);
+    this.checkDefeat();
   }
 
   private bootstrapDebugEncounter() {
@@ -904,6 +988,62 @@ export class CombatRoomScene extends Phaser.Scene {
     const { bounds } = this.currentRoomDefinition;
 
     camera.centerOn(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  }
+
+  private checkDefeat() {
+    if (this.runPhase !== 'playing' || this.playerHealth.state.current > 0) {
+      return;
+    }
+
+    this.runPhase = 'defeat';
+    this.feedbackRenderer?.playAnnouncement('YOU CAME UNDONE', this.currentRoomDefinition.bounds, 'damage');
+    this.music?.stop(1400);
+    this.cameras.main.fadeOut(1700, 8, 4, 16);
+    this.time.delayedCall(2300, () => this.resetRun());
+  }
+
+  private startVictory() {
+    this.runPhase = 'victory';
+    this.music?.stop(2400);
+    // Let the boss dissolve finish before the title card lands.
+    this.time.delayedCall(1900, () => {
+      if (this.runPhase !== 'victory') {
+        return;
+      }
+
+      this.bossHud?.showIntro('CHAPTER CLEARED', 'THE HAT LIES EMPTY');
+    });
+    this.time.delayedCall(4800, () => {
+      if (this.runPhase !== 'victory') {
+        return;
+      }
+
+      this.cameras.main.fadeOut(900, 8, 4, 16);
+      this.time.delayedCall(1000, () => this.resetRun());
+    });
+  }
+
+  /** Fresh run: new dungeon, full hearts, back to the start room. */
+  private resetRun() {
+    this.runPhase = 'playing';
+    this.healedRoomIds.clear();
+    this.dungeonState = createInitialDungeonState();
+    this.currentRoomDefinition = createCombatRoomDefinitionForDungeonRoom(
+      this.dungeonState,
+      getCurrentDungeonRoom(this.dungeonState)
+    );
+    this.player = new BowbertPlayerModel({ x: PLAYER_START.x, y: PLAYER_START.y });
+    this.playerHealth.reset();
+    this.heartsHud?.update(this.playerHealth.state);
+    this.rebuildRoomRenderer();
+    this.clearRoomRuntime();
+    this.bossIntroShownFor = '';
+    this.bossMusicActive = false;
+    this.nextSheepBleatAt = 0;
+    this.bossHud?.update(null);
+    this.music?.play('combat');
+    this.centerCameraOnRoom();
+    this.cameras.main.fadeIn(700, 8, 4, 16);
   }
 
   /** Sheepbert complains every second or two while polymorphed. */

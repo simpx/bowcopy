@@ -95,6 +95,10 @@ export interface RoomThemeKit {
       {
         readonly kind: RoomThemeKitDungeonKind;
         readonly theme: RoomVisualThemeId;
+        /** Encounter kind pinned to rooms of this symbol (level design). */
+        readonly encounter?: string;
+        /** Enemy budget override; falls back to the depth formula. */
+        readonly budget?: number;
       }
     >;
   };

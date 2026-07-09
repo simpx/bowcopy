@@ -27,6 +27,8 @@ export interface DungeonRoomState {
   readonly decorSeed: number;
   readonly depth: number;
   readonly enemyBudget: number;
+  /** Level design: which encounter this room hosts (validated by the scene). */
+  readonly encounterKind?: string;
   phase: RoomPhase;
   wave: number;
   remainingSpawnMarkers: number;
@@ -51,13 +53,23 @@ type DungeonBlueprintSelection = {
 const DUNGEON_ROUTE_DSL = ROOM_THEME_KIT.dungeonDsl.rows;
 
 const ROOM_SPEC_BY_SYMBOL: Partial<
-  Record<string, { readonly kind: DungeonRoomKind; readonly theme: DungeonRoomTheme }>
+  Record<
+    string,
+    {
+      readonly kind: DungeonRoomKind;
+      readonly theme: DungeonRoomTheme;
+      readonly encounter?: string;
+      readonly budget?: number;
+    }
+  >
 > = Object.fromEntries(
   Object.entries(ROOM_THEME_KIT.dungeonDsl.legend).map(([symbol, spec]) => [
     symbol,
     {
       kind: spec.kind,
-      theme: ROOM_RUNTIME_THEME_BY_VISUAL_THEME[spec.theme]
+      theme: ROOM_RUNTIME_THEME_BY_VISUAL_THEME[spec.theme],
+      encounter: spec.encounter,
+      budget: spec.budget
     }
   ])
 );
@@ -96,7 +108,7 @@ export function createInitialDungeonState(): DungeonState {
       const id = dungeonRoomId(x, y);
       const { kind, theme } = roomSpec;
       const depth = Math.abs(x - blueprint.start.x) + Math.abs(y - blueprint.start.y);
-      const enemyBudget = enemyBudgetForRoom(kind, depth, theme);
+      const enemyBudget = roomSpec.budget ?? enemyBudgetForRoom(kind, depth, theme);
       const phase: RoomPhase = kind === 'start' || kind === 'wizard' ? 'cleared' : 'open';
 
       rooms.set(id, {
@@ -109,6 +121,7 @@ export function createInitialDungeonState(): DungeonState {
         decorSeed: seededGridValue(x, y, row.charCodeAt(x) + 97),
         depth,
         enemyBudget,
+        encounterKind: roomSpec.encounter,
         phase,
         wave: Math.max(1, depth),
         remainingSpawnMarkers: 0,
