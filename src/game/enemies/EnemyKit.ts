@@ -56,6 +56,8 @@ export interface EnemyKitServices {
   teleportPlayer?(position: SimVector): void;
   /** Polymorphs Bowbert into sheep form for the duration (Hexbrim's hex). */
   hexPlayer?(durationMs: number): void;
+  /** Full-screen camera flash for boss beats. */
+  flashCamera?(durationMs: number, red?: number, green?: number, blue?: number): void;
   damagePlayerFromRadius(position: SimVector, radius: number, damage: number): void;
   /** Marks the room cleared with sfx/feedback/shake and optional projectile cleanup. */
   encounterCleared(options: { clearSpores: boolean; clearDarts: boolean }): void;

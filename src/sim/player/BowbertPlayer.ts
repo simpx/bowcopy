@@ -58,6 +58,10 @@ const DODGE_SPEED = 540;
 const DODGE_DURATION_MS = 310;
 const DODGE_COOLDOWN_MS = 680;
 const DODGE_INVULNERABLE_MS = 360;
+const SHEEP_DASH_SPEED = 470;
+const SHEEP_DASH_DURATION_MS = 190;
+const SHEEP_DASH_COOLDOWN_MS = 760;
+const SHEEP_DASH_INVULNERABLE_MS = 220;
 const FIRST_ARROW_MS = 0;
 const ARROW_CADENCE_MS = 360;
 const ARROW_DAMAGE = 1;
@@ -149,11 +153,9 @@ export class BowbertPlayerModel {
 
     this.state.hexedMs = decay(this.state.hexedMs, deltaMs);
 
-    // A sheep cannot draw a bow OR tumble — it can only waddle and pray.
+    // A sheep cannot draw a bow, but it keeps a panicky short dash.
     const effectiveSnapshot: InputSnapshot =
-      this.state.hexedMs > 0
-        ? { ...snapshot, firing: false, actions: { ...snapshot.actions, dodge: false } }
-        : snapshot;
+      this.state.hexedMs > 0 ? { ...snapshot, firing: false } : snapshot;
 
     this.updateFacing(effectiveSnapshot);
     this.updateDodge(effectiveSnapshot, deltaMs, events);
@@ -230,10 +232,12 @@ export class BowbertPlayerModel {
     const moveDirection = normalize(snapshot.move);
     const direction = isActiveVector(moveDirection) ? moveDirection : copyVector(this.state.facing);
 
-    dodge.activeMs = DODGE_DURATION_MS;
-    dodge.durationMs = DODGE_DURATION_MS;
-    dodge.cooldownMs = DODGE_COOLDOWN_MS;
-    dodge.invulnerableMs = DODGE_INVULNERABLE_MS;
+    const sheep = this.state.hexedMs > 0;
+
+    dodge.activeMs = sheep ? SHEEP_DASH_DURATION_MS : DODGE_DURATION_MS;
+    dodge.durationMs = dodge.activeMs;
+    dodge.cooldownMs = sheep ? SHEEP_DASH_COOLDOWN_MS : DODGE_COOLDOWN_MS;
+    dodge.invulnerableMs = sheep ? SHEEP_DASH_INVULNERABLE_MS : DODGE_INVULNERABLE_MS;
     dodge.direction = direction;
 
     events.push({
@@ -250,7 +254,8 @@ export class BowbertPlayerModel {
 
     if (dodge.activeMs > 0) {
       const progress = 1 - dodge.activeMs / Math.max(1, dodge.durationMs);
-      const easedSpeed = DODGE_SPEED * (0.78 + Math.sin(progress * Math.PI) * 0.22);
+      const dashSpeed = this.state.hexedMs > 0 ? SHEEP_DASH_SPEED : DODGE_SPEED;
+      const easedSpeed = dashSpeed * (0.78 + Math.sin(progress * Math.PI) * 0.22);
 
       this.state.velocity = {
         x: dodge.direction.x * easedSpeed,

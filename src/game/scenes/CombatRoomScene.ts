@@ -96,6 +96,7 @@ export class CombatRoomScene extends Phaser.Scene {
   private dungeonMinimap?: DungeonMinimap;
   private heartsHud?: HeartsHud;
   private bossHud?: BossHud;
+  private bossIntroShownFor = '';
   private touchOverlay?: TouchInputOverlay;
   private roomRenderer?: CombatRoomRenderer;
   private playerRenderer?: BowbertRenderer;
@@ -224,7 +225,16 @@ export class CombatRoomScene extends Phaser.Scene {
       }
     }
 
-    this.bossHud?.update(this.kitFor(encounterKind)?.getBossStatus?.());
+    const bossStatus = this.kitFor(encounterKind)?.getBossStatus?.();
+
+    if (bossStatus && this.bossIntroShownFor !== bossStatus.name) {
+      this.bossIntroShownFor = bossStatus.name;
+      this.bossHud?.showIntro(bossStatus.name, 'NOTHING INSIDE');
+      this.cameras.main.flash(500, 120, 60, 170);
+      this.shakeCamera('room-clear');
+    }
+
+    this.bossHud?.update(bossStatus);
 
     const enemyDartEvents = this.enemyDarts.update(
       delta,
@@ -371,6 +381,9 @@ export class CombatRoomScene extends Phaser.Scene {
       teleportPlayer: (position) => {
         this.player.state.position.x = position.x;
         this.player.state.position.y = position.y;
+      },
+      flashCamera: (durationMs, red = 255, green = 255, blue = 255) => {
+        this.cameras.main.flash(durationMs, red, green, blue);
       },
       hexPlayer: (durationMs) => {
         this.player.markHexed(durationMs);

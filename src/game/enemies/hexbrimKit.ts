@@ -47,7 +47,9 @@ export class HexbrimKit implements EnemyKit {
   getBossStatus() {
     const status = this.system.bossStatus();
 
-    return status ? { name: 'HEXBRIM', ...status } : null;
+    return status
+      ? { name: 'HEXBRIM', ...status, castProgress: this.system.channelProgress() }
+      : null;
   }
 
   update(
@@ -60,7 +62,7 @@ export class HexbrimKit implements EnemyKit {
   ): readonly number[] {
     const frame = this.system.update(deltaMs, bounds, playerPosition, arrows);
 
-    this.handleEvents(frame.events);
+    this.handleEvents(frame.events, bounds);
     this.renderer?.playEvents(frame.events);
 
     const show = activeKind === 'hexbrim';
@@ -79,7 +81,7 @@ export class HexbrimKit implements EnemyKit {
   debugStep(timeMs: number, deltaMs: number, bounds: RoomBounds, _kind: EncounterKind) {
     const frame = this.system.update(deltaMs, bounds, this.services.getPlayerPosition(), []);
 
-    this.handleEvents(frame.events);
+    this.handleEvents(frame.events, bounds);
     this.renderer?.playEvents(frame.events);
     this.renderer?.update(
       timeMs,
@@ -106,7 +108,7 @@ export class HexbrimKit implements EnemyKit {
     this.system.clear();
   }
 
-  private handleEvents(events: readonly HexbrimEvent[]) {
+  private handleEvents(events: readonly HexbrimEvent[], bounds: RoomBounds) {
     const feedback = this.services.getFeedback();
     const sfx = this.services.getSfx();
 
@@ -146,12 +148,23 @@ export class HexbrimKit implements EnemyKit {
       if (event.type === 'hexbrim-ritual-complete') {
         // The finished ritual detonates the whole arena; a well-timed
         // tumble (i-frames) is the only out — damagePlayer respects it.
+        feedback?.playAnnouncement('TOO SLOW', bounds, 'damage');
+        this.services.flashCamera?.(420, 210, 40, 60);
         this.services.damagePlayer(this.services.getPlayerPosition(), event.damage);
         this.services.shakeCamera('damage');
         continue;
       }
 
+      if (event.type === 'hexbrim-channel-started') {
+        feedback?.playAnnouncement('THE RITUAL BEGINS', bounds, 'damage');
+        this.services.flashCamera?.(320, 138, 60, 190);
+        this.services.shakeCamera('damage');
+        continue;
+      }
+
       if (event.type === 'hexbrim-channel-interrupted') {
+        feedback?.playAnnouncement('RITUAL BROKEN', bounds, 'clear');
+        this.services.flashCamera?.(200, 255, 255, 255);
         feedback?.playEnemySpawn(event.position);
         this.services.shakeCamera('hit');
         continue;
@@ -172,6 +185,8 @@ export class HexbrimKit implements EnemyKit {
       if (event.type === 'hexbrim-killed') {
         sfx?.playEnemyDeath(event.position);
         feedback?.playEnemyDeath(event.position);
+        feedback?.playAnnouncement('HEXBRIM UNRAVELED', bounds, 'clear');
+        this.services.flashCamera?.(600, 255, 255, 255);
         this.services.shakeCamera('room-clear');
         continue;
       }

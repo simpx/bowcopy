@@ -135,6 +135,17 @@ export class CombatFeedbackRenderer {
     this.bursts.emit(position, 14, [TONE_COLORS.damage, 0xffd0a1], 62, 148, 4.6, 290);
   }
 
+  /** Big centered announcement (boss beats: ritual start/broken, death). */
+  playAnnouncement(text: string, bounds: RoomBounds, tone: 'clear' | 'damage' | 'dodge' = 'clear') {
+    const center = {
+      x: bounds.x + bounds.width / 2,
+      y: bounds.y + bounds.height / 2
+    };
+
+    this.addPulse(center, tone, 30, 96, 4, 360);
+    this.addLabel(text, { x: center.x, y: center.y - 70 }, tone, { x: 0, y: -30 }, 1050);
+  }
+
   playRoomClear(bounds: RoomBounds) {
     const center = {
       x: bounds.x + bounds.width / 2,

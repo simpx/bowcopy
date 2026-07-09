@@ -862,9 +862,13 @@ class HexbrimSlot extends EnemySlotBase {
         this.feedback.playArrowEnemy(event.position, event.damage);
       } else if (event.type === 'hexbrim-witchfire-burn') {
         this.feedback.playDamage(event.position, event.damage);
+      } else if (event.type === 'hexbrim-channel-started') {
+        this.feedback.playAnnouncement('THE RITUAL BEGINS', this.cell.bounds, 'damage');
       } else if (event.type === 'hexbrim-ritual-complete') {
+        this.feedback.playAnnouncement('TOO SLOW', this.cell.bounds, 'damage');
         this.feedback.playDamage(clampToBounds(target, this.cell.bounds), event.damage);
       } else if (event.type === 'hexbrim-channel-interrupted') {
+        this.feedback.playAnnouncement('RITUAL BROKEN', this.cell.bounds, 'clear');
         this.feedback.playEnemySpawn(event.position);
       } else if (event.type === 'hexbrim-clone-dispelled') {
         this.feedback.playSporeBreak(event.position);
