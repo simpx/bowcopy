@@ -15,6 +15,20 @@ This is the index for audio assets, sourcing notes, and current integration rule
 - `sfx/curated-v1.json`: curated audition manifest after user selection.
 - `THIRD_PARTY_LICENSES.md`: attribution and license notes for bundled audio files.
 
+## Audition v2 (2026-07-09, boss/new-enemy SFX + music)
+
+- Regenerate everything: `python3 tools/build_audition.py` (downloads into
+  `assets/audio/.cache/`, fills `sfx/candidates/`, renders normalized clips
+  into `sfx/curated/<event>/`, music into `music/candidates/`, and writes
+  `audition-v2.json`). All of it is gitignored intermediate material.
+- Audition page: `/audition.html` (dev and preview servers). Selections and
+  free-text notes post to the shared review inbox under the `audio`
+  pseudo-target; the AI applies accepted picks into `sfx/game/` +
+  `manifest.json` + `THIRD_PARTY_LICENSES.md`, music into `music/`.
+- Events covered: portal_whoosh, spell_bolt, witchfire_ignite, hex_orb_launch,
+  sheep_morph, sheep_bleat, ritual_channel, ritual_blast, shade_summon,
+  door_creak, parry_wood, plus `music_combat` / `music_boss` loops.
+
 ## Available Game Audio
 
 The current playable pack is `assets/audio/sfx/game/`.
