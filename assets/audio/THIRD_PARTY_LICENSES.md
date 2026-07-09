@@ -264,3 +264,8 @@ OpenGameArt notes that this sound is a mixture of these qubodup submissions:
 - `enemy_death_ghost.ogg` — "Ghost/Monster Voice: Moaning & Growling" by qubodup — https://opengameart.org/content/ghost-monster-voice-moaning-growling
 - `enemy_hit_metal.ogg` — Kenney Impact Sounds — https://kenney.nl/assets/impact-sounds
 - `explosion_small.ogg` — "Synthesized Explosion" by qubodup — https://opengameart.org/content/synthesized-explosion
+
+### Audition v3 round 2 (2026-07-09, both CC0)
+
+- `enemy_hit_magic.ogg` — Kenney RPG Audio (cloth2) — https://kenney.nl/assets/rpg-audio
+- `enemy_death_magic.ogg` — "Ghost/Monster Voice: Moaning & Growling" by qubodup — https://opengameart.org/content/ghost-monster-voice-moaning-growling

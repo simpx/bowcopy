@@ -428,6 +428,30 @@
       "license": "CC0",
       "clipFrom": "assets/audio/.cache/oga-synthesized-explosion/synthetic_explosion_1.flac",
       "selectedVia": "audition-v3 (2026-07-09)"
+    },
+    "enemy_hit_magic": {
+      "file": "assets/audio/sfx/game/enemy_hit_magic.ogg",
+      "status": "selected",
+      "usage": "Hexbrim (cloth + magic) taking an arrow: muffled fabric whump.",
+      "playback": "Force scales with damage.",
+      "sourceId": "kenney_rpg-audio",
+      "source": "Kenney RPG Audio",
+      "author": "Kenney",
+      "license": "CC0",
+      "clipFrom": "assets/audio/.cache/kenney_rpg-audio/unz/Audio/cloth2.ogg",
+      "selectedVia": "audition-v3 round 2 (2026-07-09)"
+    },
+    "enemy_death_magic": {
+      "file": "assets/audio/sfx/game/enemy_death_magic.ogg",
+      "status": "selected",
+      "usage": "Hexbrim defeat: dark moan dissipating (death is a vanish, not a blast).",
+      "playback": "Play once on hexbrim-killed.",
+      "sourceId": "oga-ghost-monster-voice",
+      "source": "Ghost/Monster Voice: Moaning & Growling",
+      "author": "qubodup",
+      "license": "CC0",
+      "clipFrom": "assets/audio/.cache/oga-ghost-monster-voice/unz/qubodup-GhostMoans/wav/qubodup-GhostMoan01.wav",
+      "selectedVia": "audition-v3 round 2 (2026-07-09)"
     }
   },
   "backups": {
@@ -468,7 +492,5 @@
       "selectedVia": "audition-v2 (2026-07-09)"
     }
   },
-  "notes": [
-    "audition-v3: enemy_hit_magic / enemy_death_magic rejected — new candidates pending re-audition; hexbrim falls back to wood until then."
-  ]
+  "notes": []
 }
