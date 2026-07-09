@@ -1,0 +1,62 @@
+{
+  "id": "sheepbert",
+  "kind": "player-form",
+  "projectContext": "bowbert",
+  "base": {
+    "image": "base.png"
+  },
+  "runtime": {
+    "id": "sheepbert",
+    "base": {
+      "source": "fixed-ai-image",
+      "textureKey": "sheepbert-base-ai-v1",
+      "imageAsset": "assets/characters/sheepbert/base.png",
+      "imageSize": {
+        "width": 900,
+        "height": 1038
+      },
+      "scale": 0.085,
+      "y": -14,
+      "shadow": {
+        "width": 56,
+        "height": 15,
+        "y": 22
+      }
+    },
+    "gaze": {
+      "eyes": {
+        "left": {
+          "x": 0.3798,
+          "y": 0.49,
+          "radiusX": 0.0665,
+          "radiusY": 0.057,
+          "rotation": 0.0,
+          "cuts": []
+        },
+        "right": {
+          "x": 0.6115,
+          "y": 0.4876,
+          "radiusX": 0.0662,
+          "radiusY": 0.057,
+          "rotation": 0.0,
+          "cuts": []
+        }
+      },
+      "pupilOffsetScale": {
+        "x": 0.28,
+        "y": 0.2
+      },
+      "emotions": {
+        "template": "standard"
+      }
+    },
+    "motion": {
+      "idleBob": 2.6,
+      "idleSquash": 0.03,
+      "walkBob": 4.2,
+      "walkSquash": 0.1,
+      "hitScaleX": 0.08,
+      "hitScaleY": 0.05
+    }
+  }
+}

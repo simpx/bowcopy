@@ -6,9 +6,8 @@ lockedReference: source/reference-01.png
 sourceReferences:
   - source/reference-01.png
 openItems:
-  - INTEGRATED (kit + workbench slot + /?encounter=hexbrim). Review aids: 强制弹幕/强制咒术/强制传送/强制分身 buttons. Status stays rigged pending human review.
-  - True polymorph (turning Bowbert into a sheep like the Hades II hex) needs player-model support; v1 hex detonation deals damage instead.
-  - Boss HP / cadence / phase thresholds are first-pass numbers for review.
+  - INTEGRATED (kit + workbench slot + /?encounter=hexbrim). Review aids: 强制弹幕/咒术/波环/传送/分身 buttons; Bowbert card has 变羊4秒. Status stays rigged pending human review.
+  - Boss HP 64 / cadence / phase thresholds are first-pass numbers for review.
   - Boss room presentation (intro beat, health bar?) is future gameplay work.
 ---
 
@@ -20,13 +19,14 @@ Role:
 Behavior (kit `hexbrimKit`, mechanics modeled on Hades II's first-chapter headmistress fight):
 - float: hovers keeping mid-range, orbiting Bowbert.
 - volley: telegraphed fan of 5 magic bolts (7 in phase 3) via the enemy dart system (black-ink style).
-- hexcast: a polymorph circle blooms under Bowbert (0.95s) and detonates — the sheep-hex homage (v1 damages; true morph is an open item). Phase 3 casts two.
+- hexcast: a polymorph circle blooms under Bowbert (0.95s) and detonates — caught inside, Bowbert IS the sheep (Sheepbert form, 4s: no bow, 55% speed, tumble intact; i-frames dodge it). Phase 3 casts two.
 - teleport: vanishes into a portal (invulnerable), reappears away from Bowbert.
-- clones (phase 2, hp <= 66%): splits into the real boss + 2 identical 1-HP illusions; illusions volley too and dispel in one hit; killing the boss dispels all.
+- ring: a telegraphed shockwave ring expands from the boss (damage on edge contact; dodge through it). Phase 3 fires ring pairs.
+- clones (at 66% AND 33% hp): splits into the real boss + 2 identical 1-HP illusions; illusions volley too and dispel in one hit; killing the boss dispels all.
 - Phase 3 (hp <= 33%): faster float cadence, wider volleys, double hexcast.
 
 Visual target:
-- Locked reference: purple hat with moon-gold crescent buckle + midnight cloak, tattered hem, void between. Spooky-cute doodle.
+- Locked reference (v2, flat doodle per review): chunky flat purple hat with crescent buckle + plain blue cloak, void between; rejected realistic v1 kept in source/.
 
 Decomposition:
 - base.png: the complete outfit, transparent background. No attachments, no eye whites.

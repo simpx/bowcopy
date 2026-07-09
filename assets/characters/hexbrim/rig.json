@@ -12,10 +12,10 @@
       "textureKey": "hexbrim-base-ai-v1",
       "imageAsset": "assets/characters/hexbrim/base.png",
       "imageSize": {
-        "width": 883,
-        "height": 1254
+        "width": 893,
+        "height": 1235
       },
-      "scale": 0.16,
+      "scale": 0.154,
       "y": -26,
       "shadow": {
         "width": 84,
