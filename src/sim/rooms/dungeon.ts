@@ -29,6 +29,8 @@ export interface DungeonRoomState {
   readonly enemyBudget: number;
   /** Level design: which encounter this room hosts (validated by the scene). */
   readonly encounterKind?: string;
+  /** Mixed rooms: several encounters at once, each with its own budget. */
+  readonly encounters?: readonly { readonly kind: string; readonly budget: number }[];
   phase: RoomPhase;
   wave: number;
   remainingSpawnMarkers: number;
@@ -60,6 +62,7 @@ const ROOM_SPEC_BY_SYMBOL: Partial<
       readonly theme: DungeonRoomTheme;
       readonly encounter?: string;
       readonly budget?: number;
+      readonly encounters?: readonly { readonly kind: string; readonly budget: number }[];
     }
   >
 > = Object.fromEntries(
@@ -69,7 +72,8 @@ const ROOM_SPEC_BY_SYMBOL: Partial<
       kind: spec.kind,
       theme: ROOM_RUNTIME_THEME_BY_VISUAL_THEME[spec.theme],
       encounter: spec.encounter,
-      budget: spec.budget
+      budget: spec.budget,
+      encounters: spec.encounters
     }
   ])
 );
@@ -108,7 +112,10 @@ export function createInitialDungeonState(): DungeonState {
       const id = dungeonRoomId(x, y);
       const { kind, theme } = roomSpec;
       const depth = Math.abs(x - blueprint.start.x) + Math.abs(y - blueprint.start.y);
-      const enemyBudget = roomSpec.budget ?? enemyBudgetForRoom(kind, depth, theme);
+      const enemyBudget =
+        roomSpec.encounters?.reduce((sum, entry) => sum + entry.budget, 0) ??
+        roomSpec.budget ??
+        enemyBudgetForRoom(kind, depth, theme);
       const phase: RoomPhase = kind === 'start' || kind === 'wizard' ? 'cleared' : 'open';
 
       rooms.set(id, {
@@ -122,6 +129,7 @@ export function createInitialDungeonState(): DungeonState {
         depth,
         enemyBudget,
         encounterKind: roomSpec.encounter,
+        encounters: roomSpec.encounters,
         phase,
         wave: Math.max(1, depth),
         remainingSpawnMarkers: 0,

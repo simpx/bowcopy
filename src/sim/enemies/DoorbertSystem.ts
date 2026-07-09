@@ -47,6 +47,7 @@ export type DoorbertEvent =
   | { type: 'doorbert-spawned'; id: number; position: SimVector }
   | { type: 'doorbert-portal-opened'; id: number; position: SimVector; portalPosition: SimVector }
   | { type: 'doorbert-portal-closed'; id: number }
+  | { type: 'doorbert-burst'; id: number; position: SimVector }
   | { type: 'keylet-spawned'; id: number; position: SimVector }
   | { type: 'keylet-bite'; id: number; position: SimVector; damage: number }
   | { type: 'keylet-killed'; id: number; position: SimVector }
@@ -63,6 +64,9 @@ export interface DoorbertFrame {
 export interface DoorbertEncounterOptions {
   readonly enemyCount?: number;
   readonly waveIndex?: number;
+  /** false: the door emits 'doorbert-burst' instead of spawning keylets —
+   *  the kit decides what actually comes out (random normal minions). */
+  readonly spawnKeylets?: boolean;
 }
 
 const DEFAULT_ENCOUNTER_SIZE = 1;
@@ -158,6 +162,7 @@ const getSegmentDistanceSquared = (point: SimVector, start: SimVector, end: SimV
 export class DoorbertSystem {
   private readonly doors = new Map<number, DoorbertEnemy>();
   private readonly keylets = new Map<number, KeyletEnemy>();
+  private spawnKeylets = true;
   private pendingSpawns: RoomSpawnPoint[] = [];
   private nextId = 1;
   private nextSpawnMs = 0;
@@ -168,6 +173,7 @@ export class DoorbertSystem {
   startEncounter(spawnPoints: readonly RoomSpawnPoint[], options: DoorbertEncounterOptions = {}) {
     this.clear();
     this.encounterStarted = true;
+    this.spawnKeylets = options.spawnKeylets ?? true;
     this.pendingSpawns = Array.from(spawnPoints).slice(
       0,
       Math.max(1, Math.floor(options.enemyCount ?? DEFAULT_ENCOUNTER_SIZE))
@@ -426,6 +432,15 @@ export class DoorbertSystem {
 
     if (door.phase === 'creak' && door.phaseElapsedMs >= door.phaseDurationMs) {
       this.enterDoorPhase(door, 'burst');
+      events.push({
+        type: 'doorbert-burst',
+        id: door.id,
+        position: copyVector(door.portalPosition ?? door.position)
+      });
+
+      if (!this.spawnKeylets) {
+        return;
+      }
 
       const room = KEYLET_CAP - this.keylets.size;
 

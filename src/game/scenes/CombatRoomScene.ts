@@ -112,6 +112,7 @@ export class CombatRoomScene extends Phaser.Scene {
   private nextSheepBleatAt = 0;
   private runPhase: 'playing' | 'defeat' | 'victory' = 'playing';
   private healedRoomIds = new Set<string>();
+  private pendingEncounterClears = 0;
   private dungeonState: DungeonState = createInitialDungeonState();
   private currentRoomDefinition: CombatRoomDefinition = referenceCombatRoom;
   private debugPlayerDemoElapsedMs = 0;
@@ -248,15 +249,19 @@ export class CombatRoomScene extends Phaser.Scene {
     const projectileEvents = this.projectiles.update(delta, this.currentRoomDefinition.bounds);
     this.handleProjectileEvents(projectileEvents);
     const encounterKind = this.getCurrentEncounterKind();
+    const activeKinds = new Set(this.getCurrentEncounterKinds());
 
     for (const kit of this.enemyKits) {
+      // Mixed rooms: each kit sees its own kind as active when it is in
+      // the room's set; other kits see a kind that hides their renderer.
+      const kitActiveKind = kit.kinds.find((kind) => activeKinds.has(kind)) ?? encounterKind;
       const consumedArrowIds = kit.update(
         time,
         delta,
         this.currentRoomDefinition.bounds,
         playerFrame.state.position,
         this.projectiles.getActiveArrows(),
-        encounterKind
+        kitActiveKind
       );
 
       for (const arrowId of consumedArrowIds) {
@@ -471,6 +476,13 @@ export class CombatRoomScene extends Phaser.Scene {
   }
 
   private encounterClearedByKit(options: { clearSpores: boolean; clearDarts: boolean }) {
+    this.pendingEncounterClears = Math.max(0, this.pendingEncounterClears - 1);
+
+    if (this.pendingEncounterClears > 0) {
+      // Mixed room: other encounters still fighting.
+      return;
+    }
+
     const clearedRoom = getCurrentDungeonRoom(this.dungeonState);
 
     clearCurrentDungeonRoom(this.dungeonState);
@@ -495,19 +507,40 @@ export class CombatRoomScene extends Phaser.Scene {
 
   private startCurrentRoomEncounter() {
     const roomState = getCurrentDungeonRoom(this.dungeonState);
-    const encounterKind = this.getCurrentEncounterKind();
+    const kinds = this.getCurrentEncounterKinds();
+    const budgets = new Map<EncounterKind, number>(
+      (roomState.encounters ?? []).map((entry) => [entry.kind as EncounterKind, entry.budget])
+    );
 
-    this.kitFor(encounterKind)?.startEncounter({
-      kind: encounterKind,
-      spawnPoints: this.currentRoomDefinition.spawnPoints,
-      remainingSpawnMarkers: roomState.remainingSpawnMarkers,
-      wave: roomState.wave,
-      shroomVariant: this.getCurrentShroomVariant()
-    });
+    this.pendingEncounterClears = kinds.length;
+
+    // Rotate the spawn markers per kind so mixed encounters don't stack
+    // their enemies on the same points.
+    const spawnPoints = this.currentRoomDefinition.spawnPoints;
+    let spawnOffset = 0;
+
+    for (const kind of kinds) {
+      const budget = budgets.get(kind) ?? roomState.remainingSpawnMarkers;
+      const rotated = [
+        ...spawnPoints.slice(spawnOffset % spawnPoints.length),
+        ...spawnPoints.slice(0, spawnOffset % spawnPoints.length)
+      ];
+
+      this.kitFor(kind)?.startEncounter({
+        kind,
+        spawnPoints: rotated,
+        remainingSpawnMarkers: budget,
+        wave: roomState.wave,
+        shroomVariant: this.getCurrentShroomVariant()
+      });
+      spawnOffset += Math.max(2, Math.min(budget, 3));
+    }
   }
 
   private hasCurrentEncounterStarted(): boolean {
-    return this.kitFor(this.getCurrentEncounterKind())?.hasEncounterStarted() ?? false;
+    return this.getCurrentEncounterKinds().some(
+      (kind) => this.kitFor(kind)?.hasEncounterStarted() ?? false
+    );
   }
 
   private stepDebugEncounter(encounterKind: EncounterKind, timeMs: number, deltaMs: number) {
@@ -560,6 +593,28 @@ export class CombatRoomScene extends Phaser.Scene {
     this.shroomSpores.clear();
     this.projectiles.clear();
     this.applyCurrentRoomState();
+  }
+
+  /** All encounter kinds this room hosts (mixed rooms run several at once). */
+  private getCurrentEncounterKinds(): readonly EncounterKind[] {
+    const debugEncounter = this.getDebugEncounterKind();
+
+    if (debugEncounter) {
+      return [debugEncounter];
+    }
+
+    const room = getCurrentDungeonRoom(this.dungeonState);
+    const mixed = (room.encounters ?? [])
+      .map((entry) => entry.kind)
+      .filter((kind): kind is EncounterKind =>
+        (ENCOUNTER_KINDS as readonly string[]).includes(kind)
+      );
+
+    if (mixed.length > 0) {
+      return mixed;
+    }
+
+    return [this.getCurrentEncounterKind()];
   }
 
   private getCurrentEncounterKind(): EncounterKind {
@@ -1044,6 +1099,7 @@ export class CombatRoomScene extends Phaser.Scene {
   private resetRun() {
     this.runPhase = 'playing';
     this.healedRoomIds.clear();
+    this.pendingEncounterClears = 0;
     this.dungeonState = createInitialDungeonState();
     this.currentRoomDefinition = createCombatRoomDefinitionForDungeonRoom(
       this.dungeonState,

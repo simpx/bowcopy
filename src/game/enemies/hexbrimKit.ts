@@ -1,17 +1,8 @@
 import type Phaser from 'phaser';
 
-import {
-  HexbrimRenderer,
-  SpooperGooperRenderer,
-  preloadHexbrimAssets,
-  preloadSpooperGooperAssets
-} from '../../render/enemies';
-import {
-  HexbrimSystem,
-  SpooperGooperSystem,
-  type HexbrimEvent,
-  type SpooperGooperEvent
-} from '../../sim/enemies';
+import { HexbrimRenderer, preloadHexbrimAssets } from '../../render/enemies';
+import { HexbrimSystem, type HexbrimEvent } from '../../sim/enemies';
+import { DoorbertKit } from './doorbertKit';
 import type { SimVector } from '../../sim/player';
 import type { ArrowProjectile } from '../../sim/projectiles';
 import type { RoomBounds } from '../../sim/rooms';
@@ -26,33 +17,33 @@ const STREAM_BOLT_SPEEDS = [170, 225, 285] as const;
  * polymorphs Bowbert into Sheepbert; witchfire leaves burning ground; the
  * ritual (clone split) must be interrupted by hitting the real boss before
  * the channel completes or an arena blast lands. At half health the boss
- * summons two Spooper Gooper shades (an embedded spooper sim); they dissipate
- * when the boss dies. Reports getBossStatus for the boss HUD bar.
+ * summons a Doorbert — a door that keeps letting random minions through
+ * until it is destroyed (embedded DoorbertKit); it dissolves with the boss.
+ * Reports getBossStatus for the boss HUD bar.
  */
 export class HexbrimKit implements EnemyKit {
   readonly kinds: readonly EncounterKind[] = ['hexbrim'];
 
   private readonly system = new HexbrimSystem();
-  private readonly shades = new SpooperGooperSystem();
+  private readonly door = new DoorbertKit();
   private services!: EnemyKitServices;
   private renderer?: HexbrimRenderer;
-  private shadeRenderer?: SpooperGooperRenderer;
 
   preload(scene: Phaser.Scene) {
     preloadHexbrimAssets(scene);
-    preloadSpooperGooperAssets(scene);
+    this.door.preload(scene);
   }
 
   create(services: EnemyKitServices) {
     this.services = services;
     this.renderer = new HexbrimRenderer(services.scene);
     this.renderer.create();
-    this.shadeRenderer = new SpooperGooperRenderer(services.scene);
-    this.shadeRenderer.create();
+    // The summoned door must never end the boss room on its own.
+    this.door.create({ ...services, encounterCleared: () => {} });
   }
 
   startEncounter(context: EncounterContext) {
-    this.shades.clear();
+    this.door.clear();
     this.system.startEncounter(context.spawnPoints, { waveIndex: context.wave });
   }
 
@@ -81,14 +72,19 @@ export class HexbrimKit implements EnemyKit {
     activeKind: EncounterKind
   ): readonly number[] {
     const frame = this.system.update(deltaMs, bounds, playerPosition, arrows);
-    const shadeFrame = this.shades.update(deltaMs, bounds, playerPosition, arrows);
 
     this.handleEvents(frame.events, bounds);
-    this.handleShadeEvents(shadeFrame.events);
     this.renderer?.playEvents(frame.events);
-    this.shadeRenderer?.playEvents(shadeFrame.events);
 
     const show = activeKind === 'hexbrim';
+    const doorConsumed = this.door.update(
+      timeMs,
+      deltaMs,
+      bounds,
+      playerPosition,
+      arrows,
+      show ? 'doorbert' : activeKind
+    );
 
     this.renderer?.update(
       timeMs,
@@ -97,19 +93,16 @@ export class HexbrimKit implements EnemyKit {
       show ? this.system.getActiveHexOrbs() : [],
       show ? this.system.getActiveFirePatches() : []
     );
-    this.shadeRenderer?.update(timeMs, deltaMs, show ? this.shades.getActiveEnemies() : []);
 
-    return [...frame.consumedArrowIds, ...shadeFrame.consumedArrowIds];
+    return [...frame.consumedArrowIds, ...doorConsumed];
   }
 
   debugStep(timeMs: number, deltaMs: number, bounds: RoomBounds, _kind: EncounterKind) {
     const frame = this.system.update(deltaMs, bounds, this.services.getPlayerPosition(), []);
-    const shadeFrame = this.shades.update(deltaMs, bounds, this.services.getPlayerPosition(), []);
 
     this.handleEvents(frame.events, bounds);
-    this.handleShadeEvents(shadeFrame.events);
     this.renderer?.playEvents(frame.events);
-    this.shadeRenderer?.playEvents(shadeFrame.events);
+    this.door.debugStep(timeMs, deltaMs, bounds, 'doorbert');
     this.renderer?.update(
       timeMs,
       deltaMs,
@@ -117,7 +110,6 @@ export class HexbrimKit implements EnemyKit {
       this.system.getActiveHexOrbs(),
       this.system.getActiveFirePatches()
     );
-    this.shadeRenderer?.update(timeMs, deltaMs, this.shades.getActiveEnemies());
   }
 
   debugForceEffect(effect: string, _kind: EncounterKind, _bounds: RoomBounds) {
@@ -135,16 +127,14 @@ export class HexbrimKit implements EnemyKit {
 
   clear() {
     this.system.clear();
-    this.shades.clear();
+    this.door.clear();
   }
 
   destroy() {
     this.renderer?.destroy();
     this.renderer = undefined;
-    this.shadeRenderer?.destroy();
-    this.shadeRenderer = undefined;
+    this.door.destroy();
     this.system.clear();
-    this.shades.clear();
   }
 
   private handleEvents(events: readonly HexbrimEvent[], bounds: RoomBounds) {
@@ -205,19 +195,21 @@ export class HexbrimKit implements EnemyKit {
       }
 
       if (event.type === 'hexbrim-summon') {
-        feedback?.playAnnouncement('SHADES ANSWER', bounds, 'damage');
-        sfx?.playShadeSummon(event.positions[0] ?? this.services.getPlayerPosition());
+        // The witch calls a door; the door keeps calling minions.
+        const position = event.positions[0] ?? this.services.getPlayerPosition();
+
+        feedback?.playAnnouncement('THE DOOR ANSWERS', bounds, 'damage');
+        sfx?.playShadeSummon(position);
         this.services.duckMusic?.(1200);
         this.services.flashCamera?.(320, 90, 140, 90);
         this.services.shakeCamera('damage');
-        this.shades.startEncounter(
-          event.positions.map((position, index) => ({
-            id: `hexbrim-shade-${index}`,
-            x: position.x,
-            y: position.y
-          })),
-          { enemyCount: event.positions.length }
-        );
+        this.door.startEncounter({
+          kind: 'doorbert',
+          spawnPoints: [{ id: 'hexbrim-door', x: position.x, y: position.y }],
+          remainingSpawnMarkers: 1,
+          wave: 1,
+          shroomVariant: 'red'
+        });
         continue;
       }
 
@@ -276,12 +268,12 @@ export class HexbrimKit implements EnemyKit {
       }
 
       if (event.type === 'hexbrim-killed') {
-        // Shades are bound to the boss: they dissipate the moment it dies.
-        for (const shade of this.shades.getActiveEnemies()) {
-          feedback?.playSporeBreak(shade.position);
+        // The summoned door is bound to the boss: it dissolves with it.
+        for (const doorPosition of this.door.getDoorPositions()) {
+          feedback?.playSporeBreak(doorPosition);
         }
 
-        this.shades.clear();
+        this.door.clear();
         // A vanish, not a blast: dark moan, soft violet flash, gentle rumble.
         sfx?.playEnemyDeath(event.position, 'magic');
         feedback?.playAnnouncement('HEXBRIM UNRAVELED', bounds, 'clear');
@@ -292,45 +284,6 @@ export class HexbrimKit implements EnemyKit {
 
       if (event.type === 'hexbrim-encounter-cleared') {
         this.services.encounterCleared({ clearSpores: false, clearDarts: true });
-      }
-    }
-  }
-
-  /** Mirrors spooperGooperKit's routing, minus encounter-cleared (the shades
-   *  are adds — only the boss ends the encounter). */
-  private handleShadeEvents(events: readonly SpooperGooperEvent[]) {
-    const feedback = this.services.getFeedback();
-    const sfx = this.services.getSfx();
-
-    for (const event of events) {
-      if (event.type === 'spooper-gooper-appeared') {
-        feedback?.playEnemySpawn(event.position);
-        continue;
-      }
-
-      if (event.type === 'spooper-gooper-attacked') {
-        this.services.enemyDarts.fireDart({
-          origin: event.position,
-          direction: event.direction,
-          speed: 92,
-          damage: event.damage,
-          style: 'black-ink',
-          ttlMs: 1800
-        });
-        continue;
-      }
-
-      if (event.type === 'spooper-gooper-hit') {
-        sfx?.playEnemyHit(event.position, event.damage, 'ghost');
-        feedback?.playArrowEnemy(event.position, event.damage);
-        this.services.shakeCamera('hit');
-        continue;
-      }
-
-      if (event.type === 'spooper-gooper-killed') {
-        sfx?.playEnemyDeath(event.position, 'ghost');
-        feedback?.playEnemyDeath(event.position);
-        this.services.shakeCamera('hit');
       }
     }
   }

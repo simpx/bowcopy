@@ -122,15 +122,15 @@ export class EnemyDartProjectileRenderer {
     for (let index = 1; index < dart.trail.length; index += 1) {
       const point = dart.trail[index];
       const progress = index / Math.max(1, dart.trail.length - 1);
-      const speckCount = 3 + Math.round(progress * 3);
+      const speckCount = 1 + Math.round(progress * 2);
 
       for (let speck = 0; speck < speckCount; speck += 1) {
         const seed = dart.id * 37 + index * 11 + speck * 17;
-        const offsetX = (this.stableNoise(seed) - 0.5) * 18;
-        const offsetY = (this.stableNoise(seed + 7) - 0.5) * 14;
-        const radius = 1.1 + this.stableNoise(seed + 13) * (1.8 + progress * 2.4);
+        const offsetX = (this.stableNoise(seed) - 0.5) * 12;
+        const offsetY = (this.stableNoise(seed + 7) - 0.5) * 10;
+        const radius = 0.9 + this.stableNoise(seed + 13) * (1.2 + progress * 1.6);
 
-        graphics.fillStyle(INK_BODY_COLOR, 0.08 + progress * 0.32);
+        graphics.fillStyle(INK_BODY_COLOR, 0.1 + progress * 0.4);
         graphics.fillCircle(point.x + offsetX, point.y + offsetY, radius);
       }
     }
@@ -152,7 +152,7 @@ export class EnemyDartProjectileRenderer {
       const angle = Math.atan2(dart.direction.y, dart.direction.x);
 
       visual.container.setPosition(dart.position.x, dart.position.y);
-      visual.container.setRotation(dart.style === 'black-ink' ? angle * 0.18 : angle);
+      visual.container.setRotation(angle);
       visual.container.setDepth(57 + dart.position.y / 1000);
     }
 
@@ -184,27 +184,22 @@ export class EnemyDartProjectileRenderer {
     return visual;
   }
 
+  /** Solid black bullet head per the source reference (spooper-gooper
+   *  source/video-black-bullet-reference.jpg): round nose, tapered tail. */
   private createInkVisual(id: number): DartVisual {
     const ink = this.scene.add.graphics();
-    const blobs = [
-      { x: 0, y: 0, width: 22, height: 18 },
-      { x: -8, y: 5, width: 15, height: 11 },
-      { x: 7, y: -4, width: 13, height: 10 },
-      { x: 6, y: 6, width: 11, height: 8 }
-    ];
 
-    ink.fillStyle(0x000000, 1);
-    for (const blob of blobs) {
-      ink.fillEllipse(blob.x, blob.y, blob.width + 5, blob.height + 5);
-    }
-
+    // Teardrop pointing +x: round nose at the front, tail tapering behind.
     ink.fillStyle(INK_BODY_COLOR, 1);
-    for (const blob of blobs) {
-      ink.fillEllipse(blob.x, blob.y, blob.width, blob.height);
-    }
+    ink.beginPath();
+    ink.arc(4, 0, 9, -Math.PI / 2, Math.PI / 2, false);
+    ink.lineTo(-16, 3.2);
+    ink.arc(-16, 0, 3.2, Math.PI / 2, (3 * Math.PI) / 2, false);
+    ink.closePath();
+    ink.fillPath();
 
-    ink.fillStyle(INK_HIGHLIGHT_COLOR, 0.58);
-    ink.fillCircle(-3, -5, 1.8);
+    ink.fillStyle(INK_HIGHLIGHT_COLOR, 0.5);
+    ink.fillCircle(6, -3.4, 1.7);
 
     const container = this.scene.add.container(0, 0, [ink]);
     const visual = {

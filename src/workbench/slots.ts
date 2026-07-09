@@ -747,42 +747,72 @@ class SwitcherooSlot extends EnemySlotBase {
 
 class DoorbertSlot extends EnemySlotBase {
   private readonly system = new DoorbertSystem();
+  private readonly minions = new SpooperGooperSystem();
   private renderer!: DoorbertRenderer;
+  private minionRenderer!: SpooperGooperRenderer;
   private lastTarget: SimVector = { x: 0, y: 0 };
 
   readonly actions = [{ label: '强制开门', run: () => this.system.debugForceOpen() }];
 
   constructor() {
-    super('doorbert', 'Doorbert (+ Keylet)');
+    super('doorbert', 'Doorbert (随机放怪)');
   }
 
   protected onCreate() {
     this.renderer = new DoorbertRenderer(this.scene);
     this.renderer.create();
+    this.minionRenderer = new SpooperGooperRenderer(this.scene);
+    this.minionRenderer.create();
   }
 
   start() {
-    this.system.startEncounter(this.cell.spawnPoints, { enemyCount: 1 });
+    this.minions.clear();
+    this.system.startEncounter(this.cell.spawnPoints, { enemyCount: 1, spawnKeylets: false });
   }
 
   protected step(timeMs: number, deltaMs: number, target: SimVector, arrows: readonly ArrowProjectile[]) {
     this.lastTarget = target;
 
     const frame = this.system.update(deltaMs, this.cell.bounds, target, arrows);
+    const minionFrame = this.minions.update(deltaMs, this.cell.bounds, target, arrows);
 
     for (const event of frame.events) {
-      if (event.type === 'doorbert-spawned' || event.type === 'keylet-spawned') {
+      if (event.type === 'doorbert-spawned') {
         this.feedback.playEnemySpawn(event.position);
+      } else if (event.type === 'doorbert-burst') {
+        this.minions.startEncounter(
+          [
+            { id: 'wb-door-minion-0', x: event.position.x - 26, y: event.position.y },
+            { id: 'wb-door-minion-1', x: event.position.x + 26, y: event.position.y }
+          ],
+          { enemyCount: 2 }
+        );
       } else if (event.type === 'doorbert-blocked') {
         this.feedback.playArrowWall(event.position);
       } else if (event.type === 'doorbert-hit' && event.hp > 0) {
         this.feedback.playArrowEnemy(event.position, event.damage);
-      } else if (event.type === 'doorbert-killed' || event.type === 'keylet-killed') {
+      } else if (event.type === 'doorbert-killed') {
+        for (const minion of this.minions.getActiveEnemies()) {
+          this.feedback.playSporeBreak(minion.position);
+        }
+
+        this.minions.clear();
+        this.feedback.playEnemyDeath(event.position);
+      }
+    }
+
+    for (const event of minionFrame.events) {
+      if (event.type === 'spooper-gooper-appeared') {
+        this.feedback.playEnemySpawn(event.position);
+      } else if (event.type === 'spooper-gooper-hit' && event.hp > 0) {
+        this.feedback.playArrowEnemy(event.position, event.damage);
+      } else if (event.type === 'spooper-gooper-killed') {
         this.feedback.playEnemyDeath(event.position);
       }
     }
 
     this.renderer.playEvents(frame.events);
+    this.minionRenderer.playEvents(minionFrame.events);
     this.renderer.update(
       timeMs,
       deltaMs,
@@ -790,8 +820,9 @@ class DoorbertSlot extends EnemySlotBase {
       this.system.getActiveKeylets(),
       this.lastTarget
     );
+    this.minionRenderer.update(timeMs, deltaMs, this.minions.getActiveEnemies());
 
-    return frame.consumedArrowIds;
+    return [...frame.consumedArrowIds, ...minionFrame.consumedArrowIds];
   }
 
   protected cleared(): boolean {
@@ -801,22 +832,26 @@ class DoorbertSlot extends EnemySlotBase {
   protected enemyPositions(): readonly SimVector[] {
     return [
       ...this.system.getActiveDoors().map((door) => door.position),
-      ...this.system.getActiveKeylets().map((keylet) => keylet.position)
+      ...this.minions.getActiveEnemies().map((minion) => minion.position)
     ];
   }
 
   destroy() {
     this.renderer.destroy();
+    this.minionRenderer.destroy();
     this.system.clear();
+    this.minions.clear();
   }
 }
 
 
 class HexbrimSlot extends EnemySlotBase {
   private readonly system = new HexbrimSystem();
+  private readonly door = new DoorbertSystem();
   private readonly shades = new SpooperGooperSystem();
   private readonly darts = new EnemyDartProjectileSystem();
   private renderer!: HexbrimRenderer;
+  private doorRenderer!: DoorbertRenderer;
   private shadeRenderer!: SpooperGooperRenderer;
   private dartRenderer!: EnemyDartProjectileRenderer;
 
@@ -836,6 +871,8 @@ class HexbrimSlot extends EnemySlotBase {
   protected onCreate() {
     this.renderer = new HexbrimRenderer(this.scene);
     this.renderer.create();
+    this.doorRenderer = new DoorbertRenderer(this.scene);
+    this.doorRenderer.create();
     this.shadeRenderer = new SpooperGooperRenderer(this.scene);
     this.shadeRenderer.create();
     this.dartRenderer = new EnemyDartProjectileRenderer(this.scene);
@@ -844,6 +881,7 @@ class HexbrimSlot extends EnemySlotBase {
 
   start() {
     this.darts.clear();
+    this.door.clear();
     this.shades.clear();
     this.system.startEncounter(this.cell.spawnPoints);
   }
@@ -869,15 +907,13 @@ class HexbrimSlot extends EnemySlotBase {
           }
         }
       } else if (event.type === 'hexbrim-summon') {
-        this.feedback.playAnnouncement('SHADES ANSWER', this.cell.bounds, 'damage');
-        this.shades.startEncounter(
-          event.positions.map((position, index) => ({
-            id: `hexbrim-shade-${index}`,
-            x: position.x,
-            y: position.y
-          })),
-          { enemyCount: event.positions.length }
-        );
+        const position = event.positions[0] ?? clampToBounds(target, this.cell.bounds);
+
+        this.feedback.playAnnouncement('THE DOOR ANSWERS', this.cell.bounds, 'damage');
+        this.door.startEncounter([{ id: 'wb-hexbrim-door', x: position.x, y: position.y }], {
+          enemyCount: 1,
+          spawnKeylets: false
+        });
       } else if (event.type === 'hexbrim-hit' && event.hp > 0) {
         this.feedback.playArrowEnemy(event.position, event.damage);
       } else if (event.type === 'hexbrim-witchfire-burn') {
@@ -893,11 +929,38 @@ class HexbrimSlot extends EnemySlotBase {
       } else if (event.type === 'hexbrim-clone-dispelled') {
         this.feedback.playSporeBreak(event.position);
       } else if (event.type === 'hexbrim-killed') {
+        for (const door of this.door.getActiveDoors()) {
+          this.feedback.playSporeBreak(door.position);
+        }
+
         for (const shade of this.shades.getActiveEnemies()) {
           this.feedback.playSporeBreak(shade.position);
         }
 
+        this.door.clear();
         this.shades.clear();
+        this.feedback.playEnemyDeath(event.position);
+      }
+    }
+
+    const doorFrame = this.door.update(deltaMs, this.cell.bounds, target, arrows);
+
+    for (const event of doorFrame.events) {
+      if (event.type === 'doorbert-spawned') {
+        this.feedback.playEnemySpawn(event.position);
+      } else if (event.type === 'doorbert-burst') {
+        this.shades.startEncounter(
+          [
+            { id: 'wb-hexdoor-minion-0', x: event.position.x - 26, y: event.position.y },
+            { id: 'wb-hexdoor-minion-1', x: event.position.x + 26, y: event.position.y }
+          ],
+          { enemyCount: 2 }
+        );
+      } else if (event.type === 'doorbert-blocked') {
+        this.feedback.playArrowWall(event.position);
+      } else if (event.type === 'doorbert-hit' && event.hp > 0) {
+        this.feedback.playArrowEnemy(event.position, event.damage);
+      } else if (event.type === 'doorbert-killed') {
         this.feedback.playEnemyDeath(event.position);
       }
     }
@@ -926,6 +989,7 @@ class HexbrimSlot extends EnemySlotBase {
     const dartEvents = this.darts.update(deltaMs, this.cell.bounds, clampToBounds(target, this.cell.bounds));
 
     this.renderer.playEvents(frame.events);
+    this.doorRenderer.playEvents(doorFrame.events);
     this.shadeRenderer.playEvents(shadeFrame.events);
     this.dartRenderer.playEvents(dartEvents);
     this.renderer.update(
@@ -935,10 +999,21 @@ class HexbrimSlot extends EnemySlotBase {
       this.system.getActiveHexOrbs(),
       this.system.getActiveFirePatches()
     );
+    this.doorRenderer.update(
+      timeMs,
+      deltaMs,
+      this.door.getActiveDoors(),
+      this.door.getActiveKeylets(),
+      clampToBounds(target, this.cell.bounds)
+    );
     this.shadeRenderer.update(timeMs, deltaMs, this.shades.getActiveEnemies());
     this.dartRenderer.update(deltaMs, this.darts.getActiveDarts());
 
-    return [...frame.consumedArrowIds, ...shadeFrame.consumedArrowIds];
+    return [
+      ...frame.consumedArrowIds,
+      ...doorFrame.consumedArrowIds,
+      ...shadeFrame.consumedArrowIds
+    ];
   }
 
   protected cleared(): boolean {
@@ -948,15 +1023,18 @@ class HexbrimSlot extends EnemySlotBase {
   protected enemyPositions(): readonly SimVector[] {
     return [
       ...this.system.getActiveEntities().filter((e) => e.visible).map((e) => e.position),
+      ...this.door.getActiveDoors().map((door) => door.position),
       ...this.shades.getActiveEnemies().map((shade) => shade.position)
     ];
   }
 
   destroy() {
     this.renderer.destroy();
+    this.doorRenderer.destroy();
     this.shadeRenderer.destroy();
     this.dartRenderer.destroy();
     this.system.clear();
+    this.door.clear();
     this.shades.clear();
     this.darts.clear();
   }

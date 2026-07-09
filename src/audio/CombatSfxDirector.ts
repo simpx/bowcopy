@@ -360,10 +360,10 @@ const CUE_PROFILES: Partial<Record<CombatSfxKey, Partial<CueProfile>>> = {
     cooldownMs: 150
   },
   player_damage_soft: {
-    volume: 0.13,
-    volumeJitter: 0.018,
-    detuneJitter: 18,
-    rateJitter: 0.012,
+    volume: 0.3,
+    volumeJitter: 0.03,
+    detuneJitter: 24,
+    rateJitter: 0.015,
     cooldownMs: 95
   },
   room_clear: {
@@ -596,7 +596,7 @@ export class CombatSfxDirector {
   }
 
   playPlayerDamage(pos: SimVector, damage: number): void {
-    this.play('player_damage_soft', { force: Phaser.Math.Clamp(0.45 + damage * 0.2, 0.45, 0.78), pos });
+    this.play('player_damage_soft', { force: Phaser.Math.Clamp(0.6 + damage * 0.25, 0.6, 1), pos });
   }
 
   playDodge(pos: SimVector): void {

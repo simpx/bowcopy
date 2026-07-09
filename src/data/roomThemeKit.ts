@@ -99,6 +99,8 @@ export interface RoomThemeKit {
         readonly encounter?: string;
         /** Enemy budget override; falls back to the depth formula. */
         readonly budget?: number;
+        /** Mixed rooms: several encounters run at once, each with its own budget. */
+        readonly encounters?: readonly { readonly kind: string; readonly budget: number }[];
       }
     >;
   };
