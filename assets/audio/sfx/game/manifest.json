@@ -356,6 +356,78 @@
       "license": "CC0",
       "clipFrom": "assets/audio/sfx/candidates/kenney_impact-sounds/impactPlank_medium_000.ogg",
       "selectedVia": "audition-v2 (2026-07-09)"
+    },
+    "enemy_hit_squish": {
+      "file": "assets/audio/sfx/game/enemy_hit_squish.ogg",
+      "status": "selected",
+      "usage": "Soft-body enemies (goobers, switcheroo) taking an arrow.",
+      "playback": "Force scales with damage.",
+      "sourceId": "oga-8-wet-squish-slurp-impacts",
+      "source": "8 Wet Squish, Slurp Impacts",
+      "author": "Independent.nu (via qubodup)",
+      "license": "CC0",
+      "clipFrom": "assets/audio/.cache/oga-8-wet-squish-slurp-impacts/unz/impsplat/impactsplat01.mp3.flac",
+      "selectedVia": "audition-v3 (2026-07-09)"
+    },
+    "enemy_death_squish": {
+      "file": "assets/audio/sfx/game/enemy_death_squish.ogg",
+      "status": "selected",
+      "usage": "Soft-body enemy death splat.",
+      "playback": "Play once on kill.",
+      "sourceId": "oga-8-wet-squish-slurp-impacts",
+      "source": "8 Wet Squish, Slurp Impacts",
+      "author": "Independent.nu (via qubodup)",
+      "license": "CC0",
+      "clipFrom": "assets/audio/.cache/oga-8-wet-squish-slurp-impacts/unz/impsplat/impactsplat07.mp3.flac",
+      "selectedVia": "audition-v3 (2026-07-09)"
+    },
+    "enemy_hit_ghost": {
+      "file": "assets/audio/sfx/game/enemy_hit_ghost.ogg",
+      "status": "selected",
+      "usage": "Ghost enemies (spooper gooper, hexbrim shades) hit.",
+      "playback": "Force scales with damage.",
+      "sourceId": "oga-7-ghast-sounds",
+      "source": "7 Ghast Sounds",
+      "author": "starninjas",
+      "license": "CC0",
+      "clipFrom": "assets/audio/.cache/oga-7-ghast-sounds/unz/ghast - StarNinjas/ghast_hurt.1.ogg",
+      "selectedVia": "audition-v3 (2026-07-09)"
+    },
+    "enemy_death_ghost": {
+      "file": "assets/audio/sfx/game/enemy_death_ghost.ogg",
+      "status": "selected",
+      "usage": "Ghost enemy dissipating.",
+      "playback": "Play once on kill.",
+      "sourceId": "oga-ghost-monster-voice",
+      "source": "Ghost/Monster Voice: Moaning & Growling",
+      "author": "qubodup",
+      "license": "CC0",
+      "clipFrom": "assets/audio/.cache/oga-ghost-monster-voice/unz/qubodup-GhostMoans/wav/qubodup-GhostMoan04.wav",
+      "selectedVia": "audition-v3 (2026-07-09)"
+    },
+    "enemy_hit_metal": {
+      "file": "assets/audio/sfx/game/enemy_hit_metal.ogg",
+      "status": "selected",
+      "usage": "Metal enemies (keylets, kaboomlet shell) hit; also their death at higher force.",
+      "playback": "Force scales with damage.",
+      "sourceId": "kenney_impact-sounds",
+      "source": "Kenney Impact Sounds",
+      "author": "Kenney",
+      "license": "CC0",
+      "clipFrom": "assets/audio/.cache/kenney_impact-sounds/unz/Audio/impactMetal_light_000.ogg",
+      "selectedVia": "audition-v3 (2026-07-09)"
+    },
+    "explosion_small": {
+      "file": "assets/audio/sfx/game/explosion_small.ogg",
+      "status": "selected",
+      "usage": "Kaboomlet explosion.",
+      "playback": "Play once on kaboomlet-exploded.",
+      "sourceId": "oga-synthesized-explosion",
+      "source": "Synthesized Explosion",
+      "author": "qubodup",
+      "license": "CC0",
+      "clipFrom": "assets/audio/.cache/oga-synthesized-explosion/synthetic_explosion_1.flac",
+      "selectedVia": "audition-v3 (2026-07-09)"
     }
   },
   "backups": {
@@ -395,5 +467,8 @@
       "sourceUrl": "https://opengameart.org/content/basilisk-boss-battle-loop",
       "selectedVia": "audition-v2 (2026-07-09)"
     }
-  }
+  },
+  "notes": [
+    "audition-v3: enemy_hit_magic / enemy_death_magic rejected — new candidates pending re-audition; hexbrim falls back to wood until then."
+  ]
 }
