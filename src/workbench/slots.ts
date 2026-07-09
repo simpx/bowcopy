@@ -814,8 +814,10 @@ class DoorbertSlot extends EnemySlotBase {
 
 class HexbrimSlot extends EnemySlotBase {
   private readonly system = new HexbrimSystem();
+  private readonly shades = new SpooperGooperSystem();
   private readonly darts = new EnemyDartProjectileSystem();
   private renderer!: HexbrimRenderer;
+  private shadeRenderer!: SpooperGooperRenderer;
   private dartRenderer!: EnemyDartProjectileRenderer;
 
   readonly actions = [
@@ -823,7 +825,8 @@ class HexbrimSlot extends EnemySlotBase {
     { label: '强制咒术', run: () => this.system.debugForce('hexcast') },
     { label: '强制巫火', run: () => this.system.debugForce('witchfire') },
     { label: '强制传送', run: () => this.system.debugForce('teleport') },
-    { label: '强制分身', run: () => this.system.debugForce('clones') }
+    { label: '强制分身', run: () => this.system.debugForce('clones') },
+    { label: '强制召唤', run: () => this.system.debugForce('summon') }
   ];
 
   constructor() {
@@ -833,12 +836,15 @@ class HexbrimSlot extends EnemySlotBase {
   protected onCreate() {
     this.renderer = new HexbrimRenderer(this.scene);
     this.renderer.create();
+    this.shadeRenderer = new SpooperGooperRenderer(this.scene);
+    this.shadeRenderer.create();
     this.dartRenderer = new EnemyDartProjectileRenderer(this.scene);
     this.dartRenderer.create();
   }
 
   start() {
     this.darts.clear();
+    this.shades.clear();
     this.system.startEncounter(this.cell.spawnPoints);
   }
 
@@ -849,15 +855,29 @@ class HexbrimSlot extends EnemySlotBase {
       if (event.type === 'hexbrim-spawned') {
         this.feedback.playEnemySpawn(event.position);
       } else if (event.type === 'hexbrim-volley') {
+        const speeds = event.pattern === 'stream' ? [170, 225, 285] : [220];
+
         for (const direction of event.directions) {
-          this.darts.fireDart({
-            origin: event.origin,
-            direction,
-            speed: 220,
-            damage: 1,
-            style: 'black-ink'
-          });
+          for (const speed of speeds) {
+            this.darts.fireDart({
+              origin: event.origin,
+              direction,
+              speed,
+              damage: 1,
+              style: 'black-ink'
+            });
+          }
         }
+      } else if (event.type === 'hexbrim-summon') {
+        this.feedback.playAnnouncement('SHADES ANSWER', this.cell.bounds, 'damage');
+        this.shades.startEncounter(
+          event.positions.map((position, index) => ({
+            id: `hexbrim-shade-${index}`,
+            x: position.x,
+            y: position.y
+          })),
+          { enemyCount: event.positions.length }
+        );
       } else if (event.type === 'hexbrim-hit' && event.hp > 0) {
         this.feedback.playArrowEnemy(event.position, event.damage);
       } else if (event.type === 'hexbrim-witchfire-burn') {
@@ -873,6 +893,32 @@ class HexbrimSlot extends EnemySlotBase {
       } else if (event.type === 'hexbrim-clone-dispelled') {
         this.feedback.playSporeBreak(event.position);
       } else if (event.type === 'hexbrim-killed') {
+        for (const shade of this.shades.getActiveEnemies()) {
+          this.feedback.playSporeBreak(shade.position);
+        }
+
+        this.shades.clear();
+        this.feedback.playEnemyDeath(event.position);
+      }
+    }
+
+    const shadeFrame = this.shades.update(deltaMs, this.cell.bounds, target, arrows);
+
+    for (const event of shadeFrame.events) {
+      if (event.type === 'spooper-gooper-appeared') {
+        this.feedback.playEnemySpawn(event.position);
+      } else if (event.type === 'spooper-gooper-attacked') {
+        this.darts.fireDart({
+          origin: event.position,
+          direction: event.direction,
+          speed: 92,
+          damage: event.damage,
+          style: 'black-ink',
+          ttlMs: 1800
+        });
+      } else if (event.type === 'spooper-gooper-hit' && event.hp > 0) {
+        this.feedback.playArrowEnemy(event.position, event.damage);
+      } else if (event.type === 'spooper-gooper-killed') {
         this.feedback.playEnemyDeath(event.position);
       }
     }
@@ -880,6 +926,7 @@ class HexbrimSlot extends EnemySlotBase {
     const dartEvents = this.darts.update(deltaMs, this.cell.bounds, clampToBounds(target, this.cell.bounds));
 
     this.renderer.playEvents(frame.events);
+    this.shadeRenderer.playEvents(shadeFrame.events);
     this.dartRenderer.playEvents(dartEvents);
     this.renderer.update(
       timeMs,
@@ -888,9 +935,10 @@ class HexbrimSlot extends EnemySlotBase {
       this.system.getActiveHexOrbs(),
       this.system.getActiveFirePatches()
     );
+    this.shadeRenderer.update(timeMs, deltaMs, this.shades.getActiveEnemies());
     this.dartRenderer.update(deltaMs, this.darts.getActiveDarts());
 
-    return frame.consumedArrowIds;
+    return [...frame.consumedArrowIds, ...shadeFrame.consumedArrowIds];
   }
 
   protected cleared(): boolean {
@@ -898,13 +946,18 @@ class HexbrimSlot extends EnemySlotBase {
   }
 
   protected enemyPositions(): readonly SimVector[] {
-    return this.system.getActiveEntities().filter((e) => e.visible).map((e) => e.position);
+    return [
+      ...this.system.getActiveEntities().filter((e) => e.visible).map((e) => e.position),
+      ...this.shades.getActiveEnemies().map((shade) => shade.position)
+    ];
   }
 
   destroy() {
     this.renderer.destroy();
+    this.shadeRenderer.destroy();
     this.dartRenderer.destroy();
     this.system.clear();
+    this.shades.clear();
     this.darts.clear();
   }
 }

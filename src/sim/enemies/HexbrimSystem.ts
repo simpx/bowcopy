@@ -76,7 +76,8 @@ export type HexbrimEvent =
   | { type: 'hexbrim-spawned'; id: number; position: SimVector }
   | { type: 'hexbrim-teleport-out'; id: number; position: SimVector }
   | { type: 'hexbrim-teleport-in'; id: number; position: SimVector }
-  | { type: 'hexbrim-volley'; id: number; origin: SimVector; directions: SimVector[] }
+  | { type: 'hexbrim-volley'; id: number; origin: SimVector; directions: SimVector[]; pattern: HexbrimVolleyPattern }
+  | { type: 'hexbrim-summon'; positions: SimVector[] }
   | { type: 'hexbrim-hexcast'; id: number; position: SimVector }
   | { type: 'hexbrim-hex-caught'; position: SimVector; morphMs: number }
   | { type: 'hexbrim-hex-expired'; position: SimVector }
@@ -126,6 +127,8 @@ const FLOAT_SPEED = 64;
 const PREFERRED_RANGE = 200;
 const BOSS_HP = 64;
 const CLONE_COUNT = 2;
+const SUMMON_THRESHOLD = 0.5;
+const SUMMON_COUNT = 2;
 const VOLLEY_BOLTS = 5;
 const VOLLEY_BOLTS_PHASE3 = 7;
 const VOLLEY_SPREAD = 0.62;
@@ -202,6 +205,7 @@ const getSegmentDistanceSquared = (point: SimVector, start: SimVector, end: SimV
 };
 
 type HexbrimAction = 'volley' | 'hexcast' | 'witchfire' | 'teleport';
+export type HexbrimVolleyPattern = 'fan' | 'stream';
 
 export class HexbrimSystem {
   private readonly entities = new Map<number, HexbrimEnemy>();
@@ -216,7 +220,9 @@ export class HexbrimSystem {
   private actionRotationIndex = 0;
   private splitPhase2Done = false;
   private splitPhase3Done = false;
-  private forcedAction: HexbrimAction | 'clones' | null = null;
+  private summonDone = false;
+  private volleyToggle = false;
+  private forcedAction: HexbrimAction | 'clones' | 'summon' | null = null;
 
   startEncounter(spawnPoints: readonly RoomSpawnPoint[], _options: HexbrimEncounterOptions = {}) {
     this.clear();
@@ -376,7 +382,7 @@ export class HexbrimSystem {
     return this.encounterCleared;
   }
 
-  debugForce(action: HexbrimAction | 'clones') {
+  debugForce(action: HexbrimAction | 'clones' | 'summon') {
     this.forcedAction = action;
   }
 
@@ -390,6 +396,8 @@ export class HexbrimSystem {
     this.actionRotationIndex = 0;
     this.splitPhase2Done = false;
     this.splitPhase3Done = false;
+    this.summonDone = false;
+    this.volleyToggle = false;
     this.forcedAction = null;
     this.firePatches.clear();
     this.burnCooldownMs = 0;
@@ -549,7 +557,7 @@ export class HexbrimSystem {
   }
 
   private pickAction(): HexbrimAction {
-    if (this.forcedAction && this.forcedAction !== 'clones') {
+    if (this.forcedAction && this.forcedAction !== 'clones' && this.forcedAction !== 'summon') {
       return this.forcedAction;
     }
 
@@ -622,6 +630,35 @@ export class HexbrimSystem {
           return;
         }
 
+        const wantsSummon =
+          this.forcedAction === 'summon' ||
+          (!this.summonDone && entity.hp <= entity.maxHp * SUMMON_THRESHOLD);
+
+        if (wantsSummon) {
+          this.summonDone = true;
+          this.forcedAction = null;
+
+          const positions: SimVector[] = [];
+
+          for (let index = 0; index < SUMMON_COUNT; index += 1) {
+            const side = index % 2 === 0 ? -1 : 1;
+
+            positions.push(
+              clampPositionToBounds(
+                {
+                  x: playerPosition.x + side * 190,
+                  y: playerPosition.y + (Math.random() - 0.5) * 140
+                },
+                bounds
+              )
+            );
+          }
+
+          events.push({ type: 'hexbrim-summon', positions });
+          this.enterPhase(entity, 'vanish');
+          return;
+        }
+
         const action = this.pickAction();
 
         this.forcedAction = null;
@@ -641,21 +678,31 @@ export class HexbrimSystem {
         return;
       }
 
-      const bolts = this.phase3() ? VOLLEY_BOLTS_PHASE3 : VOLLEY_BOLTS;
       const aim = vectorTo(entity.position, playerPosition);
+      const pattern: HexbrimVolleyPattern = this.volleyToggle ? 'stream' : 'fan';
+
+      this.volleyToggle = !this.volleyToggle;
+
       const directions: SimVector[] = [];
 
-      for (let index = 0; index < bolts; index += 1) {
-        const angle = (index / (bolts - 1) - 0.5) * VOLLEY_SPREAD;
+      if (pattern === 'fan') {
+        const bolts = this.phase3() ? VOLLEY_BOLTS_PHASE3 : VOLLEY_BOLTS;
 
-        directions.push(rotate(aim, angle));
+        for (let index = 0; index < bolts; index += 1) {
+          const angle = (index / (bolts - 1) - 0.5) * VOLLEY_SPREAD;
+
+          directions.push(rotate(aim, angle));
+        }
+      } else {
+        directions.push(aim);
       }
 
       events.push({
         type: 'hexbrim-volley',
         id: entity.id,
         origin: copyVector(entity.position),
-        directions
+        directions,
+        pattern
       });
       this.finishAction(entity);
       return;
