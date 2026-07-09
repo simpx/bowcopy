@@ -206,7 +206,7 @@ DECIDED = {'portal_whoosh','spell_bolt','witchfire_ignite','hex_orb_launch','she
            'sheep_bleat','ritual_channel','ritual_blast','shade_summon','door_creak','parry_wood',
            'music_combat','music_boss',
            'enemy_hit_squish','enemy_death_squish','enemy_hit_ghost','enemy_death_ghost',
-           'enemy_hit_metal','explosion_small'}
+           'enemy_hit_metal','explosion_small','enemy_hit_magic','enemy_death_magic'}
 MUSIC={
  'music_combat':('普通战斗房循环',[
    ('oga-8-bit-battle-loop','8BitBattleLoop_0.ogg','8bit-battle'),
