@@ -39,7 +39,9 @@ export const COMBAT_SFX_KEYS = [
   'enemy_hit_ghost',
   'enemy_death_ghost',
   'enemy_hit_metal',
-  'explosion_small'
+  'explosion_small',
+  'enemy_hit_magic',
+  'enemy_death_magic'
 ] as const;
 
 /** What an enemy is made of — picks its hit/death samples. */
@@ -222,16 +224,23 @@ const COMBAT_SFX_ASSETS: readonly CombatSfxAsset[] = [
   {
     key: 'explosion_small',
     url: new URL('../../assets/audio/sfx/game/explosion_small.ogg', import.meta.url).href
+  },
+  {
+    key: 'enemy_hit_magic',
+    url: new URL('../../assets/audio/sfx/game/enemy_hit_magic.ogg', import.meta.url).href
+  },
+  {
+    key: 'enemy_death_magic',
+    url: new URL('../../assets/audio/sfx/game/enemy_death_magic.ogg', import.meta.url).href
   }
 ];
 
-// 'magic' falls back to wood until its re-audition lands (audition v3 note).
 const HIT_KEY_BY_MATERIAL: Record<EnemyMaterial, CombatSfxKey> = {
   wood: 'hit_wood_board',
   squish: 'enemy_hit_squish',
   ghost: 'enemy_hit_ghost',
   metal: 'enemy_hit_metal',
-  magic: 'hit_wood_board'
+  magic: 'enemy_hit_magic'
 };
 
 const DEATH_KEY_BY_MATERIAL: Record<EnemyMaterial, CombatSfxKey> = {
@@ -239,7 +248,7 @@ const DEATH_KEY_BY_MATERIAL: Record<EnemyMaterial, CombatSfxKey> = {
   squish: 'enemy_death_squish',
   ghost: 'enemy_death_ghost',
   metal: 'enemy_hit_metal',
-  magic: 'hit_wood_board'
+  magic: 'enemy_death_magic'
 };
 
 const DEFAULT_PROFILE: CueProfile = {
@@ -518,6 +527,20 @@ const CUE_PROFILES: Partial<Record<CombatSfxKey, Partial<CueProfile>>> = {
     detuneJitter: 20,
     rateJitter: 0.015,
     cooldownMs: 250
+  },
+  enemy_hit_magic: {
+    volume: 0.26,
+    volumeJitter: 0.03,
+    detuneJitter: 50,
+    rateJitter: 0.035,
+    cooldownMs: 90
+  },
+  enemy_death_magic: {
+    volume: 0.28,
+    volumeJitter: 0.015,
+    detuneJitter: 15,
+    rateJitter: 0.01,
+    cooldownMs: 600
   }
 };
 

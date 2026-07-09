@@ -282,11 +282,11 @@ export class HexbrimKit implements EnemyKit {
         }
 
         this.shades.clear();
+        // A vanish, not a blast: dark moan, soft violet flash, gentle rumble.
         sfx?.playEnemyDeath(event.position, 'magic');
-        feedback?.playEnemyDeath(event.position);
         feedback?.playAnnouncement('HEXBRIM UNRAVELED', bounds, 'clear');
-        this.services.flashCamera?.(600, 255, 255, 255);
-        this.services.shakeCamera('room-clear');
+        this.services.flashCamera?.(700, 90, 50, 130);
+        this.services.shakeCamera('hit');
         continue;
       }
 

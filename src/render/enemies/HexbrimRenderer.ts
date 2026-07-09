@@ -33,6 +33,7 @@ export const preloadHexbrimAssets = (scene: Phaser.Scene) => {
 
 export class HexbrimRenderer {
   private readonly visuals = new Map<number, HexbrimVisual>();
+  private readonly dissolveVisuals = new Set<Phaser.GameObjects.Image>();
   private readonly bursts: ParticleBurstPool;
   private readonly portals: PortalEffectPool;
   private hexGraphics?: Phaser.GameObjects.Graphics;
@@ -126,13 +127,19 @@ export class HexbrimRenderer {
       }
 
       if (event.type === 'hexbrim-killed') {
-        this.portals.flash(event.position, 60, 900);
-        this.bursts.emit(event.position, 40, DEATH_COLORS, 66, 170, 6.2, 460);
+        // Defeat is a vanish, not a blast: the outfit drifts up, stretches
+        // thin, and dissolves into the portal that opens beneath it.
+        this.playDissolve(event.position);
       }
     }
   }
 
   destroy() {
+    for (const visual of this.dissolveVisuals) {
+      visual.destroy();
+    }
+
+    this.dissolveVisuals.clear();
     this.bursts.destroy();
     this.portals.destroy();
     this.hexGraphics?.destroy();
@@ -143,6 +150,36 @@ export class HexbrimRenderer {
     }
 
     this.visuals.clear();
+  }
+
+  private playDissolve(position: { x: number; y: number }) {
+    const { base } = HEXBRIM_RIG;
+
+    this.portals.flash(position, 46, 1600);
+    // Slow upward drift of dark motes instead of an explosive burst.
+    this.bursts.emit(position, 18, DEATH_COLORS, 8, 36, 3.4, 1100);
+
+    const ghost = this.scene.add
+      .image(position.x, position.y + base.y, base.textureKey)
+      .setOrigin(0.5)
+      .setScale(base.scale)
+      .setDepth(78);
+
+    this.dissolveVisuals.add(ghost);
+    this.scene.tweens.add({
+      targets: ghost,
+      y: ghost.y - 40,
+      scaleX: base.scale * 0.55,
+      scaleY: base.scale * 1.35,
+      alpha: 0,
+      angle: 6,
+      duration: 1300,
+      ease: 'Quad.easeIn',
+      onComplete: () => {
+        this.dissolveVisuals.delete(ghost);
+        ghost.destroy();
+      }
+    });
   }
 
   private syncEntities(timeMs: number, entities: readonly HexbrimEnemy[]) {
