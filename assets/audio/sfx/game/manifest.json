@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-07-07",
+  "updated": "2026-07-09",
   "name": "Uproot game SFX pack v1",
   "policy": [
     "Use only purpose-built sounds for the mapped event.",
@@ -224,6 +224,138 @@
       "source": "50 RPG sound effects",
       "author": "Kenney",
       "license": "CC0"
+    },
+    "portal_whoosh": {
+      "file": "assets/audio/sfx/game/portal_whoosh.ogg",
+      "status": "selected",
+      "usage": "Portals: hexbrim teleport/summon, switcheroo swap, doorbert side door.",
+      "playback": "Play on teleport-out/in and portal open. Cooldown prevents doubling.",
+      "sourceId": "oga-teleport",
+      "source": "Teleport",
+      "author": "fins",
+      "license": "CC0",
+      "clipFrom": "assets/audio/sfx/candidates/oga-teleport/172206__fins__teleport.wav",
+      "selectedVia": "audition-v2 (2026-07-09)"
+    },
+    "spell_bolt": {
+      "file": "assets/audio/sfx/game/spell_bolt.ogg",
+      "status": "selected",
+      "usage": "Hexbrim volley cast (fan or stream).",
+      "playback": "Play once per volley at the boss origin.",
+      "sourceId": "oga-magic-missiles",
+      "source": "Magic Missiles",
+      "author": "spookymodem",
+      "license": "CC-BY 3.0",
+      "clipFrom": "assets/audio/sfx/candidates/oga-magic-missiles/Magic_Missiles.wav",
+      "selectedVia": "audition-v2 (2026-07-09)"
+    },
+    "witchfire_ignite": {
+      "file": "assets/audio/sfx/game/witchfire_ignite.ogg",
+      "status": "selected",
+      "usage": "Witchfire patches spraying down.",
+      "playback": "Play once per witchfire spray at first patch.",
+      "sourceId": "oga-8-magic-attacks",
+      "source": "8 Magic Attacks",
+      "author": "wobbleboxx",
+      "license": "CC-BY 4.0",
+      "clipFrom": "assets/audio/sfx/candidates/oga-8-magic-attacks/04_Fire_explosion_04_medium.wav",
+      "selectedVia": "audition-v2 (2026-07-09)"
+    },
+    "hex_orb_launch": {
+      "file": "assets/audio/sfx/game/hex_orb_launch.ogg",
+      "status": "selected",
+      "usage": "Hexbrim polymorph orb launch.",
+      "playback": "Play at cast; ominous tail may overlap orb travel.",
+      "sourceId": "oga-spell-sounds-starter-pack",
+      "source": "Spell Sounds Starter Pack",
+      "author": "p0ss",
+      "license": "CC-BY-SA 3.0",
+      "clipFrom": "assets/audio/sfx/candidates/oga-spell-sounds-starter-pack/curse.ogg",
+      "selectedVia": "audition-v2 (2026-07-09)"
+    },
+    "sheep_morph": {
+      "file": "assets/audio/sfx/game/sheep_morph.ogg",
+      "status": "selected",
+      "usage": "Bowbert polymorphed into Sheepbert.",
+      "playback": "Play on hex-caught, layered with sheep_bleat.",
+      "sourceId": "oga-spell-sounds-starter-pack",
+      "source": "Spell Sounds Starter Pack",
+      "author": "p0ss",
+      "license": "CC-BY-SA 3.0",
+      "clipFrom": "assets/audio/sfx/candidates/oga-spell-sounds-starter-pack/confusion.ogg",
+      "selectedVia": "audition-v2 (2026-07-09)"
+    },
+    "sheep_bleat": {
+      "file": "assets/audio/sfx/game/sheep_bleat.ogg",
+      "status": "selected",
+      "usage": "Sheepbert bleat.",
+      "playback": "On morph and occasionally while hexed.",
+      "sourceId": "oga-sheep-baa",
+      "source": "Sheep baa",
+      "author": "confusion_music",
+      "license": "CC0",
+      "clipFrom": "assets/audio/sfx/candidates/oga-sheep-baa/sheep_baa_0.ogg",
+      "selectedVia": "audition-v2 (2026-07-09)"
+    },
+    "ritual_channel": {
+      "file": "assets/audio/sfx/game/ritual_channel.ogg",
+      "status": "selected",
+      "usage": "Hexbrim ritual channel windup (~5.4s).",
+      "playback": "Play once at channel start; duck music underneath.",
+      "sourceId": "oga-8-magic-attacks",
+      "source": "8 Magic Attacks",
+      "author": "wobbleboxx",
+      "license": "CC-BY 4.0",
+      "clipFrom": "assets/audio/sfx/candidates/oga-8-magic-attacks/45_Charge_05.wav",
+      "selectedVia": "audition-v2 (2026-07-09)"
+    },
+    "ritual_blast": {
+      "file": "assets/audio/sfx/game/ritual_blast.ogg",
+      "status": "selected",
+      "usage": "Ritual completed: arena-wide blast.",
+      "playback": "Play once on ritual-complete.",
+      "sourceId": "oga-8-magic-attacks",
+      "source": "8 Magic Attacks",
+      "author": "wobbleboxx",
+      "license": "CC-BY 4.0",
+      "clipFrom": "assets/audio/sfx/candidates/oga-8-magic-attacks/13_Ice_explosion_01.wav",
+      "selectedVia": "audition-v2 (2026-07-09)"
+    },
+    "shade_summon": {
+      "file": "assets/audio/sfx/game/shade_summon.ogg",
+      "status": "selected",
+      "usage": "SHADES ANSWER: ghast cry when shades arrive.",
+      "playback": "Play once on hexbrim-summon.",
+      "sourceId": "oga-7-ghast-sounds",
+      "source": "7 Ghast Sounds",
+      "author": "starninjas",
+      "license": "CC0",
+      "clipFrom": "assets/audio/sfx/candidates/oga-7-ghast-sounds/ghast_cries.1.ogg",
+      "selectedVia": "audition-v2 (2026-07-09)"
+    },
+    "door_creak": {
+      "file": "assets/audio/sfx/game/door_creak.ogg",
+      "status": "selected",
+      "usage": "Doorbert opening.",
+      "playback": "Play on doorbert-portal-opened.",
+      "sourceId": "kenney_rpg-audio",
+      "source": "Kenney RPG Audio",
+      "author": "Kenney",
+      "license": "CC0",
+      "clipFrom": "assets/audio/sfx/candidates/kenney_rpg-audio/doorOpen_1.ogg",
+      "selectedVia": "audition-v2 (2026-07-09)"
+    },
+    "parry_wood": {
+      "file": "assets/audio/sfx/game/parry_wood.ogg",
+      "status": "selected",
+      "usage": "Backboard parry/reflect.",
+      "playback": "Play on backboard-reflected.",
+      "sourceId": "kenney_impact-sounds",
+      "source": "Kenney Impact Sounds",
+      "author": "Kenney",
+      "license": "CC0",
+      "clipFrom": "assets/audio/sfx/candidates/kenney_impact-sounds/impactPlank_medium_000.ogg",
+      "selectedVia": "audition-v2 (2026-07-09)"
     }
   },
   "backups": {
@@ -241,5 +373,27 @@
   },
   "emptyEvents": {
     "arrow_flyby": "The auditioned arrow whoosh was rejected as noisy."
+  },
+  "music": {
+    "music_combat": {
+      "file": "assets/audio/music/combat_loop.ogg",
+      "status": "selected",
+      "usage": "Normal combat room loop.",
+      "source": "Dungeon 01",
+      "author": "Fantasy Musica",
+      "license": "CC-BY-SA 4.0",
+      "sourceUrl": "https://opengameart.org/content/dungeon-01",
+      "selectedVia": "audition-v2 (2026-07-09)"
+    },
+    "music_boss": {
+      "file": "assets/audio/music/boss_loop.ogg",
+      "status": "selected",
+      "usage": "Hexbrim boss loop.",
+      "source": "Basilisk Boss Battle Loop",
+      "author": "beardalaxy",
+      "license": "CC0",
+      "sourceUrl": "https://opengameart.org/content/basilisk-boss-battle-loop",
+      "selectedVia": "audition-v2 (2026-07-09)"
+    }
   }
 }

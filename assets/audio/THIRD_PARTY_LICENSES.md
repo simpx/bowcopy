@@ -227,3 +227,30 @@ OpenGameArt notes that this sound is a mixture of these qubodup submissions:
   - https://creativecommons.org/publicdomain/zero/1.0/
   - https://opengameart.org/content/oga-by-30-faq
 - Note: `room_clear.mp3` uses the Completion Sound candidate at low volume. The other files remain audition candidates for future reward and charge cues.
+
+## Audition v2 additions (2026-07-09)
+
+### CC0 (no attribution required; noted for provenance)
+
+- `portal_whoosh.ogg` — "Teleport" by fins — https://opengameart.org/content/teleport
+- `sheep_bleat.ogg` — "Sheep baa" by confusion_music — https://opengameart.org/content/sheep-baa
+- `shade_summon.ogg` — "7 Ghast Sounds" by StarNinjas — https://opengameart.org/content/7-ghast-sounds
+- `door_creak.ogg` — Kenney RPG Audio — https://kenney.nl/assets/rpg-audio
+- `parry_wood.ogg` — Kenney Impact Sounds — https://kenney.nl/assets/impact-sounds
+- `music/boss_loop.ogg` — "Basilisk Boss Battle Loop" by beardalaxy — https://opengameart.org/content/basilisk-boss-battle-loop
+
+### Creative Commons Attribution 3.0
+
+- `spell_bolt.ogg` — "Magic Missiles" by spookymodem — https://opengameart.org/content/magic-missiles — CC-BY 3.0
+
+### Creative Commons Attribution 4.0
+
+- `witchfire_ignite.ogg`, `ritual_channel.ogg`, `ritual_blast.ogg` — "8 Magic Attacks" by wobbleboxx — https://opengameart.org/content/8-magic-attacks — CC-BY 4.0
+
+### Creative Commons Attribution-ShareAlike 3.0
+
+- `hex_orb_launch.ogg` (curse), `sheep_morph.ogg` (confusion) — "Spell Sounds Starter Pack" by p0ss — https://opengameart.org/content/spell-sounds-starter-pack — CC-BY-SA 3.0
+
+### Creative Commons Attribution-ShareAlike 4.0
+
+- `music/combat_loop.ogg` — "Dungeon 01" by Fantasy Musica — https://opengameart.org/content/dungeon-01 — CC-BY-SA 4.0
