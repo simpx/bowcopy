@@ -21,7 +21,7 @@ Role:
 Behavior (new `spawner` pattern):
 - rooted: never moves from its spawn point; idle breathing wobble; watches the player.
 - creak (telegraph ~0.8s): the door shivers, the keyhole glows, and a small swirling black PORTAL tears open beside the door (runtime-drawn effect — the door itself never opens; decided 2026-07-08, keeps base.png a single simple reusable image).
-- spawn burst: 1–2 keylets hop out of the portal with spawn poofs; alive cap ~4 — at cap the portal fizzles empty.
+- spawn burst: 1–2 random normal minions come out (spooper ghosts or dart goobers, per-burst random; keylets retired from combat per review) of the portal with spawn poofs; alive cap ~4 — at cap the portal fizzles empty.
 - portal close + stagger: the portal collapses; the door sags with a squash, briefly dizzy.
 - Damage gate (decided 2026-07-08): the door is ONLY damageable while its portal is open (telegraph through stagger); otherwise arrows thunk off with wall-hit feedback. Keylets outlive their door.
 

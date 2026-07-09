@@ -269,3 +269,5 @@ OpenGameArt notes that this sound is a mixture of these qubodup submissions:
 
 - `enemy_hit_magic.ogg` — Kenney RPG Audio (cloth2) — https://kenney.nl/assets/rpg-audio
 - `enemy_death_magic.ogg` — "Ghost/Monster Voice: Moaning & Growling" by qubodup — https://opengameart.org/content/ghost-monster-voice-moaning-growling
+
+- `music/combat_loop.ogg` (v2) — "8-bit Battle Loop" by Wolfgang_ — https://opengameart.org/content/8-bit-battle-loop — CC0 (replaces Dungeon 01)

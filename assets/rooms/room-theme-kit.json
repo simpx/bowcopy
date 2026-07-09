@@ -514,7 +514,7 @@
   "dungeonDsl": {
     "rows": [
       "..Z..",
-      "..dp.",
+      "..P..",
       ".xs..",
       "..tk.",
       ".bm..",
@@ -533,61 +533,116 @@
       "Z": {
         "kind": "boss",
         "theme": "boss",
-        "encounter": "hexbrim"
+        "encounter": "hexbrim",
+        "budget": 7
       },
       "g": {
         "kind": "normal",
         "theme": "forest",
-        "encounter": "dart-goober",
-        "budget": 3
+        "encounters": [
+          {
+            "kind": "dart-goober",
+            "budget": 3
+          }
+        ]
       },
       "m": {
         "kind": "normal",
         "theme": "mushroom",
-        "encounter": "red-shroom",
-        "budget": 4
+        "encounters": [
+          {
+            "kind": "red-shroom",
+            "budget": 3
+          },
+          {
+            "kind": "dart-goober",
+            "budget": 2
+          }
+        ]
       },
       "b": {
         "kind": "normal",
         "theme": "forest",
-        "encounter": "backboard",
-        "budget": 3
+        "encounters": [
+          {
+            "kind": "backboard",
+            "budget": 4
+          },
+          {
+            "kind": "dart-goober",
+            "budget": 2
+          }
+        ]
       },
       "t": {
         "kind": "normal",
         "theme": "stone",
-        "encounter": "dart-tri-goober",
-        "budget": 4
+        "encounters": [
+          {
+            "kind": "dart-tri-goober",
+            "budget": 3
+          },
+          {
+            "kind": "kaboomlet",
+            "budget": 3
+          }
+        ]
       },
       "k": {
         "kind": "normal",
         "theme": "forest",
-        "encounter": "kaboomlet",
-        "budget": 6
+        "encounters": [
+          {
+            "kind": "kaboomlet",
+            "budget": 5
+          },
+          {
+            "kind": "backboard",
+            "budget": 3
+          }
+        ]
       },
       "s": {
         "kind": "normal",
         "theme": "stone",
-        "encounter": "slime-parent",
-        "budget": 6
+        "encounters": [
+          {
+            "kind": "slime-parent",
+            "budget": 5
+          },
+          {
+            "kind": "dart-tri-goober",
+            "budget": 2
+          }
+        ]
       },
       "x": {
         "kind": "normal",
         "theme": "stone",
-        "encounter": "switcheroo",
-        "budget": 6
+        "encounters": [
+          {
+            "kind": "switcheroo",
+            "budget": 5
+          },
+          {
+            "kind": "kaboomlet",
+            "budget": 3
+          }
+        ]
       },
-      "d": {
+      "P": {
         "kind": "normal",
         "theme": "boss",
-        "encounter": "doorbert",
-        "budget": 1
-      },
-      "p": {
-        "kind": "normal",
-        "theme": "boss",
-        "encounter": "spooper-gooper",
-        "budget": 4
+        "encounters": [
+          {
+            "kind": "spooper-gooper",
+            "budget": 6
+          },
+          {
+            "kind": "switcheroo",
+            "budget": 3
+          }
+        ]
       }
     }
   },

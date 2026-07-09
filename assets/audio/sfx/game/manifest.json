@@ -474,12 +474,12 @@
     "music_combat": {
       "file": "assets/audio/music/combat_loop.ogg",
       "status": "selected",
-      "usage": "Normal combat room loop.",
-      "source": "Dungeon 01",
-      "author": "Fantasy Musica",
-      "license": "CC-BY-SA 4.0",
-      "sourceUrl": "https://opengameart.org/content/dungeon-01",
-      "selectedVia": "audition-v2 (2026-07-09)"
+      "usage": "Normal combat room loop (light chiptune to match the doodle art).",
+      "source": "8-bit Battle Loop",
+      "author": "Wolfgang_",
+      "license": "CC0",
+      "sourceUrl": "https://opengameart.org/content/8-bit-battle-loop",
+      "selectedVia": "in-game review 2026-07-09: Dungeon 01 too heavy for the art style"
     },
     "music_boss": {
       "file": "assets/audio/music/boss_loop.ogg",
