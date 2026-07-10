@@ -8,13 +8,13 @@ sourceReferences:
   - source/candidate-02.png
 openItems:
   - INTEGRATED (kit + workbench slot + /?encounter=switcheroo). Review aids: 强制交换 button; in workbench the "player" endpoint is the review cursor. Status stays rigged pending human workbench review.
-  - Tune swap cadence, telegraph duration, player-priority weight, and swap radius after integration.
+  - Tune swap cadence, telegraph duration, ambush radius (150) and cluster seeking after the 2026-07-10 ambush redesign.
 ---
 
 # Switcheroo
 
 Role:
-- Disruptor: a mischievous imp that periodically swaps positions with someone in range — repositioning Bowbert into danger is its whole attack.
+- Ambush imp (redesigned 2026-07-10 per review): it seeks the densest cluster of other monsters, camps there, and swaps ONLY with Bowbert — dropping the player into the pile while it escapes to the player's old spot. Never swaps with monsters. Without at least one monster near itself, the windup fizzles.
 
 Behavior (new `swap` pattern):
 - skitter: nervous short darts, keeps middle distance, never approaches directly.
