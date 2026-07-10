@@ -14,7 +14,9 @@ import type { RoomBounds, RoomSpawnPoint } from '../rooms';
  *   player morph is an open item).
  * - teleport: vanishes into a portal, reappears elsewhere (invulnerable
  *   while gone).
- * - waves: stands still and pulses expanding ring shockwaves outward that
+ * - waves (Crossed Flames): stands still and sends ONE slow ring outward
+ *   that then contracts back — outrun it, or dash through and punish the
+ *   stationary witch during the full out-and-back cycle. Ring that
  *   burn on contact for several seconds (area denial).
  * - ritual (at 66% and 33% hp): splits into the real boss plus identical
  *   1-HP illusions and ALL of them channel a ritual — hit the real one
@@ -33,6 +35,7 @@ export type HexbrimPhase =
   | 'volley'
   | 'hexcast'
   | 'wavecast'
+  | 'wavehold'
   | 'channel'
   | 'stagger'
   | 'vanish'
@@ -69,7 +72,10 @@ export interface HexbrimWave {
   readonly origin: SimVector;
   radius: number;
   readonly maxRadius: number;
-  hitPlayer: boolean;
+  readonly speed: number;
+  expanding: boolean;
+  hitOutbound: boolean;
+  hitInbound: boolean;
 }
 
 export interface HexbrimFirePatch {
@@ -119,11 +125,12 @@ const HEX_ORB_LIFE_MS = 4500;
 const HEX_ORB_RADIUS = 20;
 const HEX_ORB_CATCH_RADIUS = 34;
 const FIRECAST_TELEGRAPH_MS = 500;
-const WAVE_SPEED = 185;
+const WAVE_SPEED = 125;
+const WAVE_SPEED_PHASE3 = 140;
 const WAVE_BAND = 18;
 const WAVE_DAMAGE = 1;
-const WAVE_MAX_RADIUS = 620;
-const WAVE_GAP = 110;
+const WAVE_MAX_RADIUS = 360;
+const WAVE_MAX_RADIUS_PHASE3 = 450;
 const CHANNEL_MS = 6000;
 const RITUAL_HEAL_FRACTION = 0.15;
 const STAGGER_MS = 1400;
@@ -294,21 +301,37 @@ export class HexbrimSystem {
     }
 
     for (const wave of Array.from(this.waves.values())) {
-      wave.radius += WAVE_SPEED * (deltaMs / 1000);
+      if (wave.expanding) {
+        wave.radius += wave.speed * (deltaMs / 1000);
 
-      if (wave.radius > wave.maxRadius) {
-        this.waves.delete(wave.id);
+        if (wave.radius >= wave.maxRadius) {
+          wave.radius = wave.maxRadius;
+          wave.expanding = false;
+        }
+      } else {
+        wave.radius -= wave.speed * (deltaMs / 1000);
+
+        if (wave.radius <= 0) {
+          this.waves.delete(wave.id);
+          continue;
+        }
+      }
+
+      const alreadyHit = wave.expanding ? wave.hitOutbound : wave.hitInbound;
+
+      if (alreadyHit) {
         continue;
       }
 
-      if (wave.radius <= 0 || wave.hitPlayer) {
-        continue;
-      }
-
-      // The ring band clips the player once; dodge i-frames (checked by
-      // the damage service) are the way through.
+      // The ring clips once outbound and once inbound; dodge i-frames
+      // (checked by the damage service) slip through either way.
       if (Math.abs(distance(wave.origin, playerPosition) - wave.radius) <= WAVE_BAND) {
-        wave.hitPlayer = true;
+        if (wave.expanding) {
+          wave.hitOutbound = true;
+        } else {
+          wave.hitInbound = true;
+        }
+
         events.push({
           type: 'hexbrim-wave-hit',
           position: copyVector(playerPosition),
@@ -360,6 +383,7 @@ export class HexbrimSystem {
 
     if (!this.pendingBossSpawn && this.boss() === undefined && !this.encounterCleared) {
       this.encounterCleared = true;
+      this.waves.clear();
       events.push({ type: 'hexbrim-encounter-cleared' });
     }
 
@@ -569,7 +593,9 @@ export class HexbrimSystem {
             ? VOLLEY_TELEGRAPH_MS
             : phase === 'hexcast'
               ? HEXCAST_TELEGRAPH_MS
-              : phase === 'wavecast'
+              : phase === 'wavehold'
+                ? 9000
+                : phase === 'wavecast'
                 ? FIRECAST_TELEGRAPH_MS
                 : phase === 'channel'
                   ? CHANNEL_MS
@@ -769,29 +795,37 @@ export class HexbrimSystem {
         return;
       }
 
-      // Stand tall and pulse rings outward, staggered by a negative
-      // starting radius so they emerge one after another.
-      const rings = this.phase3() ? 4 : 3;
+      // One slow ring, out and back; the witch holds still for the whole
+      // cycle — dashing inside is the intended punish window.
+      const wave: HexbrimWave = {
+        id: this.nextId++,
+        origin: copyVector(entity.position),
+        radius: 0,
+        maxRadius: this.phase3() ? WAVE_MAX_RADIUS_PHASE3 : WAVE_MAX_RADIUS,
+        speed: this.phase3() ? WAVE_SPEED_PHASE3 : WAVE_SPEED,
+        expanding: true,
+        hitOutbound: false,
+        hitInbound: false
+      };
 
-      for (let index = 0; index < rings; index += 1) {
-        const wave: HexbrimWave = {
-          id: this.nextId++,
-          origin: copyVector(entity.position),
-          radius: -index * WAVE_GAP,
-          maxRadius: WAVE_MAX_RADIUS,
-          hitPlayer: false
-        };
-
-        this.waves.set(wave.id, wave);
-      }
-
+      this.waves.set(wave.id, wave);
       events.push({
         type: 'hexbrim-waves',
         id: entity.id,
         origin: copyVector(entity.position),
-        count: rings
+        count: 1
       });
-      this.finishAction(entity);
+      this.enterPhase(entity, 'wavehold');
+      return;
+    }
+
+    if (entity.phase === 'wavehold') {
+      entity.telegraphProgress = 0;
+
+      if (this.waves.size === 0 || entity.phaseElapsedMs >= entity.phaseDurationMs) {
+        this.finishAction(entity);
+      }
+
       return;
     }
 
