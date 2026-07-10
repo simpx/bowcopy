@@ -526,10 +526,6 @@
         "kind": "start",
         "theme": "start"
       },
-      "W": {
-        "kind": "wizard",
-        "theme": "wizard"
-      },
       "Z": {
         "kind": "boss",
         "theme": "boss",
@@ -644,6 +640,21 @@
           }
         ]
       }
+    },
+    "generator": {
+      "intro": "g",
+      "spine": [
+        "m",
+        "t",
+        "s"
+      ],
+      "pockets": [
+        "b",
+        "k",
+        "x"
+      ],
+      "antechamber": "P",
+      "boss": "Z"
     }
   },
   "openItems": [
