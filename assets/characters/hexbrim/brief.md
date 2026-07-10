@@ -21,8 +21,8 @@ Behavior (kit `hexbrimKit`, mechanics modeled on Hades II's first-chapter headmi
 - volley: alternates two patterns per cast — a telegraphed fan of 5 bolts (7 in phase 3), or a 'stream': one lane, 3 speed-staggered bolts arriving as a train. Enemy dart system, black-ink style.
 - hexcast: launches a slow HOMING polymorph orb that stalks Bowbert for ~4.5s — touch it and Bowbert IS the sheep (Sheepbert form, 4s: no bow, no tumble, 55% speed); outrun it until it fizzles, or phase through with tumble i-frames. Phase 3 launches two.
 - teleport: vanishes into a portal (invulnerable), reappears away from Bowbert.
-- witchfire: sprays a trail of green fire patches toward Bowbert; patches burn for ~6s on contact (area denial). Phase 3 sprays wider.
-- ritual (at 66% AND 33% hp): splits into the real boss + 2 identical 1-HP illusions and ALL of them channel for 6s — hit the REAL one to interrupt (boss staggers: punish window); let it finish and an arena-wide blast lands (a well-timed tumble's i-frames evade it).
+- waves (replaces witchfire, 2026-07-10 review: closer to the original): stands still and pulses 3 expanding ring shockwaves outward (4 in phase 3); each ring hits once, tumble i-frames slip through.
+- ritual (at 66% AND 33% hp): splits into the real boss + 2 identical 1-HP illusions and ALL of them channel for 6s — hit the REAL one to interrupt (boss staggers: punish window); let it finish and the witch HEALS 15% max HP (2026-07-10: replaced the arena blast — the original punishes slowness with attrition, not a nuke).
 - teleports are interstitial: ~60% chance to blink away after each attack (per the original's constant relocating).
 - summon (once, at 50% hp, between the two rituals): announces THE DOOR ANSWERS and calls a Doorbert — a door that keeps letting random normal minions through (embedded DoorbertKit: spooper ghosts or dart goobers per burst) until destroyed; it dissolves instantly when the boss dies. Adds, never a clear condition.
 - Phase 3 (hp <= 33%): faster float cadence, wider volleys, double hexcast.
