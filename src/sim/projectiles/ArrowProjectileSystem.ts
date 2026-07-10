@@ -34,6 +34,7 @@ export type ArrowProjectileEvent =
     };
 
 const ARROW_TTL_MS = 1250;
+const MAX_ARROW_RANGE = 420;
 const TRAIL_POINTS = 7;
 const BOUNDS_MARGIN = 42;
 const DEAD_ZONE = 0.001;
@@ -76,7 +77,9 @@ export class ArrowProjectileSystem {
       speed: request.speed,
       damage: request.damage,
       ageMs: 0,
-      ttlMs: ARROW_TTL_MS,
+      // Arrows are honest about reach: they falter after MAX_ARROW_RANGE px,
+      // so sniping from across the room is not a thing.
+      ttlMs: Math.min(ARROW_TTL_MS, (MAX_ARROW_RANGE / Math.max(1, request.speed)) * 1000),
       trail: [copyVector(request.origin)]
     };
 

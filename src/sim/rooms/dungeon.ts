@@ -149,9 +149,15 @@ const generateBlueprintRows = (seed: string): readonly string[] | null => {
   rows.push(`..${generator.boss}..`);
   rows.push(`..${generator.antechamber}..`);
 
-  // Three middle rows: spine room + one pocket on a seeded side.
+  // Middle rows: shuffled spine rooms; pockets (if any) hang off a side.
   for (let index = 0; index < spine.length; index += 1) {
     const pocket = pockets[index];
+
+    if (!pocket) {
+      rows.push(`..${spine[index]}..`);
+      continue;
+    }
+
     const left = random() < 0.5;
 
     rows.push(left ? `.${pocket}${spine[index]}..` : `..${spine[index]}${pocket}.`);

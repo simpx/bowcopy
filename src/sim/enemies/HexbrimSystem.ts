@@ -863,13 +863,15 @@ export class HexbrimSystem {
         return;
       }
 
-      // Reappear away from the player.
-      const away = rotate(vectorTo(playerPosition, entity.position), (Math.random() - 0.5) * 1.6);
+      // Reappear at the player's MID-RANGE (per review: distance must never
+      // be a stable strategy — the witch keeps closing in).
+      const angle = Math.random() * Math.PI * 2;
+      const reach = 230 + Math.random() * 90;
 
       entity.position = clampPositionToBounds(
         {
-          x: playerPosition.x + away.x * (PREFERRED_RANGE + 60),
-          y: playerPosition.y + away.y * (PREFERRED_RANGE + 60)
+          x: playerPosition.x + Math.cos(angle) * reach,
+          y: playerPosition.y + Math.sin(angle) * reach
         },
         bounds
       );
