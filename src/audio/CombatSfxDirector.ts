@@ -637,6 +637,10 @@ export class CombatSfxDirector {
     this.play('spore_break', { force: 0.46, pos });
   }
 
+  playPickup(pos: SimVector): void {
+    this.play('pickup', { force: 0.7, pos });
+  }
+
   playPortal(pos: SimVector): void {
     this.play('portal_whoosh', { force: 0.66, pos });
   }

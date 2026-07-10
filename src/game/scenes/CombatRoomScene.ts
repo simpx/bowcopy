@@ -21,6 +21,7 @@ import {
 import { ArrowProjectileSystem, EnemyDartProjectileSystem, ShroomSporeProjectileSystem } from '../../sim/projectiles';
 import { CombatSfxDirector, preloadCombatSfx } from '../../audio/CombatSfxDirector';
 import { MusicDirector, preloadMusic } from '../../audio/MusicDirector';
+import { PauseScreen, ResultScreen, TitleScreen } from '../../ui/RunScreens';
 import {
   OPPOSITE_DOOR_SIDE,
   ROOM_THEME_NAMES,
@@ -111,8 +112,30 @@ export class CombatRoomScene extends Phaser.Scene {
   private bossMusicActive = false;
   private nextSheepBleatAt = 0;
   private runPhase: 'playing' | 'defeat' | 'victory' = 'playing';
-  private healedRoomIds = new Set<string>();
   private pendingEncounterClears = 0;
+  private runSeed = 'bowbert';
+  private pinnedSeed: string | null = null;
+  private gameStarted = false;
+  private runStartMs = 0;
+  private runEndMs = 0;
+  private pausedAtMs = 0;
+  private paused = false;
+  private roomsCleared = 0;
+  private titleScreen?: TitleScreen;
+  private resultScreen?: ResultScreen;
+  private pauseScreen?: PauseScreen;
+  private heartDrops: { x: number; y: number; bornMs: number }[] = [];
+  private heartDropGraphics?: Phaser.GameObjects.Graphics;
+  private readonly handleRunKeydown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      this.togglePause();
+    }
+  };
+  private readonly handleVisibilityPause = () => {
+    if (document.hidden && !this.paused) {
+      this.togglePause();
+    }
+  };
   private dungeonState: DungeonState = createInitialDungeonState();
   private currentRoomDefinition: CombatRoomDefinition = referenceCombatRoom;
   private debugPlayerDemoElapsedMs = 0;
@@ -157,7 +180,9 @@ export class CombatRoomScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#0b120d');
     this.cameras.main.setRoundPixels(true);
 
-    this.dungeonState = createInitialDungeonState();
+    this.pinnedSeed = new URLSearchParams(window.location.search).get('seed');
+    this.runSeed = this.pinnedSeed || randomRunSeed();
+    this.dungeonState = createInitialDungeonState(this.runSeed);
     this.currentRoomDefinition = createCombatRoomDefinitionForDungeonRoom(
       this.dungeonState,
       getCurrentDungeonRoom(this.dungeonState)
@@ -200,6 +225,15 @@ export class CombatRoomScene extends Phaser.Scene {
     this.playerRenderer.update(0, 0, this.player.state);
     this.feedbackRenderer = new CombatFeedbackRenderer(this);
     this.feedbackRenderer.create();
+
+    // Every kit already reports kills through playEnemyDeath — piggyback
+    // the heart-drop roll on it instead of threading a new service.
+    const originalPlayEnemyDeath = this.feedbackRenderer.playEnemyDeath.bind(this.feedbackRenderer);
+
+    this.feedbackRenderer.playEnemyDeath = (position) => {
+      originalPlayEnemyDeath(position);
+      this.maybeDropHeart(position);
+    };
     this.sfx = new CombatSfxDirector(this);
     this.music = new MusicDirector(this);
     this.music.play('combat');
@@ -214,17 +248,88 @@ export class CombatRoomScene extends Phaser.Scene {
     this.desktopInput = new DesktopInputAdapter(this, this.inputController, () => this.player.state.position);
     this.createHeartsHud();
     this.applyDebugHpFromUrl();
+    this.heartDropGraphics = this.scene.scene.add.graphics().setDepth(58);
+    this.createRunScreens();
     this.createDungeonMinimap();
     this.createTouchInput();
     this.configureCamera();
     this.centerCameraOnRoom();
 
     this.scale.on(Phaser.Scale.Events.RESIZE, this.handleScaleResize);
+    document.addEventListener('keydown', this.handleRunKeydown);
+    document.addEventListener('visibilitychange', this.handleVisibilityPause);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.disposeRuntime, this);
     this.events.once(Phaser.Scenes.Events.DESTROY, this.disposeRuntime, this);
   }
 
+  private createRunScreens() {
+    const parent = this.game.canvas.parentElement;
+
+    if (!parent) {
+      return;
+    }
+
+    this.resultScreen = new ResultScreen(parent);
+    this.pauseScreen = new PauseScreen(parent);
+    this.pauseScreen.onTap(() => {
+      if (this.paused) {
+        this.togglePause();
+      }
+    });
+
+    // Debug entrances (encounter/room URLs) skip the title and start hot.
+    if (this.getDebugEncounterKind() || new URLSearchParams(window.location.search).get('debugroom')) {
+      this.startRun();
+      return;
+    }
+
+    this.titleScreen = new TitleScreen(parent, this.pinnedSeed ?? '', (seed) => {
+      if (seed && seed !== this.runSeed) {
+        this.pinnedSeed = seed;
+        this.resetRun();
+      }
+
+      this.startRun();
+    });
+  }
+
+  private startRun() {
+    this.gameStarted = true;
+    this.runStartMs = Date.now();
+    this.runEndMs = 0;
+  }
+
+  private runElapsedMs(): number {
+    if (!this.gameStarted) {
+      return 0;
+    }
+
+    return (this.runEndMs || Date.now()) - this.runStartMs;
+  }
+
+  private togglePause() {
+    if (!this.gameStarted || this.runPhase !== 'playing' || !this.pauseScreen) {
+      return;
+    }
+
+    this.paused = !this.paused;
+    this.pauseScreen.setVisible(this.paused);
+
+    if (this.paused) {
+      this.pausedAtMs = Date.now();
+      this.game.sound.pauseAll();
+    } else {
+      // Paused time doesn't count toward the run clock.
+      this.runStartMs += Date.now() - this.pausedAtMs;
+      this.game.sound.resumeAll();
+    }
+  }
+
   update(time: number, delta: number) {
+    if (this.paused || !this.gameStarted) {
+      return;
+    }
+
     this.desktopInput?.update();
     this.updateDebugPlayerDemo(delta);
 
@@ -287,6 +392,7 @@ export class CombatRoomScene extends Phaser.Scene {
     }
 
     this.updateSheepBleats(time, playerFrame.state.hexedMs);
+    this.updateHeartDrops(time, playerFrame.state.position);
     this.bossHud?.update(bossStatus);
 
     const enemyDartEvents = this.enemyDarts.update(
@@ -505,6 +611,7 @@ export class CombatRoomScene extends Phaser.Scene {
     const clearedRoom = getCurrentDungeonRoom(this.dungeonState);
 
     clearCurrentDungeonRoom(this.dungeonState);
+    this.roomsCleared += 1;
 
     if (clearedRoom.kind === 'boss' && this.runPhase === 'playing') {
       this.startVictory();
@@ -832,24 +939,10 @@ export class CombatRoomScene extends Phaser.Scene {
     this.rebuildRoomRenderer();
     this.clearRoomRuntime();
     this.placePlayerAtEntry(OPPOSITE_DOOR_SIDE[exitSide]);
-    this.healInWizardRoomIfNeeded(nextRoom.id, nextRoom.kind);
     this.startCombatInCurrentRoomIfNeeded();
     this.centerCameraOnRoom();
   }
 
-  /** The wizard's den restores all hearts, once per room per run. */
-  private healInWizardRoomIfNeeded(roomId: string, kind: string) {
-    if (kind !== 'wizard' || this.healedRoomIds.has(roomId)) {
-      return;
-    }
-
-    this.healedRoomIds.add(roomId);
-    this.playerHealth.reset();
-    this.heartsHud?.update(this.playerHealth.state);
-    this.feedbackRenderer?.playAnnouncement('RESTORED', this.currentRoomDefinition.bounds, 'clear');
-    this.feedbackRenderer?.playRoomClear(this.currentRoomDefinition.bounds);
-    this.sfx?.playPortal(this.player.state.position);
-  }
 
   private getRequestedExitSide(move: { readonly x: number; readonly y: number }): RoomDoorSide | undefined {
     const { bounds } = this.currentRoomDefinition;
@@ -1081,20 +1174,73 @@ export class CombatRoomScene extends Phaser.Scene {
     camera.centerOn(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
   }
 
+  /** Fallen enemies sometimes leave half a heart behind (the only sustain
+   *  in a run — the wizard retired). */
+  maybeDropHeart(position: SimVector) {
+    if (this.runPhase !== 'playing' || Math.random() > 0.12) {
+      return;
+    }
+
+    this.heartDrops.push({ x: position.x, y: position.y, bornMs: this.time.now });
+  }
+
+  private updateHeartDrops(timeMs: number, playerPosition: SimVector) {
+    const graphics = this.heartDropGraphics;
+
+    if (!graphics) {
+      return;
+    }
+
+    graphics.clear();
+
+    for (let index = this.heartDrops.length - 1; index >= 0; index -= 1) {
+      const drop = this.heartDrops[index];
+      const age = timeMs - drop.bornMs;
+
+      if (age > 12000) {
+        this.heartDrops.splice(index, 1);
+        continue;
+      }
+
+      if (Math.hypot(playerPosition.x - drop.x, playerPosition.y - drop.y) < 36) {
+        this.heartDrops.splice(index, 1);
+        this.playerHealth.heal(0.5);
+        this.heartsHud?.update(this.playerHealth.state);
+        this.sfx?.playPickup(drop);
+        this.feedbackRenderer?.playSporeBreak(drop);
+        continue;
+      }
+
+      const bob = Math.sin(timeMs * 0.006 + drop.x) * 3;
+      const blink = age > 9000 && Math.sin(timeMs * 0.02) > 0 ? 0.25 : 1;
+      const x = drop.x;
+      const y = drop.y + bob;
+
+      graphics.fillStyle(0xff5d7a, 0.95 * blink);
+      graphics.fillCircle(x - 3.4, y - 2.4, 4.4);
+      graphics.fillCircle(x + 3.4, y - 2.4, 4.4);
+      graphics.fillTriangle(x - 7.4, y - 0.6, x + 7.4, y - 0.6, x, y + 8);
+      graphics.fillStyle(0xffd0da, 0.8 * blink);
+      graphics.fillCircle(x - 3.6, y - 3.4, 1.6);
+    }
+  }
+
   private checkDefeat() {
     if (this.runPhase !== 'playing' || this.playerHealth.state.current > 0) {
       return;
     }
 
     this.runPhase = 'defeat';
+    this.runEndMs = Date.now();
     this.feedbackRenderer?.playAnnouncement('YOU CAME UNDONE', this.currentRoomDefinition.bounds, 'damage');
     this.music?.stop(1400);
     this.cameras.main.fadeOut(1700, 8, 4, 16);
-    this.time.delayedCall(2300, () => this.resetRun());
+    this.time.delayedCall(2100, () => this.showRunResult(false));
   }
 
   private startVictory() {
     this.runPhase = 'victory';
+    this.runEndMs = Date.now();
     this.music?.stop(2400);
     // Let the boss dissolve finish before the title card lands.
     this.time.delayedCall(1900, () => {
@@ -1110,16 +1256,61 @@ export class CombatRoomScene extends Phaser.Scene {
       }
 
       this.cameras.main.fadeOut(900, 8, 4, 16);
-      this.time.delayedCall(1000, () => this.resetRun());
+      this.time.delayedCall(1000, () => this.showRunResult(true));
     });
+  }
+
+  private showRunResult(victory: boolean) {
+    if (!this.runEndMs) {
+      this.runEndMs = Date.now();
+    }
+
+    const timeMs = this.runElapsedMs();
+    const records = loadRunRecords();
+    const newRecord = victory && (records.bestTimeMs === null || timeMs < records.bestTimeMs);
+
+    if (newRecord) {
+      records.bestTimeMs = timeMs;
+    }
+
+    records.mostRooms = Math.max(records.mostRooms, this.roomsCleared);
+    saveRunRecords(records);
+
+    const totalRooms = Array.from(this.dungeonState.rooms.values()).filter(
+      (room) => room.kind === 'normal' || room.kind === 'boss'
+    ).length;
+
+    this.resultScreen?.show(
+      {
+        victory,
+        timeMs,
+        roomsCleared: this.roomsCleared,
+        totalRooms,
+        heartsLeft: this.playerHealth.state.current,
+        maxHearts: this.playerHealth.state.max,
+        seed: this.runSeed,
+        bestTimeMs: records.bestTimeMs,
+        newRecord
+      },
+      () => {
+        this.resetRun();
+        this.startRun();
+      }
+    );
   }
 
   /** Fresh run: new dungeon, full hearts, back to the start room. */
   private resetRun() {
     this.runPhase = 'playing';
-    this.healedRoomIds.clear();
     this.pendingEncounterClears = 0;
-    this.dungeonState = createInitialDungeonState();
+    this.roomsCleared = 0;
+    this.heartDrops = [];
+    this.paused = false;
+    this.pauseScreen?.setVisible(false);
+    this.runSeed = this.pinnedSeed || randomRunSeed();
+    this.runStartMs = Date.now();
+    this.runEndMs = 0;
+    this.dungeonState = createInitialDungeonState(this.runSeed);
     this.currentRoomDefinition = createCombatRoomDefinitionForDungeonRoom(
       this.dungeonState,
       getCurrentDungeonRoom(this.dungeonState)
@@ -1158,6 +1349,16 @@ export class CombatRoomScene extends Phaser.Scene {
 
   private disposeRuntime() {
     this.scale.off(Phaser.Scale.Events.RESIZE, this.handleScaleResize);
+    document.removeEventListener('keydown', this.handleRunKeydown);
+    document.removeEventListener('visibilitychange', this.handleVisibilityPause);
+    this.titleScreen?.destroy();
+    this.titleScreen = undefined;
+    this.resultScreen?.destroy();
+    this.resultScreen = undefined;
+    this.pauseScreen?.destroy();
+    this.pauseScreen = undefined;
+    this.heartDropGraphics?.destroy();
+    this.heartDropGraphics = undefined;
     this.music?.destroy();
     this.music = undefined;
     this.desktopInput?.dispose();
@@ -1191,4 +1392,37 @@ export class CombatRoomScene extends Phaser.Scene {
     this.enemyDarts.clear();
     this.shroomSpores.clear();
   }
+}
+
+const RUN_RECORDS_KEY = 'bowcopy-run-records';
+
+interface RunRecords {
+  bestTimeMs: number | null;
+  mostRooms: number;
+}
+
+function loadRunRecords(): RunRecords {
+  try {
+    const raw = window.localStorage.getItem(RUN_RECORDS_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Partial<RunRecords>) : {};
+
+    return {
+      bestTimeMs: typeof parsed.bestTimeMs === 'number' ? parsed.bestTimeMs : null,
+      mostRooms: typeof parsed.mostRooms === 'number' ? parsed.mostRooms : 0
+    };
+  } catch {
+    return { bestTimeMs: null, mostRooms: 0 };
+  }
+}
+
+function saveRunRecords(records: RunRecords) {
+  try {
+    window.localStorage.setItem(RUN_RECORDS_KEY, JSON.stringify(records));
+  } catch {
+    // Private browsing etc. — records are a nicety, not a requirement.
+  }
+}
+
+function randomRunSeed(): string {
+  return Math.random().toString(36).slice(2, 7);
 }

@@ -89,6 +89,14 @@ export interface RoomThemeKit {
   readonly baseProps: readonly FloorProp[];
   readonly themes: Record<RoomVisualThemeId, RoomThemeKitTheme>;
   readonly dungeonDsl: {
+    /** Seeded layout generator: fixed intro/antechamber/boss plus shuffled pools. */
+    readonly generator?: {
+      readonly intro: string;
+      readonly spine: readonly string[];
+      readonly pockets: readonly string[];
+      readonly antechamber: string;
+      readonly boss: string;
+    };
     readonly rows: readonly string[];
     readonly legend: Record<
       string,

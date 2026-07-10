@@ -19,6 +19,12 @@ export class PlayerHealth {
     this.current = this.max;
   }
 
+  heal(amount: number): PlayerHealthState {
+    this.current = Math.min(this.max, snapToHealthStep(this.current + Math.max(0, amount)));
+
+    return this.state;
+  }
+
   damage(amount: number): PlayerHealthState {
     this.current = Math.max(0, snapToHealthStep(this.current - Math.max(0, amount)));
 
