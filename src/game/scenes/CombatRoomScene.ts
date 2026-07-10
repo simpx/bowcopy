@@ -435,6 +435,7 @@ export class CombatRoomScene extends Phaser.Scene {
       getSfx: () => this.sfx,
       duckMusic: (holdMs) => this.music?.duck(holdMs),
       getPlayerPosition: () => this.player.state.position,
+      isPlayerInvulnerable: () => this.player.state.dodge.invulnerableMs > 0,
       shakeCamera: (kind) => this.shakeCamera(kind),
       damagePlayer: (sourcePosition, damage) => this.damagePlayerFromEnemy(sourcePosition, damage),
       damageEnemiesFromRadius: (position, radius, damage) => {

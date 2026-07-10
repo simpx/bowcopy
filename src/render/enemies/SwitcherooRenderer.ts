@@ -47,6 +47,7 @@ export class SwitcherooRenderer {
   private readonly visuals = new Map<number, SwitcherooVisual>();
   private readonly bursts: ParticleBurstPool;
   private readonly portals: PortalEffectPool;
+  private tetherGraphics?: Phaser.GameObjects.Graphics;
 
   constructor(private readonly scene: Phaser.Scene) {
     this.bursts = new ParticleBurstPool(scene, PARTICLE_DEPTH, {
@@ -59,12 +60,79 @@ export class SwitcherooRenderer {
   create() {
     this.bursts.create();
     this.portals.create();
+    this.tetherGraphics = this.scene.add.graphics().setDepth(PARTICLE_DEPTH - 2);
   }
 
-  update(timeMs: number, deltaMs: number, enemies: readonly SwitcherooEnemy[]) {
+  update(
+    timeMs: number,
+    deltaMs: number,
+    enemies: readonly SwitcherooEnemy[],
+    playerPosition?: SimVector
+  ) {
     this.syncEnemies(timeMs, enemies);
+    this.drawTethers(timeMs, enemies, playerPosition);
     this.bursts.update(deltaMs);
     this.portals.update(deltaMs);
+  }
+
+  /** Windup telegraph: a marching dashed line from the imp to Bowbert —
+   *  the "you are about to trade places" warning (dodge through it). */
+  private drawTethers(
+    timeMs: number,
+    enemies: readonly SwitcherooEnemy[],
+    playerPosition?: SimVector
+  ) {
+    const graphics = this.tetherGraphics;
+
+    if (!graphics) {
+      return;
+    }
+
+    graphics.clear();
+
+    if (!playerPosition) {
+      return;
+    }
+
+    for (const enemy of enemies) {
+      if (enemy.phase !== 'windup' || !enemy.targetingPlayer) {
+        continue;
+      }
+
+      const deltaX = playerPosition.x - enemy.position.x;
+      const deltaY = playerPosition.y - enemy.position.y;
+      const length = Math.hypot(deltaX, deltaY);
+
+      if (length < 8) {
+        continue;
+      }
+
+      const dirX = deltaX / length;
+      const dirY = deltaY / length;
+      const dash = 14;
+      const gap = 10;
+      const cycle = dash + gap;
+      const march = (timeMs * 0.12) % cycle;
+      const alpha = 0.4 + enemy.windupProgress * 0.5;
+
+      graphics.lineStyle(3, 0xc65df0, alpha);
+
+      for (let at = march; at < length; at += cycle) {
+        const to = Math.min(at + dash, length);
+
+        graphics.lineBetween(
+          enemy.position.x + dirX * at,
+          enemy.position.y + dirY * at - 14,
+          enemy.position.x + dirX * to,
+          enemy.position.y + dirY * to - 14
+        );
+      }
+
+      // Growing ring on the player's end: the incoming trade.
+      graphics.lineStyle(2.5, 0xc65df0, alpha);
+      graphics.strokeCircle(playerPosition.x, playerPosition.y, 22 + enemy.windupProgress * 14);
+      graphics.strokeCircle(enemy.position.x, enemy.position.y - 14, 16 + enemy.windupProgress * 8);
+    }
   }
 
   playEvents(events: readonly SwitcherooEvent[]) {
@@ -88,6 +156,13 @@ export class SwitcherooRenderer {
         continue;
       }
 
+      if (event.type === 'switcheroo-swap-dodged') {
+        // The trade whiffs: sad little pops at both ends, no portals.
+        this.bursts.emit(event.position, 6, SWAP_COLORS, 20, 52, 2.8, 200);
+        this.bursts.emit(event.playerPosition, 6, SWAP_COLORS, 20, 52, 2.8, 200);
+        continue;
+      }
+
       if (event.type === 'switcheroo-hit') {
         this.bursts.emit(event.position, 7, HIT_COLORS, 30, 76, 3.2, 180);
         continue;
@@ -100,6 +175,8 @@ export class SwitcherooRenderer {
   }
 
   destroy() {
+    this.tetherGraphics?.destroy();
+    this.tetherGraphics = undefined;
     this.bursts.destroy();
     this.portals.destroy();
 

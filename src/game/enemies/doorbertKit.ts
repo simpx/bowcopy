@@ -285,10 +285,10 @@ export class DoorbertKit implements EnemyKit {
         this.services.enemyDarts.fireDart({
           origin: event.position,
           direction: event.direction,
-          speed: 92,
+          speed: 150,
           damage: event.damage,
           style: 'black-ink',
-          ttlMs: 1800
+          ttlMs: 4200
         });
         continue;
       }

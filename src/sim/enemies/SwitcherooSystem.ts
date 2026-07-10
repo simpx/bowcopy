@@ -40,6 +40,7 @@ export type SwitcherooEvent =
   | { type: 'switcheroo-spawned'; id: number; position: SimVector }
   | { type: 'switcheroo-windup'; id: number; position: SimVector; targetPosition: SimVector; targetingPlayer: boolean }
   | { type: 'switcheroo-fizzle'; id: number; position: SimVector }
+  | { type: 'switcheroo-swap-dodged'; id: number; position: SimVector; playerPosition: SimVector }
   | {
       type: 'switcheroo-swapped';
       id: number;
@@ -177,7 +178,8 @@ export class SwitcherooSystem {
     bounds: RoomBounds,
     playerPosition: SimVector,
     arrows: readonly ArrowProjectile[],
-    allies: readonly SimVector[] = []
+    allies: readonly SimVector[] = [],
+    playerInvulnerable = false
   ): SwitcherooFrame {
     const events: SwitcherooEvent[] = [];
     const consumedArrowIds = new Set<number>();
@@ -192,7 +194,7 @@ export class SwitcherooSystem {
     this.applyArrowHits(arrows, events, consumedArrowIds);
 
     for (const enemy of Array.from(this.enemies.values())) {
-      const teleport = this.updateEnemy(enemy, deltaMs, bounds, playerPosition, events, allies);
+      const teleport = this.updateEnemy(enemy, deltaMs, bounds, playerPosition, events, allies, playerInvulnerable);
 
       if (teleport) {
         playerTeleport = teleport;
@@ -380,7 +382,8 @@ export class SwitcherooSystem {
     bounds: RoomBounds,
     playerPosition: SimVector,
     events: SwitcherooEvent[],
-    allies: readonly SimVector[]
+    allies: readonly SimVector[],
+    playerInvulnerable: boolean
   ): SimVector | null {
     enemy.phaseElapsedMs += deltaMs;
     enemy.hitFlashMs = Math.max(0, enemy.hitFlashMs - deltaMs);
@@ -440,7 +443,20 @@ export class SwitcherooSystem {
       return null;
     }
 
-    // Execute the swap against current positions.
+    // Execute the swap against current positions. A well-timed tumble's
+    // i-frames slip the trade entirely — the imp whiffs.
+    if (enemy.targetingPlayer && playerInvulnerable) {
+      events.push({
+        type: 'switcheroo-swap-dodged',
+        id: enemy.id,
+        position: copyVector(enemy.position),
+        playerPosition: copyVector(playerPosition)
+      });
+      this.enterPhase(enemy, 'cooldown');
+
+      return null;
+    }
+
     const from = copyVector(enemy.position);
 
     if (enemy.targetingPlayer) {

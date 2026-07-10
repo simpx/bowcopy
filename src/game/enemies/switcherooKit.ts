@@ -61,7 +61,8 @@ export class SwitcherooKit implements EnemyKit {
       bounds,
       playerPosition,
       arrows,
-      this.services.getOtherEnemyPositions('switcheroo')
+      this.services.getOtherEnemyPositions('switcheroo'),
+      this.services.isPlayerInvulnerable()
     );
 
     if (frame.playerTeleport) {
@@ -84,7 +85,7 @@ export class SwitcherooKit implements EnemyKit {
 
     this.handleEvents(frame.events);
     this.renderer?.playEvents(frame.events);
-    this.renderer?.update(timeMs, deltaMs, this.system.getActiveEnemies());
+    this.renderer?.update(timeMs, deltaMs, this.system.getActiveEnemies(), this.services.getPlayerPosition());
   }
 
   debugForceEffect(effect: string, _kind: EncounterKind, _bounds: RoomBounds) {

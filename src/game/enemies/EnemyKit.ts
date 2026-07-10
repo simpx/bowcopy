@@ -65,6 +65,8 @@ export interface EnemyKitServices {
   damageEnemiesFromRadius(position: SimVector, radius: number, damage: number): void;
   /** Positions of every living enemy except the asking kind (ambush AI). */
   getOtherEnemyPositions(excludeKind: EncounterKind): readonly SimVector[];
+  /** True while dodge i-frames are active (dodgeable telegraphed attacks). */
+  isPlayerInvulnerable(): boolean;
   /** Marks the room cleared with sfx/feedback/shake and optional projectile cleanup. */
   encounterCleared(options: { clearSpores: boolean; clearDarts: boolean }): void;
   /** Debug-bootstrap helpers so kits can pump shared projectile systems. */

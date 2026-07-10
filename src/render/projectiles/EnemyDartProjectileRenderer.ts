@@ -127,9 +127,9 @@ export class EnemyDartProjectileRenderer {
 
       for (let speck = 0; speck < speckCount; speck += 1) {
         const seed = dart.id * 37 + index * 11 + speck * 17;
-        const offsetX = (this.stableNoise(seed) - 0.5) * (14 + progress * 18);
-        const offsetY = (this.stableNoise(seed + 7) - 0.5) * (12 + progress * 16);
-        const radius = 1 + this.stableNoise(seed + 13) * (1.6 + progress * 2.2);
+        const offsetX = (this.stableNoise(seed) - 0.5) * (18 + progress * 22);
+        const offsetY = (this.stableNoise(seed + 7) - 0.5) * (16 + progress * 20);
+        const radius = 1.2 + this.stableNoise(seed + 13) * (2 + progress * 2.6);
 
         graphics.fillStyle(INK_BODY_COLOR, 0.12 + progress * 0.45);
         graphics.fillCircle(point.x + offsetX, point.y + offsetY, radius);
@@ -192,12 +192,12 @@ export class EnemyDartProjectileRenderer {
     const ink = this.scene.add.graphics();
 
     ink.fillStyle(INK_BODY_COLOR, 1);
-    ink.fillCircle(2, 0, 11);
-    ink.fillCircle(-8, 1, 7);
-    ink.fillCircle(-15, -2.5, 3.6);
+    ink.fillCircle(3, 0, 14);
+    ink.fillCircle(-10, 1.5, 9);
+    ink.fillCircle(-19, -3, 4.5);
 
     ink.fillStyle(INK_HIGHLIGHT_COLOR, 0.5);
-    ink.fillCircle(5, -4, 2);
+    ink.fillCircle(7, -5, 2.6);
 
     const container = this.scene.add.container(0, 0, [ink]);
     const visual = {

@@ -466,10 +466,10 @@ class SpooperGooperSlot extends EnemySlotBase {
         this.darts.fireDart({
           origin: event.position,
           direction: event.direction,
-          speed: 92,
+          speed: 150,
           damage: event.damage,
           style: 'black-ink',
-          ttlMs: 1800
+          ttlMs: 4200
         });
       } else if (event.type === 'spooper-gooper-hit' && event.hp > 0) {
         this.feedback.playArrowEnemy(event.position, event.damage);
@@ -726,7 +726,7 @@ class SwitcherooSlot extends EnemySlotBase {
     }
 
     this.renderer.playEvents(frame.events);
-    this.renderer.update(timeMs, deltaMs, this.system.getActiveEnemies());
+    this.renderer.update(timeMs, deltaMs, this.system.getActiveEnemies(), clampToBounds(target, this.cell.bounds));
 
     return frame.consumedArrowIds;
   }
@@ -974,10 +974,10 @@ class HexbrimSlot extends EnemySlotBase {
         this.darts.fireDart({
           origin: event.position,
           direction: event.direction,
-          speed: 92,
+          speed: 150,
           damage: event.damage,
           style: 'black-ink',
-          ttlMs: 1800
+          ttlMs: 4200
         });
       } else if (event.type === 'spooper-gooper-hit' && event.hp > 0) {
         this.feedback.playArrowEnemy(event.position, event.damage);
