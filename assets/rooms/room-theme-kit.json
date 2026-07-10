@@ -565,7 +565,7 @@
             "budget": 4
           },
           {
-            "kind": "dart-goober",
+            "kind": "switcheroo",
             "budget": 2
           }
         ]
@@ -584,20 +584,6 @@
           }
         ]
       },
-      "k": {
-        "kind": "normal",
-        "theme": "forest",
-        "encounters": [
-          {
-            "kind": "kaboomlet",
-            "budget": 5
-          },
-          {
-            "kind": "backboard",
-            "budget": 3
-          }
-        ]
-      },
       "s": {
         "kind": "normal",
         "theme": "stone",
@@ -609,20 +595,6 @@
           {
             "kind": "kaboomlet",
             "budget": 4
-          }
-        ]
-      },
-      "x": {
-        "kind": "normal",
-        "theme": "stone",
-        "encounters": [
-          {
-            "kind": "switcheroo",
-            "budget": 5
-          },
-          {
-            "kind": "kaboomlet",
-            "budget": 3
           }
         ]
       },
@@ -646,13 +618,10 @@
       "spine": [
         "m",
         "t",
-        "s"
+        "s",
+        "b"
       ],
-      "pockets": [
-        "b",
-        "k",
-        "x"
-      ],
+      "pockets": [],
       "antechamber": "P",
       "boss": "Z"
     }
