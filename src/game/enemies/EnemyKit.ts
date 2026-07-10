@@ -63,6 +63,8 @@ export interface EnemyKitServices {
   damagePlayerFromRadius(position: SimVector, radius: number, damage: number): void;
   /** Friendly-fire blasts: forwards to every kit's damageArea hook. */
   damageEnemiesFromRadius(position: SimVector, radius: number, damage: number): void;
+  /** Positions of every living enemy except the asking kind (ambush AI). */
+  getOtherEnemyPositions(excludeKind: EncounterKind): readonly SimVector[];
   /** Marks the room cleared with sfx/feedback/shake and optional projectile cleanup. */
   encounterCleared(options: { clearSpores: boolean; clearDarts: boolean }): void;
   /** Debug-bootstrap helpers so kits can pump shared projectile systems. */
@@ -99,6 +101,8 @@ export interface EnemyKit {
   ): readonly number[];
   /** Optional: take splash damage from explosions (kaboomlet etc.). */
   damageArea?(position: SimVector, radius: number, damage: number): void;
+  /** Optional: expose living enemy positions for cross-kit AI. */
+  getEnemyPositions?(): readonly SimVector[];
   /** Bootstrap stepping used by debug encounter URLs (no arrows, muted events where the original did so). */
   debugStep(timeMs: number, deltaMs: number, bounds: RoomBounds, kind: EncounterKind): void;
   /** Optional forced previews triggered by debug URL params (split/damage/explosion/spore). */

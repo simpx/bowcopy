@@ -36,6 +36,10 @@ export class KaboomletKit implements EnemyKit {
     this.system.queueAreaDamage(position, radius, damage);
   }
 
+  getEnemyPositions(): readonly SimVector[] {
+    return this.system.getActiveEnemies().map((enemy) => enemy.position);
+  }
+
   hasEncounterStarted(): boolean {
     return this.system.hasEncounterStarted();
   }

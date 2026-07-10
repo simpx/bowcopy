@@ -122,15 +122,16 @@ export class EnemyDartProjectileRenderer {
     for (let index = 1; index < dart.trail.length; index += 1) {
       const point = dart.trail[index];
       const progress = index / Math.max(1, dart.trail.length - 1);
-      const speckCount = 1 + Math.round(progress * 2);
+      // Wide splatter cone behind the blob, per the reference footage.
+      const speckCount = 2 + Math.round(progress * 3);
 
       for (let speck = 0; speck < speckCount; speck += 1) {
         const seed = dart.id * 37 + index * 11 + speck * 17;
-        const offsetX = (this.stableNoise(seed) - 0.5) * 12;
-        const offsetY = (this.stableNoise(seed + 7) - 0.5) * 10;
-        const radius = 0.9 + this.stableNoise(seed + 13) * (1.2 + progress * 1.6);
+        const offsetX = (this.stableNoise(seed) - 0.5) * (14 + progress * 18);
+        const offsetY = (this.stableNoise(seed + 7) - 0.5) * (12 + progress * 16);
+        const radius = 1 + this.stableNoise(seed + 13) * (1.6 + progress * 2.2);
 
-        graphics.fillStyle(INK_BODY_COLOR, 0.1 + progress * 0.4);
+        graphics.fillStyle(INK_BODY_COLOR, 0.12 + progress * 0.45);
         graphics.fillCircle(point.x + offsetX, point.y + offsetY, radius);
       }
     }
@@ -184,22 +185,19 @@ export class EnemyDartProjectileRenderer {
     return visual;
   }
 
-  /** Solid black bullet head per the source reference (spooper-gooper
-   *  source/video-black-bullet-reference.jpg): round nose, tapered tail. */
+  /** Fat ink comma per the source reference (spooper-gooper
+   *  source/video-black-bullet-reference.jpg): near-round blob head with a
+   *  short tail curling up-back, big enough to read at a glance. */
   private createInkVisual(id: number): DartVisual {
     const ink = this.scene.add.graphics();
 
-    // Teardrop pointing +x: round nose at the front, tail tapering behind.
     ink.fillStyle(INK_BODY_COLOR, 1);
-    ink.beginPath();
-    ink.arc(4, 0, 9, -Math.PI / 2, Math.PI / 2, false);
-    ink.lineTo(-16, 3.2);
-    ink.arc(-16, 0, 3.2, Math.PI / 2, (3 * Math.PI) / 2, false);
-    ink.closePath();
-    ink.fillPath();
+    ink.fillCircle(2, 0, 11);
+    ink.fillCircle(-8, 1, 7);
+    ink.fillCircle(-15, -2.5, 3.6);
 
     ink.fillStyle(INK_HIGHLIGHT_COLOR, 0.5);
-    ink.fillCircle(6, -3.4, 1.7);
+    ink.fillCircle(5, -4, 2);
 
     const container = this.scene.add.container(0, 0, [ink]);
     const visual = {

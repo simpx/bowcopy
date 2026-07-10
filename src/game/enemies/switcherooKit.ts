@@ -36,6 +36,10 @@ export class SwitcherooKit implements EnemyKit {
     this.system.queueAreaDamage(position, radius, damage);
   }
 
+  getEnemyPositions(): readonly SimVector[] {
+    return this.system.getActiveEnemies().map((enemy) => enemy.position);
+  }
+
   hasEncounterStarted(): boolean {
     return this.system.hasEncounterStarted();
   }
@@ -52,7 +56,13 @@ export class SwitcherooKit implements EnemyKit {
     arrows: readonly ArrowProjectile[],
     activeKind: EncounterKind
   ): readonly number[] {
-    const frame = this.system.update(deltaMs, bounds, playerPosition, arrows);
+    const frame = this.system.update(
+      deltaMs,
+      bounds,
+      playerPosition,
+      arrows,
+      this.services.getOtherEnemyPositions('switcheroo')
+    );
 
     if (frame.playerTeleport) {
       this.services.teleportPlayer?.(frame.playerTeleport);

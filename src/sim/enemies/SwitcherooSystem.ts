@@ -3,11 +3,12 @@ import type { ArrowProjectile } from '../projectiles';
 import type { RoomBounds, RoomSpawnPoint } from '../rooms';
 
 /**
- * Switcheroo: a disruptor imp that periodically swaps positions with someone
- * in range — Bowbert (weighted higher) or a sibling imp. Both ends of the
- * swap are telegraphed during the windup; with no target in radius the
- * windup fizzles straight into cooldown (decided 2026-07-08). The kit moves
- * the player via a scene service when the target is Bowbert.
+ * Switcheroo: an ambush imp. It seeks the densest cluster of other monsters
+ * (allies passed in by the kit; sibling imps count too), camps there, and
+ * swaps positions with BOWBERT — dropping the player into the pile while it
+ * escapes to the player's old spot (redesigned 2026-07-10: never swaps with
+ * monsters). Both ends are telegraphed during the windup; without at least
+ * one monster near the imp the windup fizzles into cooldown.
  */
 
 export type SwitcherooPhase = 'spawning' | 'skitter' | 'windup' | 'cooldown';
@@ -71,8 +72,11 @@ const SKITTER_EXTRA_MS = 1400;
 const WINDUP_MS = 650;
 const COOLDOWN_MS = 1400;
 const SKITTER_SPEED = 120;
-const SWAP_RADIUS = 260;
-const PLAYER_PRIORITY = 0.6;
+const SWAP_RADIUS = 300;
+/** A swap is only worth it with monsters this close to the imp. */
+const AMBUSH_RADIUS = 150;
+/** Cluster scoring radius when choosing where to camp. */
+const CLUSTER_RADIUS = 170;
 const MAX_HP = 2;
 const HIT_FLASH_MS = 170;
 const ENEMY_RADIUS = 22;
@@ -172,7 +176,8 @@ export class SwitcherooSystem {
     deltaMs: number,
     bounds: RoomBounds,
     playerPosition: SimVector,
-    arrows: readonly ArrowProjectile[]
+    arrows: readonly ArrowProjectile[],
+    allies: readonly SimVector[] = []
   ): SwitcherooFrame {
     const events: SwitcherooEvent[] = [];
     const consumedArrowIds = new Set<number>();
@@ -187,7 +192,7 @@ export class SwitcherooSystem {
     this.applyArrowHits(arrows, events, consumedArrowIds);
 
     for (const enemy of Array.from(this.enemies.values())) {
-      const teleport = this.updateEnemy(enemy, deltaMs, bounds, playerPosition, events);
+      const teleport = this.updateEnemy(enemy, deltaMs, bounds, playerPosition, events, allies);
 
       if (teleport) {
         playerTeleport = teleport;
@@ -332,27 +337,35 @@ export class SwitcherooSystem {
     }
   }
 
-  private pickTarget(enemy: SwitcherooEnemy, playerPosition: SimVector): boolean {
+  /** Monsters near this imp (allies passed in + sibling imps). */
+  private monstersNear(enemy: SwitcherooEnemy, allies: readonly SimVector[], radius: number): number {
+    let count = 0;
+
+    for (const ally of allies) {
+      if (distance(enemy.position, ally) <= radius) {
+        count += 1;
+      }
+    }
+
+    for (const other of this.enemies.values()) {
+      if (other.id !== enemy.id && distance(enemy.position, other.position) <= radius) {
+        count += 1;
+      }
+    }
+
+    return count;
+  }
+
+  /** Swap only with the player, and only when the trap is baited: the imp
+   *  wants at least one monster around itself to drop Bowbert into. */
+  private pickTarget(
+    enemy: SwitcherooEnemy,
+    playerPosition: SimVector,
+    allies: readonly SimVector[]
+  ): boolean {
     const playerInRange = distance(enemy.position, playerPosition) <= SWAP_RADIUS;
-    const siblings = Array.from(this.enemies.values()).filter(
-      (other) => other.id !== enemy.id && distance(enemy.position, other.position) <= SWAP_RADIUS
-    );
 
-    if (playerInRange && (Math.random() < PLAYER_PRIORITY || siblings.length === 0)) {
-      enemy.targetingPlayer = true;
-      enemy.targetImpId = null;
-      return true;
-    }
-
-    if (siblings.length > 0) {
-      const sibling = siblings[Math.floor(Math.random() * siblings.length)];
-
-      enemy.targetingPlayer = false;
-      enemy.targetImpId = sibling.id;
-      return true;
-    }
-
-    if (playerInRange) {
+    if (playerInRange && this.monstersNear(enemy, allies, AMBUSH_RADIUS) > 0) {
       enemy.targetingPlayer = true;
       enemy.targetImpId = null;
       return true;
@@ -366,7 +379,8 @@ export class SwitcherooSystem {
     deltaMs: number,
     bounds: RoomBounds,
     playerPosition: SimVector,
-    events: SwitcherooEvent[]
+    events: SwitcherooEvent[],
+    allies: readonly SimVector[]
   ): SimVector | null {
     enemy.phaseElapsedMs += deltaMs;
     enemy.hitFlashMs = Math.max(0, enemy.hitFlashMs - deltaMs);
@@ -386,7 +400,7 @@ export class SwitcherooSystem {
     }
 
     if (enemy.phase === 'skitter' || enemy.phase === 'cooldown') {
-      this.moveSkitter(enemy, deltaMs, bounds);
+      this.moveSkitter(enemy, deltaMs, bounds, allies);
 
       if (enemy.phaseElapsedMs >= enemy.phaseDurationMs || this.forceSwapRequested) {
         const wasForced = this.forceSwapRequested;
@@ -395,7 +409,7 @@ export class SwitcherooSystem {
 
         if (enemy.phase === 'cooldown' && !wasForced) {
           this.enterPhase(enemy, 'skitter');
-        } else if (this.pickTarget(enemy, playerPosition)) {
+        } else if (this.pickTarget(enemy, playerPosition, allies)) {
           this.enterPhase(enemy, 'windup');
 
           const targetPosition = enemy.targetingPlayer
@@ -444,38 +458,58 @@ export class SwitcherooSystem {
       return from;
     }
 
-    const sibling = this.enemies.get(enemy.targetImpId ?? -1);
-
-    if (!sibling) {
-      events.push({ type: 'switcheroo-fizzle', id: enemy.id, position: copyVector(enemy.position) });
-      this.enterPhase(enemy, 'cooldown');
-
-      return null;
-    }
-
-    enemy.position = copyVector(sibling.position);
-    sibling.position = from;
-    enemy.sinceSwapMs = 0;
-    sibling.sinceSwapMs = 0;
-    events.push({
-      type: 'switcheroo-swapped',
-      id: enemy.id,
-      fromPosition: from,
-      toPosition: copyVector(enemy.position),
-      targetingPlayer: false
-    });
+    // Unreachable since targets are always the player now, but keep the
+    // fizzle as a safe fallback.
+    events.push({ type: 'switcheroo-fizzle', id: enemy.id, position: copyVector(enemy.position) });
     this.enterPhase(enemy, 'cooldown');
 
     return null;
   }
 
-  private moveSkitter(enemy: SwitcherooEnemy, deltaMs: number, bounds: RoomBounds) {
+  private moveSkitter(
+    enemy: SwitcherooEnemy,
+    deltaMs: number,
+    bounds: RoomBounds,
+    allies: readonly SimVector[]
+  ) {
     if (!enemy.waypoint || distance(enemy.position, enemy.waypoint) < 12) {
+      // Camp the thickest crowd: pick the monster with the most company.
+      const crowd = [
+        ...allies,
+        ...Array.from(this.enemies.values())
+          .filter((other) => other.id !== enemy.id)
+          .map((other) => other.position)
+      ];
+      let best: SimVector | null = null;
+      let bestScore = -1;
+
+      for (const candidate of crowd) {
+        let score = 0;
+
+        for (const other of crowd) {
+          if (other !== candidate && distance(candidate, other) <= CLUSTER_RADIUS) {
+            score += 1;
+          }
+        }
+
+        score += Math.random() * 0.5; // tie-break wobble
+
+        if (score > bestScore) {
+          bestScore = score;
+          best = candidate;
+        }
+      }
+
       enemy.waypoint = clampPositionToBounds(
-        {
-          x: enemy.position.x + (Math.random() - 0.5) * 220,
-          y: enemy.position.y + (Math.random() - 0.5) * 180
-        },
+        best
+          ? {
+              x: best.x + (Math.random() - 0.5) * 90,
+              y: best.y + (Math.random() - 0.5) * 70
+            }
+          : {
+              x: enemy.position.x + (Math.random() - 0.5) * 220,
+              y: enemy.position.y + (Math.random() - 0.5) * 180
+            },
         bounds
       );
     }

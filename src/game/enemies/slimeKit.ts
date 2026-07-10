@@ -42,6 +42,10 @@ export class SlimeKit implements EnemyKit {
     });
   }
 
+  getEnemyPositions(): readonly SimVector[] {
+    return this.system.getActiveEnemies().map((enemy) => enemy.position);
+  }
+
   hasEncounterStarted(): boolean {
     return this.system.hasEncounterStarted();
   }

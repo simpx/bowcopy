@@ -442,6 +442,19 @@ export class CombatRoomScene extends Phaser.Scene {
           kit.damageArea?.(position, radius, damage);
         }
       },
+      getOtherEnemyPositions: (excludeKind) => {
+        const positions: SimVector[] = [];
+
+        for (const kit of this.enemyKits) {
+          if (kit.kinds.includes(excludeKind)) {
+            continue;
+          }
+
+          positions.push(...(kit.getEnemyPositions?.() ?? []));
+        }
+
+        return positions;
+      },
       teleportPlayer: (position) => {
         this.player.state.position.x = position.x;
         this.player.state.position.y = position.y;

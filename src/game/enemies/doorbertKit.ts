@@ -78,6 +78,14 @@ export class DoorbertKit implements EnemyKit {
     );
   }
 
+  getEnemyPositions(): readonly SimVector[] {
+    return [
+      ...this.system.getActiveDoors().map((door) => door.position),
+      ...this.ghostMinions.getActiveEnemies().map((minion) => minion.position),
+      ...this.gooberMinions.getActiveEnemies().map((minion) => minion.position)
+    ];
+  }
+
   /** For dispel effects when an embedding kit clears the door. */
   getDoorPositions(): SimVector[] {
     return this.system.getActiveDoors().map((door) => ({ ...door.position }));
