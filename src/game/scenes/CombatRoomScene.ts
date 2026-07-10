@@ -21,7 +21,7 @@ import {
 import { ArrowProjectileSystem, EnemyDartProjectileSystem, ShroomSporeProjectileSystem } from '../../sim/projectiles';
 import { CombatSfxDirector, preloadCombatSfx } from '../../audio/CombatSfxDirector';
 import { MusicDirector, preloadMusic } from '../../audio/MusicDirector';
-import { PauseScreen, ResultScreen, TitleScreen } from '../../ui/RunScreens';
+import { LowHealthVignette, MenuButton, MenuScreen, ResultScreen, TitleScreen, mountPortraitHint } from '../../ui/RunScreens';
 import {
   OPPOSITE_DOOR_SIDE,
   ROOM_THEME_NAMES,
@@ -123,7 +123,10 @@ export class CombatRoomScene extends Phaser.Scene {
   private roomsCleared = 0;
   private titleScreen?: TitleScreen;
   private resultScreen?: ResultScreen;
-  private pauseScreen?: PauseScreen;
+  private menuScreen?: MenuScreen;
+  private menuButton?: MenuButton;
+  private vignette?: LowHealthVignette;
+  private muted = false;
   private heartDrops: { x: number; y: number; bornMs: number }[] = [];
   private heartDropGraphics?: Phaser.GameObjects.Graphics;
   private readonly handleRunKeydown = (event: KeyboardEvent) => {
@@ -269,10 +272,34 @@ export class CombatRoomScene extends Phaser.Scene {
       return;
     }
 
+    this.muted = window.localStorage.getItem('bowcopy-muted') === '1';
+    this.game.sound.mute = this.muted;
     this.resultScreen = new ResultScreen(parent);
-    this.pauseScreen = new PauseScreen(parent);
-    this.pauseScreen.onTap(() => {
-      if (this.paused) {
+    this.vignette = new LowHealthVignette(parent);
+    mountPortraitHint(parent);
+    this.menuScreen = new MenuScreen(parent, this.muted, {
+      onResume: () => {
+        if (this.paused) {
+          this.togglePause();
+        }
+      },
+      onAbandon: () => {
+        if (this.paused) {
+          this.togglePause();
+        }
+
+        this.resetRun();
+        this.startRun();
+      },
+      onToggleMute: () => {
+        this.muted = !this.muted;
+        this.game.sound.mute = this.muted;
+        window.localStorage.setItem('bowcopy-muted', this.muted ? '1' : '0');
+        return this.muted;
+      }
+    });
+    this.menuButton = new MenuButton(parent, () => {
+      if (this.gameStarted && this.runPhase === 'playing') {
         this.togglePause();
       }
     });
@@ -308,12 +335,12 @@ export class CombatRoomScene extends Phaser.Scene {
   }
 
   private togglePause() {
-    if (!this.gameStarted || this.runPhase !== 'playing' || !this.pauseScreen) {
+    if (!this.gameStarted || this.runPhase !== 'playing' || !this.menuScreen) {
       return;
     }
 
     this.paused = !this.paused;
-    this.pauseScreen.setVisible(this.paused);
+    this.menuScreen.setVisible(this.paused);
 
     if (this.paused) {
       this.pausedAtMs = Date.now();
@@ -393,6 +420,10 @@ export class CombatRoomScene extends Phaser.Scene {
 
     this.updateSheepBleats(time, playerFrame.state.hexedMs);
     this.updateHeartDrops(time, playerFrame.state.position);
+    this.vignette?.setActive(this.runPhase === 'playing' && this.playerHealth.state.current <= 1);
+    this.touchOverlay?.setDodgeCooldown(
+      playerFrame.state.dodge.cooldownMs / (playerFrame.state.hexedMs > 0 ? 760 : 680)
+    );
     this.bossHud?.update(bossStatus);
 
     const enemyDartEvents = this.enemyDarts.update(
@@ -941,6 +972,7 @@ export class CombatRoomScene extends Phaser.Scene {
     this.placePlayerAtEntry(OPPOSITE_DOOR_SIDE[exitSide]);
     this.startCombatInCurrentRoomIfNeeded();
     this.centerCameraOnRoom();
+    this.cameras.main.fadeIn(170, 8, 4, 16);
   }
 
 
@@ -1232,6 +1264,10 @@ export class CombatRoomScene extends Phaser.Scene {
 
     this.runPhase = 'defeat';
     this.runEndMs = Date.now();
+    // Bowbert keels over; a soft moan as they come undone.
+    this.playerRenderer?.playDefeat(this.time.now);
+    this.sfx?.playEnemyDeath(this.player.state.position, 'ghost');
+    this.feedbackRenderer?.playEnemyDeath(this.player.state.position);
     this.feedbackRenderer?.playAnnouncement('YOU CAME UNDONE', this.currentRoomDefinition.bounds, 'damage');
     this.music?.stop(1400);
     this.cameras.main.fadeOut(1700, 8, 4, 16);
@@ -1280,6 +1316,12 @@ export class CombatRoomScene extends Phaser.Scene {
       (room) => room.kind === 'normal' || room.kind === 'boss'
     ).length;
 
+    if (victory) {
+      this.sfx?.playVictoryJingle();
+    } else {
+      this.sfx?.playDefeatJingle();
+    }
+
     this.resultScreen?.show(
       {
         victory,
@@ -1295,6 +1337,11 @@ export class CombatRoomScene extends Phaser.Scene {
       () => {
         this.resetRun();
         this.startRun();
+      },
+      () => {
+        this.resetRun();
+        this.gameStarted = false;
+        this.titleScreen?.show();
       }
     );
   }
@@ -1306,7 +1353,9 @@ export class CombatRoomScene extends Phaser.Scene {
     this.roomsCleared = 0;
     this.heartDrops = [];
     this.paused = false;
-    this.pauseScreen?.setVisible(false);
+    this.menuScreen?.setVisible(false);
+    this.playerRenderer?.resetDefeat();
+    this.vignette?.setActive(false);
     this.runSeed = this.pinnedSeed || randomRunSeed();
     this.runStartMs = Date.now();
     this.runEndMs = 0;
@@ -1355,8 +1404,12 @@ export class CombatRoomScene extends Phaser.Scene {
     this.titleScreen = undefined;
     this.resultScreen?.destroy();
     this.resultScreen = undefined;
-    this.pauseScreen?.destroy();
-    this.pauseScreen = undefined;
+    this.menuScreen?.destroy();
+    this.menuScreen = undefined;
+    this.menuButton?.destroy();
+    this.menuButton = undefined;
+    this.vignette?.destroy();
+    this.vignette = undefined;
     this.heartDropGraphics?.destroy();
     this.heartDropGraphics = undefined;
     this.music?.destroy();

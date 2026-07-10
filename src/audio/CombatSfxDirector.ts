@@ -41,7 +41,10 @@ export const COMBAT_SFX_KEYS = [
   'enemy_hit_metal',
   'explosion_small',
   'enemy_hit_magic',
-  'enemy_death_magic'
+  'enemy_death_magic',
+  'jingle_victory',
+  'jingle_defeat',
+  'boss_down_sting'
 ] as const;
 
 /** What an enemy is made of — picks its hit/death samples. */
@@ -232,6 +235,18 @@ const COMBAT_SFX_ASSETS: readonly CombatSfxAsset[] = [
   {
     key: 'enemy_death_magic',
     url: new URL('../../assets/audio/sfx/game/enemy_death_magic.ogg', import.meta.url).href
+  },
+  {
+    key: 'jingle_victory',
+    url: new URL('../../assets/audio/sfx/game/jingle_victory.ogg', import.meta.url).href
+  },
+  {
+    key: 'jingle_defeat',
+    url: new URL('../../assets/audio/sfx/game/jingle_defeat.ogg', import.meta.url).href
+  },
+  {
+    key: 'boss_down_sting',
+    url: new URL('../../assets/audio/sfx/game/boss_down_sting.ogg', import.meta.url).href
   }
 ];
 
@@ -541,7 +556,10 @@ const CUE_PROFILES: Partial<Record<CombatSfxKey, Partial<CueProfile>>> = {
     detuneJitter: 15,
     rateJitter: 0.01,
     cooldownMs: 600
-  }
+  },
+  jingle_victory: { volume: 0.34, volumeJitter: 0, detuneJitter: 0, rateJitter: 0, cooldownMs: 2000 },
+  jingle_defeat: { volume: 0.3, volumeJitter: 0, detuneJitter: 0, rateJitter: 0, cooldownMs: 2000 },
+  boss_down_sting: { volume: 0.34, volumeJitter: 0, detuneJitter: 0, rateJitter: 0, cooldownMs: 1500 }
 };
 
 export function preloadCombatSfx(scene: Phaser.Scene): void {
@@ -635,6 +653,18 @@ export class CombatSfxDirector {
 
   playSporeBreak(pos: SimVector): void {
     this.play('spore_break', { force: 0.46, pos });
+  }
+
+  playVictoryJingle(): void {
+    this.play('jingle_victory', { force: 1 });
+  }
+
+  playDefeatJingle(): void {
+    this.play('jingle_defeat', { force: 1 });
+  }
+
+  playBossDownSting(pos: SimVector): void {
+    this.play('boss_down_sting', { force: 1, pos });
   }
 
   playPickup(pos: SimVector): void {

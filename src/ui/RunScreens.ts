@@ -130,6 +130,74 @@ const RUN_SCREEN_STYLES = `
 .run-hearts { font-size: 20px; letter-spacing: 0.2em; }
 
 .run-footer { color: #4d6355; font-size: 11px; letter-spacing: 0.25em; margin-top: 4px; }
+
+.run-menu { display: flex; flex-direction: column; gap: 12px; align-items: stretch; min-width: 220px; }
+
+.run-menu-row { display: flex; gap: 12px; }
+
+.run-button.secondary {
+  background: linear-gradient(180deg, #2b4433, #16241a);
+  color: #d8e8dc;
+  font-size: 14px;
+  letter-spacing: 0.18em;
+}
+
+.run-menu-fab {
+  position: absolute;
+  top: 10px;
+  right: 46px;
+  z-index: 55;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #2b4433;
+  background: rgb(13 22 16 / 82%);
+  color: #8faa96;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.run-menu-fab.hidden { display: none; }
+
+.run-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  box-shadow: inset 0 0 90px 24px rgb(214 40 57 / 55%);
+  animation: vignette-pulse 0.9s ease-in-out infinite alternate;
+}
+
+.run-vignette.hidden { display: none; }
+
+@keyframes vignette-pulse {
+  from { opacity: 0.35; }
+  to { opacity: 0.9; }
+}
+
+@media (orientation: portrait) {
+  .portrait-hint { display: flex !important; }
+}
+
+.portrait-hint {
+  position: fixed;
+  inset: 0;
+  z-index: 98;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgb(5 8 6 / 96%);
+  color: #d8e8dc;
+  font-size: 16px;
+  letter-spacing: 0.2em;
+}
+
+.portrait-hint span { font-size: 44px; animation: rotate-hint 1.6s ease-in-out infinite; }
+
+@keyframes rotate-hint { 0%, 20% { transform: rotate(0); } 60%, 100% { transform: rotate(90deg); } }
 `;
 
 export interface RunResult {
@@ -204,6 +272,10 @@ export class TitleScreen {
     this.root.classList.add('hidden');
   }
 
+  show() {
+    this.root.classList.remove('hidden');
+  }
+
   destroy() {
     this.root.remove();
   }
@@ -213,6 +285,7 @@ export class TitleScreen {
 export class ResultScreen {
   private readonly root: HTMLDivElement;
   private onRestart?: () => void;
+  private onBackToTitle?: () => void;
 
   constructor(parent: HTMLElement) {
     ensureStyles();
@@ -221,8 +294,9 @@ export class ResultScreen {
     parent.append(this.root);
   }
 
-  show(result: RunResult, onRestart: () => void) {
+  show(result: RunResult, onRestart: () => void, onBackToTitle?: () => void) {
     this.onRestart = onRestart;
+    this.onBackToTitle = onBackToTitle;
 
     const hearts =
       '❤'.repeat(Math.floor(result.heartsLeft)) +
@@ -243,15 +317,26 @@ export class ResultScreen {
         </div>
         <div class="run-footer">SEED · ${result.seed.toUpperCase()}</div>
       </div>
-      <button class="run-button">再来一局</button>
+      <div class="run-menu-row">
+        <button class="run-button" data-action="again">再来一局</button>
+        <button class="run-button secondary" data-action="title">回标题 · 换种子</button>
+      </div>
     `;
 
-    const button = this.root.querySelector('button') as HTMLButtonElement;
-
-    button.addEventListener('click', () => {
-      this.hide();
-      this.onRestart?.();
-    });
+    (this.root.querySelector('[data-action="again"]') as HTMLButtonElement).addEventListener(
+      'click',
+      () => {
+        this.hide();
+        this.onRestart?.();
+      }
+    );
+    (this.root.querySelector('[data-action="title"]') as HTMLButtonElement).addEventListener(
+      'click',
+      () => {
+        this.hide();
+        this.onBackToTitle?.();
+      }
+    );
     this.root.classList.remove('hidden');
   }
 
@@ -264,18 +349,67 @@ export class ResultScreen {
   }
 }
 
-/** Minimal pause veil (ESC or backgrounding). */
-export class PauseScreen {
-  private readonly root: HTMLDivElement;
+export interface MenuActions {
+  readonly onResume: () => void;
+  readonly onAbandon: () => void;
+  readonly onToggleMute: () => boolean;
+}
 
-  constructor(parent: HTMLElement) {
+/** In-run menu (ESC / gear button): resume, abandon, sound toggle. */
+export class MenuScreen {
+  private readonly root: HTMLDivElement;
+  private readonly muteButton: HTMLButtonElement;
+
+  constructor(parent: HTMLElement, muted: boolean, actions: MenuActions) {
     ensureStyles();
     this.root = document.createElement('div');
     this.root.className = 'run-screen hidden';
     this.root.innerHTML = `
       <div class="run-title" style="font-size:clamp(26px,5vw,44px)">PAUSED</div>
-      <div class="run-sub">按 ESC 或点击继续</div>
+      <div class="run-menu">
+        <button class="run-button" data-action="resume">继 续</button>
+        <button class="run-button secondary" data-action="mute"></button>
+        <button class="run-button secondary" data-action="abandon">放弃本局</button>
+      </div>
+      <div class="run-sub">ESC 关闭菜单</div>
     `;
+    this.muteButton = this.root.querySelector('[data-action="mute"]') as HTMLButtonElement;
+    this.setMuted(muted);
+    (this.root.querySelector('[data-action="resume"]') as HTMLButtonElement).addEventListener(
+      'click',
+      () => actions.onResume()
+    );
+    (this.root.querySelector('[data-action="abandon"]') as HTMLButtonElement).addEventListener(
+      'click',
+      () => actions.onAbandon()
+    );
+    this.muteButton.addEventListener('click', () => this.setMuted(actions.onToggleMute()));
+    parent.append(this.root);
+  }
+
+  private setMuted(muted: boolean) {
+    this.muteButton.textContent = muted ? '🔇 声音:关' : '🔊 声音:开';
+  }
+
+  setVisible(visible: boolean) {
+    this.root.classList.toggle('hidden', !visible);
+  }
+
+  destroy() {
+    this.root.remove();
+  }
+}
+
+/** Floating gear button that opens the menu (the mobile ESC). */
+export class MenuButton {
+  private readonly root: HTMLButtonElement;
+
+  constructor(parent: HTMLElement, onTap: () => void) {
+    ensureStyles();
+    this.root = document.createElement('button');
+    this.root.className = 'run-menu-fab';
+    this.root.textContent = '⚙';
+    this.root.addEventListener('click', onTap);
     parent.append(this.root);
   }
 
@@ -283,11 +417,38 @@ export class PauseScreen {
     this.root.classList.toggle('hidden', !visible);
   }
 
-  onTap(handler: () => void) {
-    this.root.addEventListener('click', handler);
+  destroy() {
+    this.root.remove();
+  }
+}
+
+/** Low-health vignette: pulsing red edges at <=1 heart. */
+export class LowHealthVignette {
+  private readonly root: HTMLDivElement;
+
+  constructor(parent: HTMLElement) {
+    ensureStyles();
+    this.root = document.createElement('div');
+    this.root.className = 'run-vignette hidden';
+    parent.append(this.root);
+  }
+
+  setActive(active: boolean) {
+    this.root.classList.toggle('hidden', !active);
   }
 
   destroy() {
     this.root.remove();
   }
 }
+
+/** Fullscreen 'rotate your phone' veil, visible only in portrait. */
+export const mountPortraitHint = (parent: HTMLElement) => {
+  const hint = document.createElement('div');
+
+  hint.className = 'portrait-hint';
+  hint.innerHTML = '<span>📱</span><div>横屏体验更佳 · 请旋转设备</div>';
+  parent.append(hint);
+
+  return hint;
+};

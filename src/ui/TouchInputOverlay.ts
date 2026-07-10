@@ -303,6 +303,7 @@ export class TouchInputOverlay {
   private readonly leftJoystick: VirtualJoystick;
   private readonly rightJoystick: VirtualJoystick;
   private readonly dodgeButton = document.createElement('button');
+  private readonly dodgeCooldownVeil = document.createElement('span');
 
   constructor(parent: HTMLElement, input: InputController) {
     ensureTouchInputStyles();
@@ -324,6 +325,11 @@ export class TouchInputOverlay {
     this.dodgeButton.textContent = TOUCH_COPY.dodge;
     this.dodgeButton.setAttribute('aria-label', TOUCH_COPY.dodge);
     this.dodgeButton.addEventListener('pointerdown', this.handleDodgePointerDown);
+    this.dodgeCooldownVeil.style.cssText =
+      'position:absolute;inset:0;border-radius:inherit;pointer-events:none;';
+    this.dodgeButton.style.position = 'relative';
+    this.dodgeButton.style.overflow = 'hidden';
+    this.dodgeButton.append(this.dodgeCooldownVeil);
 
     rightCluster.append(this.dodgeButton, right.root);
     this.root.append(left.root, aimZone, rightCluster);
@@ -351,6 +357,16 @@ export class TouchInputOverlay {
     });
 
     this.handleDodge = () => input.emitDodge('touch');
+  }
+
+  /** Radial sweep on the dodge button while the tumble recharges. */
+  setDodgeCooldown(fraction: number) {
+    const clamped = Math.min(1, Math.max(0, fraction));
+
+    this.dodgeCooldownVeil.style.background =
+      clamped <= 0
+        ? 'none'
+        : `conic-gradient(rgb(5 8 6 / 62%) ${clamped * 360}deg, transparent 0deg)`;
   }
 
   dispose() {

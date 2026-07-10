@@ -66,6 +66,7 @@ export class BowbertRenderer {
   private bow?: Phaser.GameObjects.Image;
   private readonly ghosts: GhostAfterimage[] = [];
   private ghostMs = 0;
+  private defeatStartMs: number | null = null;
 
   constructor(private readonly scene: Phaser.Scene) {}
 
@@ -102,8 +103,30 @@ export class BowbertRenderer {
     this.container.setDepth(80);
   }
 
+  /** Defeat pose: Bowbert keels over and dims while the room fades. */
+  playDefeat(timeMs: number) {
+    this.defeatStartMs = timeMs;
+  }
+
+  resetDefeat() {
+    this.defeatStartMs = null;
+
+    this.container?.setRotation(0);
+    this.container?.setAlpha(1);
+  }
+
   update(timeMs: number, deltaMs: number, state: BowbertPlayerState) {
     if (!this.container || !this.body || !this.bow || !this.shadow) {
+      return;
+    }
+
+    if (this.defeatStartMs !== null) {
+      const progress = Math.min(1, (timeMs - this.defeatStartMs) / 550);
+      const eased = 1 - (1 - progress) ** 2;
+
+      this.container.setPosition(state.position.x, state.position.y + eased * 8);
+      this.container.setRotation((Math.PI / 2) * eased);
+      this.container.setAlpha(1 - eased * 0.35);
       return;
     }
 

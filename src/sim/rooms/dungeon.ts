@@ -172,6 +172,10 @@ const generateBlueprintRows = (seed: string): readonly string[] | null => {
 export function createInitialDungeonState(seed = 'bowbert'): DungeonState {
   const blueprint = createDungeonBlueprint(seed);
   const rooms = new Map<string, DungeonRoomState>();
+  // Same seed, same fight sizes: each encounter budget wobbles by -1/0/+1.
+  const budgetRandom = mulberry32(hashSeed(`${seed}:budgets`));
+  const jitterBudget = (budget: number): number =>
+    Math.max(2, budget + Math.floor(budgetRandom() * 3) - 1);
 
   for (let y = 0; y < blueprint.rows.length; y += 1) {
     const row = blueprint.rows[y];
@@ -184,8 +188,12 @@ export function createInitialDungeonState(seed = 'bowbert'): DungeonState {
       const id = dungeonRoomId(x, y);
       const { kind, theme } = roomSpec;
       const depth = Math.abs(x - blueprint.start.x) + Math.abs(y - blueprint.start.y);
+      const encounters = roomSpec.encounters?.map((entry) => ({
+        kind: entry.kind,
+        budget: jitterBudget(entry.budget)
+      }));
       const enemyBudget =
-        roomSpec.encounters?.reduce((sum, entry) => sum + entry.budget, 0) ??
+        encounters?.reduce((sum, entry) => sum + entry.budget, 0) ??
         roomSpec.budget ??
         enemyBudgetForRoom(kind, depth, theme);
       const phase: RoomPhase = kind === 'start' || kind === 'wizard' ? 'cleared' : 'open';
@@ -201,7 +209,7 @@ export function createInitialDungeonState(seed = 'bowbert'): DungeonState {
         depth,
         enemyBudget,
         encounterKind: roomSpec.encounter,
-        encounters: roomSpec.encounters,
+        encounters,
         phase,
         wave: Math.max(1, depth),
         remainingSpawnMarkers: 0,

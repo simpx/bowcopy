@@ -53,6 +53,17 @@ export class ArrowProjectileRenderer {
           ageMs: 0,
           durationMs: IMPACT_DURATION_MS
         });
+        continue;
+      }
+
+      // Max range reached: the arrow falters — same dust language as a
+      // wall hit, slightly softer, so the range cap reads as intentional.
+      if (event.type === 'arrow-expired') {
+        this.impacts.push({
+          position: event.position,
+          ageMs: 0,
+          durationMs: IMPACT_DURATION_MS * 0.7
+        });
       }
     }
   }
