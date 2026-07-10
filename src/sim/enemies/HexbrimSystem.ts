@@ -14,7 +14,7 @@ import type { RoomBounds, RoomSpawnPoint } from '../rooms';
  *   player morph is an open item).
  * - teleport: vanishes into a portal, reappears elsewhere (invulnerable
  *   while gone).
- * - waves (Crossed Flames): stands still and sends ONE slow ring outward
+ * - waves (Crossed Flames): stands still and sends ONE ring outward
  *   that then contracts back — outrun it, or dash through and punish the
  *   stationary witch during the full out-and-back cycle. Ring that
  *   burn on contact for several seconds (area denial).
@@ -125,8 +125,8 @@ const HEX_ORB_LIFE_MS = 4500;
 const HEX_ORB_RADIUS = 20;
 const HEX_ORB_CATCH_RADIUS = 34;
 const FIRECAST_TELEGRAPH_MS = 500;
-const WAVE_SPEED = 125;
-const WAVE_SPEED_PHASE3 = 140;
+const WAVE_SPEED = 205;
+const WAVE_SPEED_PHASE3 = 230;
 const WAVE_BAND = 18;
 const WAVE_DAMAGE = 1;
 const WAVE_MAX_RADIUS = 360;
