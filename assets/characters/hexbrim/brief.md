@@ -1,11 +1,12 @@
 ---
-status: rigged
+status: playtested
 kind: enemy
 projectContext: bowbert
 lockedReference: source/reference-01.png
 sourceReferences:
   - source/reference-01.png
 openItems:
+  - 2026-07-10 用户完整通关验证(标题→7房→boss→结算),手感确认无问题。
   - INTEGRATED (kit + workbench slot + /?encounter=hexbrim). Review aids: 强制弹幕/咒术/巫火/传送/分身/召唤 buttons; Bowbert card has 变羊4秒. Boss HP bar shows in-game. Status stays rigged pending human review.
   - Boss HP 64 / cadence / phase thresholds are first-pass numbers for review.
   - Boss room presentation (intro beat, health bar?) is future gameplay work.

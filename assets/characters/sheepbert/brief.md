@@ -1,11 +1,12 @@
 ---
-status: rigged
+status: playtested
 kind: player-form
 projectContext: bowbert
 lockedReference: source/reference-01.png
 sourceReferences:
   - source/reference-01.png
 openItems:
+  - 2026-07-10 用户完整通关验证(标题→7房→boss→结算),手感确认无问题。
   - Tune sheep waddle feel and hex duration alongside Hexbrim balancing.
   - Decide whether i-frames should also dodge the hex circle edge cases.
 ---

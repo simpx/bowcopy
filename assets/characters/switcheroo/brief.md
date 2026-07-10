@@ -1,5 +1,5 @@
 ---
-status: rigged
+status: playtested
 kind: enemy
 projectContext: bowbert
 lockedReference: source/reference-01.png
@@ -7,6 +7,7 @@ sourceReferences:
   - source/reference-01.png
   - source/candidate-02.png
 openItems:
+  - 2026-07-10 用户完整通关验证(标题→7房→boss→结算),手感确认无问题。
   - INTEGRATED (kit + workbench slot + /?encounter=switcheroo). Review aids: 强制交换 button; in workbench the "player" endpoint is the review cursor. Status stays rigged pending human workbench review.
   - Tune swap cadence, telegraph duration, ambush radius (150) and cluster seeking after the 2026-07-10 ambush redesign.
 ---

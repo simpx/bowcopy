@@ -1,5 +1,5 @@
 ---
-status: rigged
+status: playtested
 kind: enemy
 projectContext: bowbert
 lockedReference: source/reference-01.png
@@ -7,6 +7,7 @@ sourceReferences:
   - source/reference-01.png
   - source/candidate-02.png
 openItems:
+  - 2026-07-10 用户完整通关验证(标题→7房→boss→结算),手感确认无问题。
   - INTEGRATED (kit + workbench slot + /?encounter=doorbert). Review aids: 强制开门 button; keylets chase the cursor. Status stays rigged pending human workbench review.
   - Keylet (the spawned minion) is a second character folder in the same kit (slime-parent -> slime precedent); design it after the door is locked.
   - Portal effect is a shared VFX module (doorbert spawns + switcheroo endpoints); design its palette once.

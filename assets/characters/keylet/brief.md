@@ -6,6 +6,7 @@ lockedReference: source/reference-01.png
 sourceReferences:
   - source/reference-01.png
 openItems:
+  - 2026-07-10 从战斗中退役(门怪改放普通怪);资产保留为展示位,不再有接入计划。
   - INTEGRATED inside the Doorbert kit (no own workbench slot; reviewed in the Doorbert cell). Status stays rigged pending human workbench review.
   - Tune chase speed, bite cadence, and cap alongside Doorbert encounter balancing.
 ---
