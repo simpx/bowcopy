@@ -208,7 +208,7 @@
       "hitScaleY": 0.05
     },
     "explosion": {
-      "radius": 92,
+      "radius": 150,
       "countdownMs": 760,
       "damage": 1
     }
