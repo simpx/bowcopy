@@ -271,3 +271,7 @@ OpenGameArt notes that this sound is a mixture of these qubodup submissions:
 - `enemy_death_magic.ogg` — "Ghost/Monster Voice: Moaning & Growling" by qubodup — https://opengameart.org/content/ghost-monster-voice-moaning-growling
 
 - `music/combat_loop.ogg` (v2) — "8-bit Battle Loop" by Wolfgang_ — https://opengameart.org/content/8-bit-battle-loop — CC0 (replaces Dungeon 01)
+
+### Creative Commons Attribution 3.0 (complete-game polish, 2026-07-10)
+
+- `jingle_victory.ogg`, `jingle_defeat.ogg`, `boss_down_sting.ogg` — "Fantasy Sound Effects Library" by Little Robot Sound Factory (www.littlerobotsoundfactory.com) — https://opengameart.org/content/fantasy-sound-effects-library — CC-BY 3.0

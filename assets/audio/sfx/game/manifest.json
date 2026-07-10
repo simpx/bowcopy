@@ -452,6 +452,42 @@
       "license": "CC0",
       "clipFrom": "assets/audio/.cache/oga-ghost-monster-voice/unz/qubodup-GhostMoans/wav/qubodup-GhostMoan01.wav",
       "selectedVia": "audition-v3 round 2 (2026-07-09)"
+    },
+    "jingle_victory": {
+      "file": "assets/audio/sfx/game/jingle_victory.ogg",
+      "status": "selected",
+      "usage": "Run victory jingle (result card).",
+      "playback": "Play once.",
+      "sourceId": "oga-fantasy-sound-effects-library",
+      "source": "Fantasy Sound Effects Library",
+      "author": "Little Robot Sound Factory",
+      "license": "CC-BY 3.0",
+      "clipFrom": "assets/audio/.cache/oga-fantasy-sound-effects-library/unz/Fantasy Sound Library/Wav/Jingle_Win_00.wav",
+      "selectedVia": "complete-game polish (2026-07-10)"
+    },
+    "jingle_defeat": {
+      "file": "assets/audio/sfx/game/jingle_defeat.ogg",
+      "status": "selected",
+      "usage": "Run defeat jingle (result card).",
+      "playback": "Play once.",
+      "sourceId": "oga-fantasy-sound-effects-library",
+      "source": "Fantasy Sound Effects Library",
+      "author": "Little Robot Sound Factory",
+      "license": "CC-BY 3.0",
+      "clipFrom": "assets/audio/.cache/oga-fantasy-sound-effects-library/unz/Fantasy Sound Library/Wav/Jingle_Lose_00.wav",
+      "selectedVia": "complete-game polish (2026-07-10)"
+    },
+    "boss_down_sting": {
+      "file": "assets/audio/sfx/game/boss_down_sting.ogg",
+      "status": "selected",
+      "usage": "Hexbrim killed sting.",
+      "playback": "Play once.",
+      "sourceId": "oga-fantasy-sound-effects-library",
+      "source": "Fantasy Sound Effects Library",
+      "author": "Little Robot Sound Factory",
+      "license": "CC-BY 3.0",
+      "clipFrom": "assets/audio/.cache/oga-fantasy-sound-effects-library/unz/Fantasy Sound Library/Wav/Jingle_Achievement_00.wav",
+      "selectedVia": "complete-game polish (2026-07-10)"
     }
   },
   "backups": {
