@@ -46,6 +46,10 @@ export class SlimeKit implements EnemyKit {
     return this.system.getActiveEnemies().map((enemy) => enemy.position);
   }
 
+  damageArea(position: SimVector, radius: number, damage: number) {
+    this.system.queueAreaDamage(position, radius, damage);
+  }
+
   hasEncounterStarted(): boolean {
     return this.system.hasEncounterStarted();
   }

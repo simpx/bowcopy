@@ -123,8 +123,9 @@ export class KaboomletKit implements EnemyKit {
         sfx?.playExplosion(event.position);
         feedback?.playEnemyDeath(event.position);
         this.services.damagePlayerFromRadius(event.position, event.radius, event.damage);
-        // Bombs don't take sides: the blast hurts monsters too.
-        this.services.damageEnemiesFromRadius(event.position, event.radius, event.damage);
+        // Bombs don't take sides — and they hit monsters twice as hard,
+        // so a well-placed detonation clears a crowd.
+        this.services.damageEnemiesFromRadius(event.position, event.radius, event.damage * 2);
         this.services.shakeCamera('damage');
         continue;
       }

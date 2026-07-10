@@ -91,7 +91,7 @@ export class HexbrimKit implements EnemyKit {
       deltaMs,
       show ? this.system.getActiveEntities() : [],
       show ? this.system.getActiveHexOrbs() : [],
-      show ? this.system.getActiveFirePatches() : []
+      show ? this.system.getActiveWaves() : []
     );
 
     return [...frame.consumedArrowIds, ...doorConsumed];
@@ -108,7 +108,7 @@ export class HexbrimKit implements EnemyKit {
       deltaMs,
       this.system.getActiveEntities(),
       this.system.getActiveHexOrbs(),
-      this.system.getActiveFirePatches()
+      this.system.getActiveWaves()
     );
   }
 
@@ -116,7 +116,7 @@ export class HexbrimKit implements EnemyKit {
     if (
       effect === 'volley' ||
       effect === 'hexcast' ||
-      effect === 'witchfire' ||
+      effect === 'waves' ||
       effect === 'teleport' ||
       effect === 'clones' ||
       effect === 'summon'
@@ -159,10 +159,9 @@ export class HexbrimKit implements EnemyKit {
         continue;
       }
 
-      if (event.type === 'hexbrim-witchfire') {
-        if (event.positions.length > 0) {
-          sfx?.playWitchfireIgnite(event.positions[0]);
-        }
+      if (event.type === 'hexbrim-waves') {
+        sfx?.playWitchfireIgnite(event.origin);
+        this.services.shakeCamera('damage');
         continue;
       }
 
@@ -222,18 +221,16 @@ export class HexbrimKit implements EnemyKit {
         continue;
       }
 
-      if (event.type === 'hexbrim-witchfire-burn') {
+      if (event.type === 'hexbrim-wave-hit') {
         this.services.damagePlayer(event.position, event.damage);
         continue;
       }
 
       if (event.type === 'hexbrim-ritual-complete') {
-        // The finished ritual detonates the whole arena; a well-timed
-        // tumble (i-frames) is the only out — damagePlayer respects it.
-        feedback?.playAnnouncement('TOO SLOW', bounds, 'damage');
-        sfx?.playRitualBlast(this.services.getPlayerPosition());
-        this.services.flashCamera?.(420, 210, 40, 60);
-        this.services.damagePlayer(this.services.getPlayerPosition(), event.damage);
+        // The finished ritual mends the witch: break it next time.
+        feedback?.playAnnouncement('THE RITUAL COMPLETES', bounds, 'damage');
+        sfx?.playRitualBlast(event.position);
+        this.services.flashCamera?.(420, 120, 60, 170);
         this.services.shakeCamera('damage');
         continue;
       }

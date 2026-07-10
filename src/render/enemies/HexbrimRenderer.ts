@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 import hexbrimBaseUrl from '../../../assets/characters/hexbrim/base.png';
 import { HEXBRIM_RIG } from '../../characters/hexbrimRig';
-import type { HexbrimEnemy, HexbrimEvent, HexbrimFirePatch, HexbrimHexOrb } from '../../sim/enemies';
+import type { HexbrimEnemy, HexbrimEvent, HexbrimHexOrb, HexbrimWave } from '../../sim/enemies';
 import { HOUSE_BURST_STYLE, ParticleBurstPool } from '../feedback/particleBurst';
 import { PortalEffectPool } from '../feedback/portalEffect';
 
@@ -58,11 +58,11 @@ export class HexbrimRenderer {
     deltaMs: number,
     entities: readonly HexbrimEnemy[],
     hexOrbs: readonly HexbrimHexOrb[],
-    firePatches: readonly HexbrimFirePatch[] = []
+    waves: readonly HexbrimWave[] = []
   ) {
     this.timeMs = timeMs;
     this.syncEntities(timeMs, entities);
-    this.drawHexes(hexOrbs, firePatches);
+    this.drawHexes(hexOrbs, waves);
     this.bursts.update(deltaMs);
     this.portals.update(deltaMs);
   }
@@ -86,10 +86,8 @@ export class HexbrimRenderer {
         continue;
       }
 
-      if (event.type === 'hexbrim-witchfire') {
-        for (const position of event.positions) {
-          this.bursts.emit(position, 5, [HEX_COLOR, 0xd8ffb0], 20, 52, 3.0, 180);
-        }
+      if (event.type === 'hexbrim-waves') {
+        this.bursts.emit(event.origin, 10, [HEX_COLOR, 0xd8ffb0], 24, 64, 3.4, 220);
         continue;
       }
 
@@ -228,7 +226,7 @@ export class HexbrimRenderer {
     const hover = Math.sin(entity.swayPhase) * (motion.hoverBob ?? 6);
     const sway = Math.sin(entity.swayPhase * 0.8) * (motion.swayTilt ?? 0.06);
     const telegraphShake =
-      entity.phase === 'volley' || entity.phase === 'hexcast' || entity.phase === 'firecast'
+      entity.phase === 'volley' || entity.phase === 'hexcast' || entity.phase === 'wavecast'
         ? Math.sin(timeMs * 0.11) * 2.2 * entity.telegraphProgress
         : entity.phase === 'channel'
           ? Math.sin(timeMs * 0.18) * 3.4 * (0.4 + entity.telegraphProgress * 0.6)
@@ -260,7 +258,7 @@ export class HexbrimRenderer {
     );
   }
 
-  private drawHexes(hexOrbs: readonly HexbrimHexOrb[], firePatches: readonly HexbrimFirePatch[]) {
+  private drawHexes(hexOrbs: readonly HexbrimHexOrb[], waves: readonly HexbrimWave[]) {
     const graphics = this.hexGraphics;
 
     if (!graphics) {
@@ -269,24 +267,21 @@ export class HexbrimRenderer {
 
     graphics.clear();
 
-    for (const patch of firePatches) {
-      const life = patch.lifeMs / patch.maxLifeMs;
-      const flicker = 0.75 + Math.sin(this.timeMs * 0.02 + patch.id) * 0.25;
-      const alpha = Math.min(1, life * 3) * flicker;
-
-      graphics.fillStyle(0x143a10, 0.5 * alpha);
-      graphics.fillEllipse(patch.position.x, patch.position.y, patch.radius * 2.2, patch.radius * 1.8);
-      graphics.fillStyle(HEX_COLOR, 0.55 * alpha);
-      graphics.fillEllipse(patch.position.x, patch.position.y, patch.radius * 1.6, patch.radius * 1.3);
-      graphics.fillStyle(0xd8ffb0, 0.6 * alpha);
-
-      for (let index = 0; index < 3; index += 1) {
-        const angle = this.timeMs * 0.004 + patch.id + (index * Math.PI * 2) / 3;
-        const fx = patch.position.x + Math.cos(angle) * patch.radius * 0.5;
-        const fy = patch.position.y + Math.sin(angle) * patch.radius * 0.4 - 6 * flicker;
-
-        graphics.fillEllipse(fx, fy, 8, 12 * flicker);
+    for (const wave of waves) {
+      if (wave.radius <= 0) {
+        continue;
       }
+
+      const fade = 1 - wave.radius / wave.maxRadius;
+      const pulse = 0.85 + Math.sin(this.timeMs * 0.02 + wave.id) * 0.15;
+
+      // Expanding shockwave ring: soft outer glow + crisp core line.
+      graphics.lineStyle(11, HEX_CORE_COLOR, 0.3 * fade);
+      graphics.strokeCircle(wave.origin.x, wave.origin.y, wave.radius);
+      graphics.lineStyle(5, HEX_COLOR, 0.75 * fade * pulse);
+      graphics.strokeCircle(wave.origin.x, wave.origin.y, wave.radius);
+      graphics.lineStyle(1.6, 0xd8ffb0, 0.85 * fade);
+      graphics.strokeCircle(wave.origin.x, wave.origin.y, wave.radius);
     }
 
     for (const orb of hexOrbs) {

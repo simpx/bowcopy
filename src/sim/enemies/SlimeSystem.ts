@@ -188,6 +188,14 @@ export class SlimeSystem {
   private encounterStarted = false;
   private encounterCleared = false;
 
+
+  private readonly pendingAreaDamage: { position: SimVector; radius: number; damage: number }[] = [];
+
+  /** External blast (kaboomlet etc.): applied at the start of the next update. */
+  queueAreaDamage(position: SimVector, radius: number, damage: number) {
+    this.pendingAreaDamage.push({ position: { x: position.x, y: position.y }, radius, damage });
+  }
+
   startEncounter(
     spawnPoints: readonly RoomSpawnPoint[],
     options: SlimeEncounterOptions = {}
@@ -215,6 +223,7 @@ export class SlimeSystem {
       return { events, consumedArrowIds: [] };
     }
 
+    this.applyPendingAreaDamage(events);
     this.updateSpawnQueue(deltaMs, events);
     this.applyArrowHits(arrows, events, consumedArrowIds);
 
@@ -561,4 +570,38 @@ export class SlimeSystem {
       events.push({ type: 'slime-spawned', id: child.id, role: child.role, position: copyVector(child.position) });
     }
   }
+  private applyPendingAreaDamage(events: SlimeEvent[]) {
+    if (this.pendingAreaDamage.length === 0) {
+      return;
+    }
+
+    const blasts = this.pendingAreaDamage.splice(0);
+
+    for (const enemy of Array.from(this.enemies.values())) {
+      for (const blast of blasts) {
+        const blastDistance = Math.hypot(
+          enemy.position.x - blast.position.x,
+          enemy.position.y - blast.position.y
+        );
+
+        if (blastDistance > blast.radius) {
+          continue;
+        }
+
+        enemy.hp -= blast.damage;
+        enemy.hitFlashMs = HIT_FLASH_MS;
+
+        if (enemy.hp <= 0) {
+          this.enemies.delete(enemy.id);
+          events.push({ type: 'slime-killed', id: enemy.id, role: enemy.role, position: copyVector(enemy.position) });
+
+          if (enemy.role === 'parent') {
+            this.spawnSplitChildren(enemy, events);
+          }
+          break;
+        }
+      }
+    }
+  }
+
 }

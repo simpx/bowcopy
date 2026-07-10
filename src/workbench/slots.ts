@@ -858,7 +858,7 @@ class HexbrimSlot extends EnemySlotBase {
   readonly actions = [
     { label: '强制弹幕', run: () => this.system.debugForce('volley') },
     { label: '强制咒术', run: () => this.system.debugForce('hexcast') },
-    { label: '强制巫火', run: () => this.system.debugForce('witchfire') },
+    { label: '强制波环', run: () => this.system.debugForce('waves') },
     { label: '强制传送', run: () => this.system.debugForce('teleport') },
     { label: '强制分身', run: () => this.system.debugForce('clones') },
     { label: '强制召唤', run: () => this.system.debugForce('summon') }
@@ -916,13 +916,13 @@ class HexbrimSlot extends EnemySlotBase {
         });
       } else if (event.type === 'hexbrim-hit' && event.hp > 0) {
         this.feedback.playArrowEnemy(event.position, event.damage);
-      } else if (event.type === 'hexbrim-witchfire-burn') {
+      } else if (event.type === 'hexbrim-wave-hit') {
         this.feedback.playDamage(event.position, event.damage);
       } else if (event.type === 'hexbrim-channel-started') {
         this.feedback.playAnnouncement('THE RITUAL BEGINS', this.cell.bounds, 'damage');
       } else if (event.type === 'hexbrim-ritual-complete') {
-        this.feedback.playAnnouncement('TOO SLOW', this.cell.bounds, 'damage');
-        this.feedback.playDamage(clampToBounds(target, this.cell.bounds), event.damage);
+        this.feedback.playAnnouncement('THE RITUAL COMPLETES', this.cell.bounds, 'damage');
+        this.feedback.playEnemySpawn(event.position);
       } else if (event.type === 'hexbrim-channel-interrupted') {
         this.feedback.playAnnouncement('RITUAL BROKEN', this.cell.bounds, 'clear');
         this.feedback.playEnemySpawn(event.position);
@@ -997,7 +997,7 @@ class HexbrimSlot extends EnemySlotBase {
       deltaMs,
       this.system.getActiveEntities(),
       this.system.getActiveHexOrbs(),
-      this.system.getActiveFirePatches()
+      this.system.getActiveWaves()
     );
     this.doorRenderer.update(
       timeMs,

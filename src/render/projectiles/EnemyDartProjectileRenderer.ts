@@ -122,17 +122,21 @@ export class EnemyDartProjectileRenderer {
     for (let index = 1; index < dart.trail.length; index += 1) {
       const point = dart.trail[index];
       const progress = index / Math.max(1, dart.trail.length - 1);
-      // Wide splatter cone behind the blob, per the reference footage.
-      const speckCount = 2 + Math.round(progress * 3);
+      // Solid comet tail: a connected, tapering black stroke that streams
+      // behind the bullet head (per the reference footage), plus a couple
+      // of loose specks shedding off it.
+      const previous = dart.trail[index - 1];
 
-      for (let speck = 0; speck < speckCount; speck += 1) {
-        const seed = dart.id * 37 + index * 11 + speck * 17;
-        const offsetX = (this.stableNoise(seed) - 0.5) * (18 + progress * 22);
-        const offsetY = (this.stableNoise(seed + 7) - 0.5) * (16 + progress * 20);
-        const radius = 1.2 + this.stableNoise(seed + 13) * (2 + progress * 2.6);
+      graphics.lineStyle(2 + progress * 12, INK_BODY_COLOR, 0.18 + progress * 0.72);
+      graphics.lineBetween(previous.x, previous.y, point.x, point.y);
 
-        graphics.fillStyle(INK_BODY_COLOR, 0.12 + progress * 0.45);
-        graphics.fillCircle(point.x + offsetX, point.y + offsetY, radius);
+      if (index % 2 === 0) {
+        const seed = dart.id * 37 + index * 11;
+        const offsetX = (this.stableNoise(seed) - 0.5) * 20;
+        const offsetY = (this.stableNoise(seed + 7) - 0.5) * 18;
+
+        graphics.fillStyle(INK_BODY_COLOR, 0.1 + progress * 0.3);
+        graphics.fillCircle(point.x + offsetX, point.y + offsetY, 1 + this.stableNoise(seed + 13) * 2.2);
       }
     }
   }

@@ -14,7 +14,7 @@ import type { RoomBounds, RoomSpawnPoint } from '../rooms';
  *   player morph is an open item).
  * - teleport: vanishes into a portal, reappears elsewhere (invulnerable
  *   while gone).
- * - witchfire: sprays persistent green fire patches toward Bowbert that
+ * - waves: stands still and pulses expanding ring shockwaves outward that
  *   burn on contact for several seconds (area denial).
  * - ritual (at 66% and 33% hp): splits into the real boss plus identical
  *   1-HP illusions and ALL of them channel a ritual — hit the real one
@@ -32,7 +32,7 @@ export type HexbrimPhase =
   | 'float'
   | 'volley'
   | 'hexcast'
-  | 'firecast'
+  | 'wavecast'
   | 'channel'
   | 'stagger'
   | 'vanish'
@@ -64,6 +64,14 @@ export interface HexbrimHexOrb {
   radius: number;
 }
 
+export interface HexbrimWave {
+  readonly id: number;
+  readonly origin: SimVector;
+  radius: number;
+  readonly maxRadius: number;
+  hitPlayer: boolean;
+}
+
 export interface HexbrimFirePatch {
   readonly id: number;
   position: SimVector;
@@ -81,11 +89,11 @@ export type HexbrimEvent =
   | { type: 'hexbrim-hexcast'; id: number; position: SimVector }
   | { type: 'hexbrim-hex-caught'; position: SimVector; morphMs: number }
   | { type: 'hexbrim-hex-expired'; position: SimVector }
-  | { type: 'hexbrim-witchfire'; id: number; positions: SimVector[] }
-  | { type: 'hexbrim-witchfire-burn'; position: SimVector; damage: number }
+  | { type: 'hexbrim-waves'; id: number; origin: SimVector; count: number }
+  | { type: 'hexbrim-wave-hit'; position: SimVector; damage: number }
   | { type: 'hexbrim-channel-started'; durationMs: number }
   | { type: 'hexbrim-channel-interrupted'; position: SimVector }
-  | { type: 'hexbrim-ritual-complete'; damage: number }
+  | { type: 'hexbrim-ritual-complete'; healed: number; position: SimVector }
   | { type: 'hexbrim-clones-split'; positions: SimVector[] }
   | { type: 'hexbrim-clone-dispelled'; id: number; position: SimVector }
   | { type: 'hexbrim-hit'; id: number; arrowId: number; position: SimVector; hp: number; damage: number }
@@ -111,13 +119,13 @@ const HEX_ORB_LIFE_MS = 4500;
 const HEX_ORB_RADIUS = 20;
 const HEX_ORB_CATCH_RADIUS = 34;
 const FIRECAST_TELEGRAPH_MS = 500;
-const FIRE_PATCH_RADIUS = 30;
-const FIRE_PATCH_LIFE_MS = 6000;
-const FIRE_PATCH_SPACING = 72;
-const FIRE_BURN_DAMAGE = 1;
-const FIRE_BURN_COOLDOWN_MS = 900;
+const WAVE_SPEED = 185;
+const WAVE_BAND = 18;
+const WAVE_DAMAGE = 1;
+const WAVE_MAX_RADIUS = 620;
+const WAVE_GAP = 110;
 const CHANNEL_MS = 6000;
-const RITUAL_DAMAGE = 2;
+const RITUAL_HEAL_FRACTION = 0.15;
 const STAGGER_MS = 1400;
 const INTERSTITIAL_TELEPORT_CHANCE = 0.6;
 const HEX_MORPH_MS = 4000;
@@ -204,14 +212,13 @@ const getSegmentDistanceSquared = (point: SimVector, start: SimVector, end: SimV
   return deltaX * deltaX + deltaY * deltaY;
 };
 
-type HexbrimAction = 'volley' | 'hexcast' | 'witchfire' | 'teleport';
+type HexbrimAction = 'volley' | 'hexcast' | 'waves' | 'teleport';
 export type HexbrimVolleyPattern = 'fan' | 'stream';
 
 export class HexbrimSystem {
   private readonly entities = new Map<number, HexbrimEnemy>();
   private readonly hexOrbs = new Map<number, HexbrimHexOrb>();
-  private readonly firePatches = new Map<number, HexbrimFirePatch>();
-  private burnCooldownMs = 0;
+  private readonly waves = new Map<number, HexbrimWave>();
   private channelRemainingMs = 0;
   private nextId = 1;
   private encounterStarted = false;
@@ -286,22 +293,26 @@ export class HexbrimSystem {
       }
     }
 
-    this.burnCooldownMs = Math.max(0, this.burnCooldownMs - deltaMs);
+    for (const wave of Array.from(this.waves.values())) {
+      wave.radius += WAVE_SPEED * (deltaMs / 1000);
 
-    for (const patch of Array.from(this.firePatches.values())) {
-      patch.lifeMs -= deltaMs;
-
-      if (patch.lifeMs <= 0) {
-        this.firePatches.delete(patch.id);
+      if (wave.radius > wave.maxRadius) {
+        this.waves.delete(wave.id);
         continue;
       }
 
-      if (this.burnCooldownMs <= 0 && distance(patch.position, playerPosition) <= patch.radius) {
-        this.burnCooldownMs = FIRE_BURN_COOLDOWN_MS;
+      if (wave.radius <= 0 || wave.hitPlayer) {
+        continue;
+      }
+
+      // The ring band clips the player once; dodge i-frames (checked by
+      // the damage service) are the way through.
+      if (Math.abs(distance(wave.origin, playerPosition) - wave.radius) <= WAVE_BAND) {
+        wave.hitPlayer = true;
         events.push({
-          type: 'hexbrim-witchfire-burn',
+          type: 'hexbrim-wave-hit',
           position: copyVector(playerPosition),
-          damage: FIRE_BURN_DAMAGE
+          damage: WAVE_DAMAGE
         });
       }
     }
@@ -312,7 +323,21 @@ export class HexbrimSystem {
 
       if (this.channelRemainingMs <= 0) {
         this.channelRemainingMs = 0;
-        events.push({ type: 'hexbrim-ritual-complete', damage: RITUAL_DAMAGE });
+
+        const bossEntity = this.boss();
+        const healed = bossEntity
+          ? Math.min(bossEntity.maxHp - bossEntity.hp, Math.round(bossEntity.maxHp * RITUAL_HEAL_FRACTION))
+          : 0;
+
+        if (bossEntity) {
+          bossEntity.hp += healed;
+        }
+
+        events.push({
+          type: 'hexbrim-ritual-complete',
+          healed,
+          position: copyVector(bossEntity?.position ?? playerPosition)
+        });
 
         for (const other of Array.from(this.entities.values())) {
           if (other.isClone) {
@@ -349,8 +374,8 @@ export class HexbrimSystem {
     return Array.from(this.hexOrbs.values());
   }
 
-  getActiveFirePatches(): readonly HexbrimFirePatch[] {
-    return Array.from(this.firePatches.values());
+  getActiveWaves(): readonly HexbrimWave[] {
+    return Array.from(this.waves.values());
   }
 
   /** 0..1 while a ritual channel is running (renderer ramps the dread). */
@@ -399,8 +424,7 @@ export class HexbrimSystem {
     this.summonDone = false;
     this.volleyToggle = false;
     this.forcedAction = null;
-    this.firePatches.clear();
-    this.burnCooldownMs = 0;
+    this.waves.clear();
     this.channelRemainingMs = 0;
   }
 
@@ -545,7 +569,7 @@ export class HexbrimSystem {
             ? VOLLEY_TELEGRAPH_MS
             : phase === 'hexcast'
               ? HEXCAST_TELEGRAPH_MS
-              : phase === 'firecast'
+              : phase === 'wavecast'
                 ? FIRECAST_TELEGRAPH_MS
                 : phase === 'channel'
                   ? CHANNEL_MS
@@ -562,8 +586,8 @@ export class HexbrimSystem {
     }
 
     const rotation: HexbrimAction[] = this.phase2()
-      ? ['volley', 'witchfire', 'hexcast', 'volley', 'witchfire']
-      : ['volley', 'hexcast', 'volley', 'witchfire'];
+      ? ['volley', 'waves', 'hexcast', 'volley', 'waves']
+      : ['volley', 'hexcast', 'volley', 'waves'];
     const action = rotation[this.actionRotationIndex % rotation.length];
 
     this.actionRotationIndex += 1;
@@ -664,7 +688,7 @@ export class HexbrimSystem {
         this.forcedAction = null;
         this.enterPhase(
           entity,
-          action === 'teleport' ? 'vanish' : action === 'witchfire' ? 'firecast' : action
+          action === 'teleport' ? 'vanish' : action === 'waves' ? 'wavecast' : action
         );
       }
 
@@ -738,40 +762,35 @@ export class HexbrimSystem {
       return;
     }
 
-    if (entity.phase === 'firecast') {
+    if (entity.phase === 'wavecast') {
       entity.telegraphProgress = clamp01(entity.phaseElapsedMs / entity.phaseDurationMs);
 
       if (entity.phaseElapsedMs < entity.phaseDurationMs) {
         return;
       }
 
-      // Spray a trail of witchfire from the boss toward Bowbert.
-      const aim = vectorTo(entity.position, playerPosition);
-      const patchCount = this.phase3() ? 5 : 4;
-      const positions: SimVector[] = [];
+      // Stand tall and pulse rings outward, staggered by a negative
+      // starting radius so they emerge one after another.
+      const rings = this.phase3() ? 4 : 3;
 
-      for (let index = 1; index <= patchCount; index += 1) {
-        const wobble = rotate(aim, (Math.random() - 0.5) * 0.3);
-        const position = clampPositionToBounds(
-          {
-            x: entity.position.x + wobble.x * FIRE_PATCH_SPACING * index,
-            y: entity.position.y + wobble.y * FIRE_PATCH_SPACING * index
-          },
-          bounds
-        );
-        const patch: HexbrimFirePatch = {
+      for (let index = 0; index < rings; index += 1) {
+        const wave: HexbrimWave = {
           id: this.nextId++,
-          position,
-          radius: FIRE_PATCH_RADIUS,
-          lifeMs: FIRE_PATCH_LIFE_MS,
-          maxLifeMs: FIRE_PATCH_LIFE_MS
+          origin: copyVector(entity.position),
+          radius: -index * WAVE_GAP,
+          maxRadius: WAVE_MAX_RADIUS,
+          hitPlayer: false
         };
 
-        this.firePatches.set(patch.id, patch);
-        positions.push(copyVector(position));
+        this.waves.set(wave.id, wave);
       }
 
-      events.push({ type: 'hexbrim-witchfire', id: entity.id, positions });
+      events.push({
+        type: 'hexbrim-waves',
+        id: entity.id,
+        origin: copyVector(entity.position),
+        count: rings
+      });
       this.finishAction(entity);
       return;
     }
