@@ -129,6 +129,8 @@ const studioReviewInbox = (): Plugin => ({
 });
 
 export default defineConfig({
+  // GitHub Pages serves the game at /<repo>/ — CI sets DEPLOY_BASE.
+  base: process.env.DEPLOY_BASE ?? '/',
   plugins: [studioReviewInbox()],
   build: {
     outDir: 'dist',

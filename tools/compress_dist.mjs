@@ -6,6 +6,13 @@
  * pixel coordinates stay valid. Sources in assets/ are never modified.
  */
 import { execFileSync } from 'node:child_process';
+
+try {
+  execFileSync('pngquant', ['--version']);
+} catch {
+  console.warn('compress_dist: pngquant not found, skipping PNG quantization');
+  process.exit(0);
+}
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
