@@ -70,8 +70,10 @@ const SPAWN_CADENCE_MS = 560;
 const SPAWN_DURATION_MS = 360;
 const SKITTER_MIN_MS = 2600;
 const SKITTER_EXTRA_MS = 1400;
-const WINDUP_MS = 650;
-const COOLDOWN_MS = 1400;
+/** Once camped (monsters near + player in range) it commits this fast. */
+const EAGER_TRIGGER_MS = 650;
+const WINDUP_MS = 820;
+const COOLDOWN_MS = 1050;
 const SKITTER_SPEED = 120;
 const SWAP_RADIUS = 300;
 /** A swap is only worth it with monsters this close to the imp. */
@@ -403,9 +405,17 @@ export class SwitcherooSystem {
     }
 
     if (enemy.phase === 'skitter' || enemy.phase === 'cooldown') {
-      this.moveSkitter(enemy, deltaMs, bounds, allies);
+      this.moveSkitter(enemy, deltaMs, bounds, allies, playerPosition);
 
-      if (enemy.phaseElapsedMs >= enemy.phaseDurationMs || this.forceSwapRequested) {
+      // Eager ambush: the moment the trap is set (monsters around it and
+      // Bowbert in range), it doesn't dawdle — swap incoming.
+      const trapReady =
+        enemy.phase === 'skitter' &&
+        enemy.phaseElapsedMs >= EAGER_TRIGGER_MS &&
+        distance(enemy.position, playerPosition) <= SWAP_RADIUS &&
+        this.monstersNear(enemy, allies, AMBUSH_RADIUS) > 0;
+
+      if (trapReady || enemy.phaseElapsedMs >= enemy.phaseDurationMs || this.forceSwapRequested) {
         const wasForced = this.forceSwapRequested;
 
         this.forceSwapRequested = false;
@@ -486,7 +496,8 @@ export class SwitcherooSystem {
     enemy: SwitcherooEnemy,
     deltaMs: number,
     bounds: RoomBounds,
-    allies: readonly SimVector[]
+    allies: readonly SimVector[],
+    playerPosition: SimVector
   ) {
     if (!enemy.waypoint || distance(enemy.position, enemy.waypoint) < 12) {
       // Camp the thickest crowd: pick the monster with the most company.
@@ -506,6 +517,11 @@ export class SwitcherooSystem {
           if (other !== candidate && distance(candidate, other) <= CLUSTER_RADIUS) {
             score += 1;
           }
+        }
+
+        // A pile the player can't be swapped into is useless bait.
+        if (distance(candidate, playerPosition) > SWAP_RADIUS * 0.9) {
+          score -= 2;
         }
 
         score += Math.random() * 0.5; // tie-break wobble

@@ -74,7 +74,8 @@ export class SwitcherooKit implements EnemyKit {
     this.renderer?.update(
       timeMs,
       deltaMs,
-      activeKind === 'switcheroo' ? this.system.getActiveEnemies() : []
+      activeKind === 'switcheroo' ? this.system.getActiveEnemies() : [],
+      playerPosition
     );
 
     return frame.consumedArrowIds;

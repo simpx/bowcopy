@@ -122,22 +122,16 @@ export class EnemyDartProjectileRenderer {
     for (let index = 1; index < dart.trail.length; index += 1) {
       const point = dart.trail[index];
       const progress = index / Math.max(1, dart.trail.length - 1);
-      // Solid comet tail: a connected, tapering black stroke that streams
-      // behind the bullet head (per the reference footage), plus a couple
-      // of loose specks shedding off it.
-      const previous = dart.trail[index - 1];
+      // Runtime smoke tail, shroom-spore style: soft overlapping puffs
+      // along the recent path — they live in the trail buffer, so the
+      // tail streams behind the moving ellipse and evaporates.
+      const seed = dart.id * 37 + index * 11;
+      const jitterX = (this.stableNoise(seed) - 0.5) * 6;
+      const jitterY = (this.stableNoise(seed + 7) - 0.5) * 6;
+      const radius = 2.5 + progress * 7.5;
 
-      graphics.lineStyle(2 + progress * 12, INK_BODY_COLOR, 0.18 + progress * 0.72);
-      graphics.lineBetween(previous.x, previous.y, point.x, point.y);
-
-      if (index % 2 === 0) {
-        const seed = dart.id * 37 + index * 11;
-        const offsetX = (this.stableNoise(seed) - 0.5) * 20;
-        const offsetY = (this.stableNoise(seed + 7) - 0.5) * 18;
-
-        graphics.fillStyle(INK_BODY_COLOR, 0.1 + progress * 0.3);
-        graphics.fillCircle(point.x + offsetX, point.y + offsetY, 1 + this.stableNoise(seed + 13) * 2.2);
-      }
+      graphics.fillStyle(INK_BODY_COLOR, 0.1 + progress * 0.5);
+      graphics.fillCircle(point.x + jitterX, point.y + jitterY, radius);
     }
   }
 
@@ -196,12 +190,10 @@ export class EnemyDartProjectileRenderer {
     const ink = this.scene.add.graphics();
 
     ink.fillStyle(INK_BODY_COLOR, 1);
-    ink.fillCircle(3, 0, 14);
-    ink.fillCircle(-10, 1.5, 9);
-    ink.fillCircle(-19, -3, 4.5);
+    ink.fillEllipse(0, 0, 32, 21);
 
     ink.fillStyle(INK_HIGHLIGHT_COLOR, 0.5);
-    ink.fillCircle(7, -5, 2.6);
+    ink.fillCircle(6, -4.5, 2.4);
 
     const container = this.scene.add.container(0, 0, [ink]);
     const visual = {
