@@ -147,6 +147,7 @@ export default defineConfig({
   },
   preview: {
     host: '0.0.0.0',
+    allowedHosts: ['.nip.io', '.sslip.io'],
     port: 4173
   }
 });
